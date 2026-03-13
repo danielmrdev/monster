@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { NavItem } from './nav-item'
 import { signOut } from '@/app/(auth)/login/actions'
 
 const navItems = [
@@ -22,13 +22,7 @@ export function NavSidebar() {
       {/* Nav links */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
-          >
-            {label}
-          </Link>
+          <NavItem key={href} href={href} label={label} />
         ))}
       </nav>
 

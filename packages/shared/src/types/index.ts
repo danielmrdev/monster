@@ -1,3 +1,5 @@
+export * from './customization.js';
+
 // ── String-literal union types ─────────────────────────────────────────────
 
 export type SiteStatus =

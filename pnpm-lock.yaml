@@ -113,6 +113,10 @@ importers:
   packages/seo-scorer: {}
 
   packages/shared:
+    dependencies:
+      zod:
+        specifier: ^3.22.0
+        version: 3.25.76
     devDependencies:
       tsup:
         specifier: ^8.0.0
