@@ -62,7 +62,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Dashboard KPIs** `risk:low` `depends:[S01]`
   > After this: Dashboard page shows real KPI cards (total sites, live count, draft count, open alerts count) fetched from Supabase via the service client, replacing the "Coming soon" stub.
 
-- [ ] **S03: Settings — API Key Management** `risk:medium` `depends:[S01]`
+- [x] **S03: Settings — API Key Management** `risk:medium` `depends:[S01]`
   > After this: user can save and retrieve API keys (Spaceship, DataForSEO, Claude, Amazon affiliate tags) via the Settings page; values stored as `{"value": "..."}` JSON in the `settings` table, displayed masked in the UI (last 4 chars visible).
 
 - [ ] **S04: Finances Shell** `risk:low` `depends:[S01]`
