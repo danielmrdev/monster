@@ -63,3 +63,20 @@ supabase/.temp/
 
 # Claude Code
 .claude/
+
+# ── GSD baseline (auto-generated) ──
+.gsd/activity/
+.gsd/runtime/
+.gsd/worktrees/
+.gsd/auto.lock
+.gsd/metrics.json
+.gsd/STATE.md
+*.code-workspace
+__pycache__/
+*.pyc
+.venv/
+venv/
+target/
+vendor/
+*.log
+tmp/
