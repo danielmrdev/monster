@@ -59,7 +59,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Sites CRUD** `risk:high` `depends:[]`
   > After this: user can create a TSA site record with all fields via a real form, see it in the Sites list fetched from Supabase, open a detail view with correct data, and edit the site — all writes using the service role client and validated against the `SiteCustomization` Zod schema; active nav link highlighting works across all 7 routes.
 
-- [ ] **S02: Dashboard KPIs** `risk:low` `depends:[S01]`
+- [x] **S02: Dashboard KPIs** `risk:low` `depends:[S01]`
   > After this: Dashboard page shows real KPI cards (total sites, live count, draft count, open alerts count) fetched from Supabase via the service client, replacing the "Coming soon" stub.
 
 - [ ] **S03: Settings — API Key Management** `risk:medium` `depends:[S01]`
