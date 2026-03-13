@@ -51,7 +51,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Monorepo + worktree scaffold** `risk:low` `depends:[]`
+- [x] **S01: Monorepo + worktree scaffold** `risk:low` `depends:[]`
   > After this: `pnpm install` works, all workspace directories exist with correct package.json files, worktree creation script creates a branch + linked working tree at the right path.
 
 - [ ] **S02: Supabase schema** `risk:high` `depends:[S01]`
