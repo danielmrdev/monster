@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "f0671072",
+    "label": "admin-dev",
+    "command": "cd /home/daniel/monster/apps/admin && pnpm dev",
+    "cwd": "/home/daniel/monster",
+    "startedAt": 1773441156792,
+    "processType": "server",
+    "group": null,
+    "readyPattern": "Ready in",
+    "readyPort": 3004,
+    "pid": 3768725
+  }
+]
