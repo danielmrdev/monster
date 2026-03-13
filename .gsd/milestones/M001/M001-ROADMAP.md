@@ -60,7 +60,7 @@ This milestone is complete only when all are true:
 - [x] **S03: Shared packages** `risk:low` `depends:[S02]`
   > After this: `packages/db` exports typed Supabase client + generated types; `packages/shared` exports all shared TS types and constants; both compile cleanly and are importable from `apps/admin`.
 
-- [ ] **S04: Admin panel shell** `risk:medium` `depends:[S02, S03]`
+- [x] **S04: Admin panel shell** `risk:medium` `depends:[S02, S03]`
   > After this: Next.js 15 admin panel runs in dev and production build, Supabase Auth login/logout cycle works, protected layout with sidebar navigation renders all 7 sections (most showing "Coming soon").
 
 - [ ] **S05: pm2 + deploy script** `risk:low` `depends:[S04]`

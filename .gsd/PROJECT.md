@@ -12,7 +12,8 @@ A working end-to-end pipeline: idea → niche research → site generated → de
 
 M001/S01 complete: monorepo scaffold with pnpm workspaces, all package directories created, worktree script ready.
 M001/S02 complete: full Phase 1 schema applied to Supabase Cloud (21 tables, 7 migrations), TypeScript types generated (1218 lines) and committed to `packages/db/src/types/supabase.ts`. All 4 Supabase env vars in `.env`.
-M001/S03 complete: `packages/db` exports typed Supabase client factories (createBrowserClient, createServiceClient) with Database generic + full type re-exports; `packages/shared` exports domain types and constants (AMAZON_MARKETS, SUPPORTED_LANGUAGES, SITE_STATUS_FLOW, REBUILD_TRIGGERS); both packages build cleanly to ESM + .d.ts; `apps/admin` resolves both via workspace:* with tsc --noEmit exit 0. Ready for S04 (Next.js admin shell with Supabase Auth).
+M001/S03 complete: `packages/db` exports typed Supabase client factories (createBrowserClient, createServiceClient) with Database generic + full type re-exports; `packages/shared` exports domain types and constants (AMAZON_MARKETS, SUPPORTED_LANGUAGES, SITE_STATUS_FLOW, REBUILD_TRIGGERS); both packages build cleanly to ESM + .d.ts; `apps/admin` resolves both via workspace:* with tsc --noEmit exit 0.
+M001/S04 complete: Next.js 15 admin panel (`apps/admin`) builds cleanly and runs on port 3004. Supabase Auth wired end-to-end — middleware protects all 7 routes (getAll/setAll cookie interface, getUser()), login/logout server actions work, protected (dashboard) layout with dark sidebar nav renders all 7 sections (stubs). `pnpm build` and `tsc --noEmit` both exit 0. Ready for S05 (pm2 ecosystem config + deploy script).
 
 ## Architecture / Key Patterns
 
