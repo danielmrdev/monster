@@ -54,7 +54,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Monorepo + worktree scaffold** `risk:low` `depends:[]`
   > After this: `pnpm install` works, all workspace directories exist with correct package.json files, worktree creation script creates a branch + linked working tree at the right path.
 
-- [ ] **S02: Supabase schema** `risk:high` `depends:[S01]`
+- [x] **S02: Supabase schema** `risk:high` `depends:[S01]`
   > After this: full Phase 1 schema applied to Supabase Cloud, `supabase gen types --linked` produces complete TypeScript types covering all tables needed through M008.
 
 - [ ] **S03: Shared packages** `risk:low` `depends:[S02]`

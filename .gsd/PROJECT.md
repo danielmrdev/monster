@@ -10,7 +10,8 @@ A working end-to-end pipeline: idea → niche research → site generated → de
 
 ## Current State
 
-Project initialized. Docs only — no code yet. Repo lives on VPS1 (danielmr-hel1, private, Tailscale). pm2 already running (nous, better-copilot). Git on main branch.
+M001/S01 complete: monorepo scaffold with pnpm workspaces, all package directories created, worktree script ready.
+M001/S02 complete: full Phase 1 schema applied to Supabase Cloud (21 tables, 7 migrations), TypeScript types generated (1218 lines) and committed to `packages/db/src/types/supabase.ts`. All 4 Supabase env vars in `.env`. Working branch: `gsd/M001/S02`. Ready for S03 (typed client wrapping generated types).
 
 ## Architecture / Key Patterns
 
