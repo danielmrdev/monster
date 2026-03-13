@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'monster-admin',
-      script: 'node_modules/.bin/next',
+      script: 'node_modules/next/dist/bin/next',
       args: 'start',
       cwd: '/home/daniel/monster/apps/admin',
       instances: 1,

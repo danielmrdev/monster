@@ -63,7 +63,7 @@ This milestone is complete only when all are true:
 - [x] **S04: Admin panel shell** `risk:medium` `depends:[S02, S03]`
   > After this: Next.js 15 admin panel runs in dev and production build, Supabase Auth login/logout cycle works, protected layout with sidebar navigation renders all 7 sections (most showing "Coming soon").
 
-- [ ] **S05: pm2 + deploy script** `risk:low` `depends:[S04]`
+- [x] **S05: pm2 + deploy script** `risk:low` `depends:[S04]`
   > After this: `pm2 start ecosystem.config.js` launches `monster-admin` on port 3001; `scripts/deploy.sh` builds and reloads it; process survives reboot via `pm2 save && pm2 startup`.
 
 ---

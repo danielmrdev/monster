@@ -13,7 +13,8 @@ A working end-to-end pipeline: idea → niche research → site generated → de
 M001/S01 complete: monorepo scaffold with pnpm workspaces, all package directories created, worktree script ready.
 M001/S02 complete: full Phase 1 schema applied to Supabase Cloud (21 tables, 7 migrations), TypeScript types generated (1218 lines) and committed to `packages/db/src/types/supabase.ts`. All 4 Supabase env vars in `.env`.
 M001/S03 complete: `packages/db` exports typed Supabase client factories (createBrowserClient, createServiceClient) with Database generic + full type re-exports; `packages/shared` exports domain types and constants (AMAZON_MARKETS, SUPPORTED_LANGUAGES, SITE_STATUS_FLOW, REBUILD_TRIGGERS); both packages build cleanly to ESM + .d.ts; `apps/admin` resolves both via workspace:* with tsc --noEmit exit 0.
-M001/S04 complete: Next.js 15 admin panel (`apps/admin`) builds cleanly and runs on port 3004. Supabase Auth wired end-to-end — middleware protects all 7 routes (getAll/setAll cookie interface, getUser()), login/logout server actions work, protected (dashboard) layout with dark sidebar nav renders all 7 sections (stubs). `pnpm build` and `tsc --noEmit` both exit 0. Ready for S05 (pm2 ecosystem config + deploy script).
+M001/S04 complete: Next.js 15 admin panel (`apps/admin`) builds cleanly and runs on port 3004. Supabase Auth wired end-to-end — middleware protects all 7 routes (getAll/setAll cookie interface, getUser()), login/logout server actions work, protected (dashboard) layout with dark sidebar nav renders all 7 sections (stubs). `pnpm build` and `tsc --noEmit` both exit 0.
+M001/S05 complete: pm2 runs monster-admin on port 3004 (online, 0 restarts, HTTP 200). `ecosystem.config.js` uses correct script path (`node_modules/next/dist/bin/next`). `scripts/deploy.sh` handles full cycle: pull → install --frozen-lockfile → build → pm2 reload || start → pm2 save. `logs/` dir tracked with `.gitkeep`. Process list saved to `~/.pm2/dump.pm2`. `M001-SUMMARY.md` documents worktree, deploy, and pm2 protocols. **M001 Foundation milestone complete.** One manual step remaining: `pm2 startup systemd` (sudo required, documented).
 
 ## Architecture / Key Patterns
 
@@ -36,7 +37,7 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 
 ## Milestone Sequence
 
-- [ ] M001: Foundation — Monorepo, worktrees, DB schema, shared packages, admin shell on pm2
+- [x] M001: Foundation — Monorepo, worktrees, DB schema, shared packages, admin shell on pm2
 - [ ] M002: Admin Panel MVP — Dashboard, Sites CRUD, Settings, Finances shell
 - [ ] M003: TSA Site Generator — Templates, pipeline, ContentGenerator, SEO Scorer
 - [ ] M004: Deployment + Cloudflare — rsync to VPS2, Cloudflare API, DNS/SSL automation, site lifecycle states

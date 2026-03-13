@@ -133,13 +133,13 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 
 ### R013 — Admin panel on VPS1 via pm2
 - Class: operability
-- Status: active
+- Status: validated
 - Description: Next.js 15 admin panel runs as a pm2 process on VPS1, accessible only via Tailscale. Deploy workflow: build on branch → squash merge to main → `pm2 reload monster-admin`.
 - Why it matters: The panel must be always-on and survive reboots. Tailscale ensures it's never public-facing.
 - Source: user
 - Primary owning slice: M001/S04
 - Supporting slices: M001/S05
-- Validation: unmapped
+- Validation: M001/S05 — pm2 shows monster-admin online (0 restarts), curl returns HTTP 200 on port 3004, process list saved to ~/.pm2/dump.pm2
 
 ### R014 — Worktree-based development workflow
 - Class: constraint
@@ -271,7 +271,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R010 | primary-user-loop | active | M007/S01 | none | unmapped |
 | R011 | operability | active | M004/S02 | M004/S01 | unmapped |
 | R012 | admin/support | active | M008/S01 | M008/S02 | unmapped |
-| R013 | operability | active | M001/S04 | M001/S05 | unmapped |
+| R013 | operability | validated | M001/S04 | M001/S05 | M001/S05 |
 | R014 | constraint | active | M001/S01 | none | unmapped |
 | R015 | differentiator | active | M003/S01 | M003/S02 | unmapped |
 | R020 | integration | deferred | none | none | unmapped |
