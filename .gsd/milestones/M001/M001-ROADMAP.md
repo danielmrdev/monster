@@ -57,7 +57,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Supabase schema** `risk:high` `depends:[S01]`
   > After this: full Phase 1 schema applied to Supabase Cloud, `supabase gen types --linked` produces complete TypeScript types covering all tables needed through M008.
 
-- [ ] **S03: Shared packages** `risk:low` `depends:[S02]`
+- [x] **S03: Shared packages** `risk:low` `depends:[S02]`
   > After this: `packages/db` exports typed Supabase client + generated types; `packages/shared` exports all shared TS types and constants; both compile cleanly and are importable from `apps/admin`.
 
 - [ ] **S04: Admin panel shell** `risk:medium` `depends:[S02, S03]`

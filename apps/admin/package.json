@@ -2,5 +2,12 @@
   "name": "@monster/admin",
   "version": "0.0.1",
   "private": true,
-  "scripts": {}
+  "scripts": {},
+  "dependencies": {
+    "@monster/db": "workspace:*",
+    "@monster/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
 }

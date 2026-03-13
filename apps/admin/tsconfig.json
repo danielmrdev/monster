@@ -3,5 +3,6 @@
   "compilerOptions": {
     "moduleResolution": "Bundler",
     "plugins": [{ "name": "next" }]
-  }
+  },
+  "include": ["src/**/*"]
 }

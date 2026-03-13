@@ -1,35 +1,3 @@
-Connecting to db.iygjgkproeuhcvbrwloo.supabase.co 5432
-v0.96.1: Pulling from supabase/postgres-meta
-4b9ad70f79cd: Pulling fs layer
-a0655704972f: Pulling fs layer
-2664cf4489e5: Pulling fs layer
-7c6ce32c8ea1: Pulling fs layer
-d1049e5e90ef: Pulling fs layer
-8bef736db8d5: Pulling fs layer
-05988a666f72: Pulling fs layer
-b74ec4036855: Pulling fs layer
-c2b9c0e674a1: Pulling fs layer
-65acec373fd5: Download complete
-c2b9c0e674a1: Download complete
-4b9ad70f79cd: Download complete
-7c6ce32c8ea1: Download complete
-d1049e5e90ef: Download complete
-b74ec4036855: Download complete
-05988a666f72: Download complete
-2664cf4489e5: Download complete
-8bef736db8d5: Download complete
-05988a666f72: Pull complete
-a0655704972f: Download complete
-a0655704972f: Pull complete
-2664cf4489e5: Pull complete
-c2b9c0e674a1: Pull complete
-7c6ce32c8ea1: Pull complete
-d1049e5e90ef: Pull complete
-8bef736db8d5: Pull complete
-4b9ad70f79cd: Pull complete
-b74ec4036855: Pull complete
-Digest: sha256:2559d20aaa50f2eb86a6cb2e5af4e847e87139673bc214b4655c126d96c160b2
-Status: Downloaded newer image for public.ecr.aws/supabase/postgres-meta:v0.96.1
 export type Json =
   | string
   | number
