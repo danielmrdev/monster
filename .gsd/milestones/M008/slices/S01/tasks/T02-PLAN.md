@@ -53,6 +53,22 @@ Create the `RevenueSection` client component with CSV import card and manual rev
 - [ ] Placeholder card removed from page
 - [ ] `pnpm --filter @monster/admin build` exit 0
 
+## Observability Impact
+
+**Signals added by this task:**
+- `importAmazonCSV` result state is displayed in the UI immediately after form submission: `{ inserted, updated, unattributed[] }` — no DB access needed to confirm attribution
+- Unattributed tracking IDs rendered as `<code>` blocks in yellow warning banner — visible without DB access, actionable (points to which `affiliate_tag` needs updating)
+- Red error banner surfaces parse errors verbatim including the raw header list — a future agent can diagnose unknown CSV format directly from the UI without reading logs
+- Green success banner confirms the import count before page revalidation completes
+
+**Failure state inspection:**
+- Parse failure: red banner shows `"Unrecognized CSV format. Headers found: ..."` — inspectable in browser
+- No file: red banner shows `"No file selected"`
+- Supabase errors: thrown → PM2 stderr via `pm2 logs monster-admin --err --lines 20`
+- Manual entry validation errors: per-field `FieldError` inline messages
+
+**Revenue history table:** provides a combined view of both `revenue_amazon` and `revenue_manual` rows sorted by date — inspectable without DB access. Empty state confirms no rows exist yet.
+
 ## Verification
 
 - `pnpm --filter @monster/admin build` exit 0

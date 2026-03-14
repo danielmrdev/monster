@@ -47,7 +47,7 @@
 
 ## Slices
 
-- [ ] **S01: Amazon CSV Import + Manual Revenue Entry** `risk:high` `depends:[]`
+- [x] **S01: Amazon CSV Import + Manual Revenue Entry** `risk:high` `depends:[]`
   > After this: user can upload an Amazon Associates CSV (ES or EN format), see imported revenue rows attributed to correct sites, see unmatched tracking IDs listed as warnings, and add manual revenue entries — all visible in the Finances page revenue section.
 
 - [ ] **S02: P&L Dashboard + Domain Expiry Alerts + CSV Export** `risk:low` `depends:[S01]`

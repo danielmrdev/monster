@@ -19,6 +19,24 @@
 - Import result shows: `${inserted} rows imported, ${updated} updated` + warning list for unattributed tracking IDs
 - `pnpm -r typecheck` exit 0, `pnpm --filter @monster/admin build` exit 0
 
+## Observability / Diagnostics
+
+**Runtime signals added by this slice:**
+- `importAmazonCSV` returns a structured `ImportResult` with `{ inserted, updated, unattributed[] }` — inspectable from server action response in UI or logs
+- Parse errors include raw CSV headers in the message: `"Unrecognized CSV format. Headers found: <list>"` — enables diagnosis of unknown export formats
+- Upsert errors are thrown with Supabase error message attached: `"Failed to upsert revenue: <message>"` — PM2 logs capture these
+- Unattributed tracking IDs surface in UI as a warning list — visible without DB access
+- `revenue_amazon` rows can be inspected: `SELECT site_id, date, market, earnings, created_at FROM revenue_amazon ORDER BY created_at DESC LIMIT 10;`
+- `revenue_manual` rows: `SELECT * FROM revenue_manual ORDER BY created_at DESC LIMIT 10;`
+
+**Failure state inspection:**
+- Parse failure: server action returns `{ success: false, error: "Unrecognized CSV format. Headers found: ..." }` — displayed as red banner in UI
+- File missing: returns `{ success: false, error: "No file selected" }`
+- Supabase upsert error: thrown (Next.js will log to PM2 stderr)
+- All errors are non-silent — either returned as structured state or thrown
+
+**Redaction:** No secrets in logs. `earnings` values are financial data — not logged, only stored in DB.
+
 ## Verification
 
 ```bash
@@ -31,6 +49,11 @@ pnpm --filter @monster/admin build
 # Verify in Supabase: SELECT * FROM revenue_amazon ORDER BY created_at DESC LIMIT 5;
 # Verify unattributed IDs appear in UI warning list (use a tracking ID not in any site.affiliate_tag)
 
+# Failure path check — upload a .txt file with garbage content
+# → Server action must return { success: false, error: "Unrecognized CSV format. Headers found: ..." }
+# → UI must display red error banner with header names listed
+# → No rows inserted in revenue_amazon (verify: SELECT COUNT(*) FROM revenue_amazon WHERE created_at > now() - interval '1 minute')
+
 # pm2 reload
 pm2 reload monster-admin
 curl -s -o /dev/null -w "%{http_code}" http://localhost:3004/finances
@@ -39,7 +62,7 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3004/finances
 
 ## Tasks
 
-- [ ] **T01: CSV parser + `importAmazonCSV` server action** `est:1.5h`
+- [x] **T01: CSV parser + `importAmazonCSV` server action** `est:1.5h`
   - Why: Core of the slice — the riskiest piece. Parser must handle EN/ES headers, semicolon/comma delimiter, BOM. Action handles file upload, site lookup, upsert, and result reporting.
   - Files: `apps/admin/src/app/(dashboard)/finances/actions.ts`, `apps/admin/src/app/(dashboard)/finances/lib.ts` (new), `apps/admin/package.json`
   - Do:
@@ -65,7 +88,7 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3004/finances
   - Verify: `pnpm -r typecheck` exit 0; manually call `parseAmazonCSV` with a semicolon-delimited ES fixture and a comma-delimited EN fixture (inline test in T01 dev, not a test file) — both return correct rows
   - Done when: typecheck passes, `importAmazonCSV` and `addManualRevenue` are exported from `actions.ts`, `papaparse` is in `apps/admin/package.json`
 
-- [ ] **T02: Revenue UI — CSV upload form + manual entry form + revenue history table** `est:1.5h`
+- [x] **T02: Revenue UI — CSV upload form + manual entry form + revenue history table** `est:1.5h`
   - Why: Makes the import and manual entry accessible through the admin panel. Replaces the placeholder card. Users need to see imported rows to confirm attribution.
   - Files: `apps/admin/src/app/(dashboard)/finances/revenue-forms.tsx` (new), `apps/admin/src/app/(dashboard)/finances/page.tsx`
   - Do:

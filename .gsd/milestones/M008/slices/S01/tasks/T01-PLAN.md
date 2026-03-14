@@ -62,6 +62,23 @@ Install `papaparse`, build the `parseAmazonCSV` pure function with EN+ES header 
 - `pnpm --filter @monster/admin build` — exit 0 (parser + actions compile cleanly)
 - Manual spot-check: create a small ES-format fixture (`Fecha;Clics;Artículos pedidos;Artículos enviados;Ingresos por envíos;Código de seguimiento\n2026-01-15;3;1;1;12,50;mainTag-siteslug-20`) and confirm `parseAmazonCSV` returns expected `{ date: '2026-01-15', clicks: 3, items_ordered: 1, earnings: 12.5, tracking_id: 'mainTag-siteslug-20' }`
 
+## Observability Impact
+
+**What changes:**
+- `parseAmazonCSV` throws with header listing on unrecognized format — future agents can read the error message to know exactly what headers were found
+- `importAmazonCSV` server action returns structured `ImportResult` with counts and unattributed IDs — inspectable from UI response state or PM2 logs
+- Upsert failures propagate as thrown errors with Supabase message attached — captured in PM2 stderr
+
+**How to inspect:**
+- After a CSV import, check `revenue_amazon`: `SELECT site_id, date, market, earnings, created_at FROM revenue_amazon ORDER BY created_at DESC LIMIT 5;`
+- Unattributed tracking IDs are in the action return value `result.unattributed[]` — displayed in UI and logged on the server side if needed
+- Parse errors: run `parseAmazonCSV` with the raw text and read the thrown message — lists all unrecognized headers
+
+**Failure visibility:**
+- `{ success: false, error: "No file selected" }` — empty form submit
+- `{ success: false, error: "Unrecognized CSV format. Headers found: <list>" }` — bad CSV
+- Upsert error thrown → PM2 captures in stderr → `pm2 logs monster-admin --err --lines 20`
+
 ## Inputs
 
 - `apps/admin/src/app/(dashboard)/finances/actions.ts` — existing `addCost` pattern to follow
