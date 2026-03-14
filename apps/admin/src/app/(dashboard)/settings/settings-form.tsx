@@ -129,6 +129,68 @@ export function SettingsForm({ maskedDisplay }: SettingsFormProps) {
         </CardContent>
       </Card>
 
+      {/* VPS2 Deployment */}
+      <Card>
+        <CardHeader>
+          <CardTitle>VPS2 Deployment</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            VPS2 must be reachable via Tailscale SSH. Ensure{' '}
+            <span className="font-mono">import sites/*</span> is in VPS2&apos;s global
+            Caddyfile.
+          </p>
+
+          {/* VPS2 Host */}
+          <div className="space-y-1.5">
+            <Label htmlFor="vps2_host">VPS2 Host</Label>
+            <Input
+              id="vps2_host"
+              name="vps2_host"
+              type="text"
+              autoComplete="off"
+              placeholder="e.g. 192.168.x.x or tailscale-hostname"
+              defaultValue=""
+              aria-invalid={!!errors?.vps2_host}
+            />
+            <MaskedIndicator last4={maskedDisplay['vps2_host']} />
+            <FieldError messages={errors?.vps2_host} />
+          </div>
+
+          {/* VPS2 User */}
+          <div className="space-y-1.5">
+            <Label htmlFor="vps2_user">VPS2 User</Label>
+            <Input
+              id="vps2_user"
+              name="vps2_user"
+              type="text"
+              autoComplete="off"
+              placeholder="e.g. daniel"
+              defaultValue=""
+              aria-invalid={!!errors?.vps2_user}
+            />
+            <MaskedIndicator last4={maskedDisplay['vps2_user']} />
+            <FieldError messages={errors?.vps2_user} />
+          </div>
+
+          {/* VPS2 Sites Root */}
+          <div className="space-y-1.5">
+            <Label htmlFor="vps2_sites_root">VPS2 Sites Root</Label>
+            <Input
+              id="vps2_sites_root"
+              name="vps2_sites_root"
+              type="text"
+              autoComplete="off"
+              placeholder="e.g. /var/www/sites"
+              defaultValue=""
+              aria-invalid={!!errors?.vps2_sites_root}
+            />
+            <MaskedIndicator last4={maskedDisplay['vps2_sites_root']} />
+            <FieldError messages={errors?.vps2_sites_root} />
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={isPending}>
           {isPending ? 'Saving…' : 'Save Settings'}
