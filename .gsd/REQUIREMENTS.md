@@ -97,7 +97,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M005/S01
 - Supporting slices: M005/S02
-- Validation: M005/S01 — tracker built (1343 bytes, ≤2KB), esbuild pipeline exits 0, 3 placeholders preserved, BaseLayout injects tracker inline with credential substitution, data-affiliate on product links, astro check 0 errors; live runtime proof (rows in analytics_events) deferred to human UAT
+- Validation: M005/S01 — tracker built (1343 bytes, ≤2KB), esbuild pipeline exits 0, 3 placeholders preserved, BaseLayout injects tracker inline with credential substitution, data-affiliate on product links, astro check 0 errors; live runtime proof (rows in analytics_events) deferred to human UAT. M005/S02 — admin panel /analytics page renders real Supabase data (pageviews, unique visitors, affiliate clicks, top pages, per-site table); filter UI (site + date range) functional; analytics_daily graceful empty state; country Phase 1 placeholder; build exits 0; typecheck exits 0.
 - Notes: Country is always null in Phase 1 (D081); CF-IPCountry not available in browser→Supabase direct POST. Transport is fetch+keepalive not sendBeacon (D084) — PostgREST requires custom auth headers that sendBeacon cannot set.
 
 ### R010 — Monster Chat agent
@@ -268,7 +268,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R006 | operability | active | M004/S01 | M004/S02 | unmapped |
 | R007 | continuity | active | M006/S01 | M006/S02 | unmapped |
 | R008 | failure-visibility | active | M006/S02 | M002/S01 | unmapped |
-| R009 | primary-user-loop | active | M005/S01 | M005/S02 | unmapped |
+| R009 | primary-user-loop | active | M005/S01 | M005/S02 | M005/S01+S02 (partial — S03 aggregation + human UAT pending) |
 | R010 | primary-user-loop | active | M007/S01 | none | unmapped |
 | R011 | operability | active | M004/S02 | M004/S01 | unmapped |
 | R012 | admin/support | active | M008/S01 | M008/S02 | unmapped |
