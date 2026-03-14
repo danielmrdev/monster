@@ -59,7 +59,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Cloudflare Automation + Deploy Pipeline** `risk:medium` `depends:[S01]`
   > After this: clicking "Deploy" in admin panel rsyncs the site to VPS2, creates a Cloudflare zone + A record, and tracks the site through `deploying → dns_pending → ssl_pending → live`; `curl -I https://<domain>` shows `CF-RAY` header once NS propagates
 
-- [ ] **S03: Domain Management + Spaceship Integration** `risk:low` `depends:[S02]`
+- [x] **S03: Domain Management + Spaceship Integration** `risk:low` `depends:[S02]`
   > After this: user can check domain availability from admin panel, approve registration, and the system registers the domain via Spaceship + updates NS to Cloudflare automatically — completing R011
 
 ## Boundary Map

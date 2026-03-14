@@ -7,6 +7,8 @@ import { SETTINGS_KEYS } from './constants'
 
 const SaveSettingsSchema = z.object({
   spaceship_api_key: z.string().optional(),
+  spaceship_api_secret: z.string().optional(),
+  spaceship_contact_id: z.string().optional(),
   dataforseo_api_key: z.string().optional(),
   claude_api_key: z.string().optional(),
   amazon_affiliate_tag: z.string().optional(),
@@ -19,6 +21,8 @@ const SaveSettingsSchema = z.object({
 
 export type SaveSettingsErrors = {
   spaceship_api_key?: string[]
+  spaceship_api_secret?: string[]
+  spaceship_contact_id?: string[]
   dataforseo_api_key?: string[]
   claude_api_key?: string[]
   amazon_affiliate_tag?: string[]

@@ -1,9 +1,9 @@
 # GSD State
 
 **Active Milestone:** M004 — Deployment + Cloudflare
-**Active Slice:** S02 — Cloudflare Automation + Deploy Pipeline
-**Phase:** execution
-**Requirements Status:** 15 active · 4 validated · 6 deferred · 3 out of scope
+**Active Slice:** S03 — Domain Management + Spaceship Integration
+**Phase:** executing — T01 next
+**Requirements Status:** 15 active · 0 validated · 6 deferred · 3 out of scope
 
 ## Milestone Registry
 - ✅ **M001:** Foundation
@@ -16,11 +16,10 @@
 - ⬜ **M008:** M008
 
 ## Recent Decisions
-- D074: `node-ssh` and `cloudflare` externalized in agents tsup config (bundling constraint)
-- D075: `domains` upsert uses `onConflict: 'domain'` (UNIQUE on domain column, not composite)
+- None recorded
 
 ## Blockers
 - None
 
 ## Next Action
-Execute S02 — start with T01 (set up `packages/domains` + `CloudflareClient`).
+Execute T01: SpaceshipClient + settings keys.

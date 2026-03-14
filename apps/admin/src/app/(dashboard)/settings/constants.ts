@@ -1,5 +1,7 @@
 export const SETTINGS_KEYS = [
   'spaceship_api_key',
+  'spaceship_api_secret',
+  'spaceship_contact_id',
   'dataforseo_api_key',
   'claude_api_key',
   'amazon_affiliate_tag',

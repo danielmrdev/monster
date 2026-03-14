@@ -71,6 +71,41 @@ export function SettingsForm({ maskedDisplay }: SettingsFormProps) {
             <FieldError messages={errors?.spaceship_api_key} />
           </div>
 
+          {/* Spaceship API Secret */}
+          <div className="space-y-1.5">
+            <Label htmlFor="spaceship_api_secret">Spaceship API Secret</Label>
+            <Input
+              id="spaceship_api_secret"
+              name="spaceship_api_secret"
+              type="password"
+              autoComplete="off"
+              placeholder="Enter new secret to update"
+              defaultValue=""
+              aria-invalid={!!errors?.spaceship_api_secret}
+            />
+            <MaskedIndicator last4={maskedDisplay['spaceship_api_secret']} />
+            <FieldError messages={errors?.spaceship_api_secret} />
+          </div>
+
+          {/* Spaceship Contact ID */}
+          <div className="space-y-1.5">
+            <Label htmlFor="spaceship_contact_id">Spaceship Contact ID</Label>
+            <Input
+              id="spaceship_contact_id"
+              name="spaceship_contact_id"
+              type="text"
+              autoComplete="off"
+              placeholder="Enter new contact ID to update"
+              defaultValue=""
+              aria-invalid={!!errors?.spaceship_contact_id}
+            />
+            <MaskedIndicator last4={maskedDisplay['spaceship_contact_id']} />
+            <p className="text-xs text-muted-foreground mt-1">
+              27-32 character alphanumeric ID. Find it in Spaceship account → Contacts.
+            </p>
+            <FieldError messages={errors?.spaceship_contact_id} />
+          </div>
+
           {/* DataForSEO API Key */}
           <div className="space-y-1.5">
             <Label htmlFor="dataforseo_api_key">DataForSEO API Key</Label>

@@ -5,6 +5,7 @@ import type { SiteCustomization } from '@monster/shared'
 import { enqueueSiteGeneration, enqueueSiteDeploy, getDeploymentCard } from './actions'
 import JobStatus from './JobStatus'
 import DeployStatus from './DeployStatus'
+import DomainManagement from './DomainManagement'
 import {
   Table,
   TableBody,
@@ -349,6 +350,14 @@ export default async function SiteDetailPage({ params }: PageProps) {
 
         {/* Live deploy job progress — polls ai_jobs for job_type='deploy_site' */}
         <DeployStatus siteId={site.id} />
+      </div>
+
+      {/* Domain Management */}
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+          Domain Management
+        </h2>
+        <DomainManagement siteId={site.id} existingDomain={site.domain} />
       </div>
 
       {/* SEO Scores */}
