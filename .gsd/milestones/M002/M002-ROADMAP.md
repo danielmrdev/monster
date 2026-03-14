@@ -65,7 +65,7 @@ This milestone is complete only when all are true:
 - [x] **S03: Settings — API Key Management** `risk:medium` `depends:[S01]`
   > After this: user can save and retrieve API keys (Spaceship, DataForSEO, Claude, Amazon affiliate tags) via the Settings page; values stored as `{"value": "..."}` JSON in the `settings` table, displayed masked in the UI (last 4 chars visible).
 
-- [ ] **S04: Finances Shell** `risk:low` `depends:[S01]`
+- [x] **S04: Finances Shell** `risk:low` `depends:[S01]`
   > After this: user can add a cost entry (category, amount, date, notes) via a form that writes to the `costs` table; the cost list displays existing records fetched from Supabase; revenue section shows a "coming soon" placeholder.
 
 ## Boundary Map
