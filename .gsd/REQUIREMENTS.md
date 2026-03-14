@@ -108,7 +108,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M007/S01
 - Supporting slices: none
-- Validation: unmapped
+- Validation: M007/S01 — ClaudeSDKClient.streamQuery() + createMonsterMcpServer() with 4 portfolio tools; /api/monster/chat SSE Route Handler; curl verified: tokens stream progressively, response references real site count from DB via MCP getPortfolioStats tool call (pm2 logs confirm tool invocation); agent_session_id persisted for session resume; conversation history persisted in chat_messages. Browser UAT pending (Playwright/Chromium missing libnspr4.so on VPS1). Full R010 validation (browser streaming responsiveness feels natural) requires human UAT.
 
 ### R011 — Domain management via Spaceship + Cloudflare
 - Class: operability
@@ -269,7 +269,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R007 | continuity | active | M006/S01 | M006/S02 | M006/S01+S02 (partial — end-to-end runtime + human UAT pending) |
 | R008 | failure-visibility | active | M006/S02 | M002/S01 | M006/S02 (partial — dashboard surface S03 + dedup live runtime pending) |
 | R009 | primary-user-loop | active | M005/S01 | M005/S02 | M005/S01+S02 (partial — S03 aggregation + human UAT pending) |
-| R010 | primary-user-loop | active | M007/S01 | none | unmapped |
+| R010 | primary-user-loop | active | M007/S01 | none | M007/S01 (partial — SSE streaming + MCP tool calls integration-verified via curl; browser UAT pending) |
 | R011 | operability | active | M004/S02 | M004/S01 | unmapped |
 | R012 | admin/support | active | M008/S01 | M008/S02 | unmapped |
 | R013 | operability | validated | M001/S04 | M001/S05 | M001/S05 |
