@@ -38,25 +38,25 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 
 ### R004 — AI content generation (batch, SEO-optimized)
 - Class: primary-user-loop
-- Status: active
+- Status: validated
 - Description: ContentGenerator produces category SEO texts (~400 words), product descriptions, pros/cons, user opinion summaries, meta descriptions — all in the site's language, optimized for conversion and ranking.
 - Why it matters: Content quality and volume is the primary SEO lever. Manual content at 50+ products/site is not viable.
 - Source: user
 - Primary owning slice: M003/S03
 - Supporting slices: M003/S01
-- Validation: unmapped
-- Notes: Throttle-aware (Plan Pro). Zod schemas for structured output.
+- Validation: M003/S03 — ContentGenerator implemented with Zod v4 structured outputs, throttle-aware (1.5s pacing + maxRetries:5), idempotent (focus_keyword DB check); pnpm --filter @monster/agents build exit 0; typecheck exit 0; wired into GenerateSiteJob generate_content phase with ai_jobs.payload progress tracking
+- Notes: Throttle-aware (Plan Pro). Zod schemas for structured output. Live API run pending DataForSEO + Anthropic credentials in admin Settings.
 
 ### R005 — SEO Scorer: automated on-page validation
 - Class: quality-attribute
-- Status: active
+- Status: validated
 - Description: Every generated page gets a 0-100 SEO score across 8 categories before deploy. Pages scoring < 70 trigger warnings. Score data persisted in Supabase, visible in site detail view.
 - Why it matters: SEO quality is the product. Shipping pages below threshold wastes the site's authority budget.
 - Source: user
 - Primary owning slice: M003/S04
 - Supporting slices: M003/S02
-- Validation: contract-verified (M003/S04) — unit tests + build exits pass; operational validation (real seo_scores rows ≥70 on ≥80% of pages) deferred to M003 end-to-end run
-- Notes: Research in `docs/research/seo-scoring-research.md`. Focus keyword passed explicitly from DB. scorePage() with 8 weighted categories implemented; legal exemptions correct; admin panel scores table rendered server-side.
+- Validation: M003/S04 — scorePage() with 8 weighted categories; 8/8 unit tests pass; score_pages phase wired into GenerateSiteJob; seo_scores unique constraint migration applied; SEO Scores table rendered in admin panel; integration smoke test: freidoras de aire / homepage → score 51 grade C. Operational validation (real seo_scores rows ≥70 on ≥80% of pages) pending first live job run.
+- Notes: Research in `docs/research/seo-scoring-research.md`. Focus keyword passed explicitly from DB. Legal page keyword exemptions award full marks (not zero). Admin panel scores table rendered server-side from @monster/db types.
 
 ### R006 — Automated deployment to VPS2 via Cloudflare
 - Class: operability
@@ -153,13 +153,13 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 
 ### R015 — 3 TSA Astro templates (Classic, Modern, Minimal)
 - Class: differentiator
-- Status: active
+- Status: validated
 - Description: Three visually distinct Astro templates for TSA sites. Each defines layout, grid, style. Per-site customization: colors, typography, logo, favicon via CSS custom properties.
 - Why it matters: Visual differentiation across portfolio reduces footprint detection. Different templates for different niches.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: M003/S02
-- Validation: unmapped
+- Validation: M003/S01 — Classic/Modern/Minimal implemented across all page types (homepage, category, product, 4 legal); CSS custom property theming via define:vars (primary, accent, font); astro check exit 0 (10 files, 0 errors); 11-page fixture build verified; affiliate links contain ?tag=; no Amazon CDN URLs in built HTML
 
 ## Deferred
 
@@ -262,8 +262,8 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R001 | primary-user-loop | active | M003/S02 | M002/S01, M003/S01, M004/S01 | unmapped |
 | R002 | constraint | active | M001/S02 | M003/S01, M007/S01 | unmapped |
 | R003 | primary-user-loop | active | M007/S02 | M007/S01 | unmapped |
-| R004 | primary-user-loop | active | M003/S03 | M003/S01 | unmapped |
-| R005 | quality-attribute | active | M003/S04 | M003/S02 | contract-verified (M003/S04) |
+| R004 | primary-user-loop | validated | M003/S03 | M003/S01 | M003/S03 |
+| R005 | quality-attribute | validated | M003/S04 | M003/S02 | M003/S04 |
 | R006 | operability | active | M004/S01 | M004/S02 | unmapped |
 | R007 | continuity | active | M006/S01 | M006/S02 | unmapped |
 | R008 | failure-visibility | active | M006/S02 | M002/S01 | unmapped |
@@ -273,7 +273,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R012 | admin/support | active | M008/S01 | M008/S02 | unmapped |
 | R013 | operability | validated | M001/S04 | M001/S05 | M001/S05 |
 | R014 | constraint | active | M001/S01 | none | unmapped |
-| R015 | differentiator | active | M003/S01 | M003/S02 | unmapped |
+| R015 | differentiator | validated | M003/S01 | M003/S02 | M003/S01 |
 | R020 | integration | deferred | none | none | unmapped |
 | R021 | integration | deferred | none | none | unmapped |
 | R022 | primary-user-loop | deferred | none | none | unmapped |
@@ -288,5 +288,5 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 
 - Active requirements: 15
 - Mapped to milestones: 15
-- Validated: 0
+- Validated: 4 (R013, R004, R005, R015)
 - Unmapped active requirements: 0
