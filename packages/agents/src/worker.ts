@@ -9,6 +9,7 @@ import 'dotenv/config';
 import { GenerateSiteJob } from './jobs/generate-site.js';
 import { DeploySiteJob } from './jobs/deploy-site.js';
 import { SslPollerJob } from './jobs/ssl-poller.js';
+import { AnalyticsAggregationJob } from './jobs/analytics-aggregation.js';
 
 const generateJob = new GenerateSiteJob();
 const generateWorker = generateJob.register();
@@ -19,9 +20,14 @@ const deployWorker = deployJob.register();
 const sslPollerJob = new SslPollerJob();
 const sslPollerWorker = sslPollerJob.register();
 
+const analyticsJob = new AnalyticsAggregationJob();
+await analyticsJob.registerScheduler();
+const analyticsWorker = analyticsJob.register();
+
 console.log('[worker] GenerateSiteJob listening on queue "generate"');
 console.log('[worker] DeploySiteJob listening on queue "deploy"');
 console.log('[worker] SslPollerJob listening on queue "ssl-poller"');
+console.log('[worker] AnalyticsAggregationJob listening on queue "analytics-aggregation"');
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
@@ -30,6 +36,7 @@ process.on('SIGTERM', async () => {
     generateWorker.close(),
     deployWorker.close(),
     sslPollerWorker.close(),
+    analyticsWorker.close(),
   ]);
   process.exit(0);
 });
@@ -40,6 +47,7 @@ process.on('SIGINT', async () => {
     generateWorker.close(),
     deployWorker.close(),
     sslPollerWorker.close(),
+    analyticsWorker.close(),
   ]);
   process.exit(0);
 });

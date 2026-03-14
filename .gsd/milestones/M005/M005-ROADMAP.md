@@ -56,7 +56,7 @@ This milestone is complete only when all are true:
   > After this: every generated Astro site contains a <2KB inline tracker script that POSTs pageview and affiliate-click events to Supabase using sendBeacon on unload and batched fetch every 5s; confirmed by visiting a generated site and seeing rows appear in analytics_events in Supabase dashboard
 - [x] **S02: Analytics Dashboard** `risk:medium` `depends:[S01]`
   > After this: the admin panel /analytics page shows real data — visits, pageviews, affiliate clicks per site, filterable by date range (today/7d/30d), with top pages per site and country breakdown; data sourced from analytics_events and analytics_daily via service role client
-- [ ] **S03: Daily Aggregation Cron** `risk:low` `depends:[S01]`
+- [x] **S03: Daily Aggregation Cron** `risk:low` `depends:[S01]`
   > After this: a BullMQ repeat job (cron `0 2 * * *`) aggregates yesterday's analytics_events into analytics_daily rows on every worker startup; manually triggerable and verified by inspecting analytics_daily table for correct counts
 
 <!--

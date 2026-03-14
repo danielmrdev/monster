@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/table'
 import { fetchAnalyticsData } from './lib'
 import { AnalyticsFilters } from './AnalyticsFilters'
+import { AggregationTrigger } from './AggregationTrigger'
 import { createServiceClient } from '@/lib/supabase/service'
 
 interface AnalyticsPageProps {
@@ -54,11 +55,14 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
-        <AnalyticsFilters
-          sites={sites}
-          selectedSite={site || undefined}
-          selectedRange={normalizedRange}
-        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          <AggregationTrigger />
+          <AnalyticsFilters
+            sites={sites}
+            selectedSite={site || undefined}
+            selectedRange={normalizedRange}
+          />
+        </div>
       </div>
 
       {/* KPI row */}

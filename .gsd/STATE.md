@@ -1,7 +1,7 @@
 # GSD State
 
 **Active Milestone:** M005 — Analytics
-**Active Slice:** S02 — Analytics Dashboard
+**Active Slice:** S03 — Daily Aggregation Cron
 **Phase:** execution
 **Requirements Status:** 15 active · 0 validated · 6 deferred · 3 out of scope
 
@@ -22,4 +22,4 @@
 - None
 
 ## Next Action
-Execute T01: Analytics data fetching and aggregation helpers (analytics/lib.ts).
+Execute S03/T01: Implement AnalyticsAggregationJob + queue + worker wiring + pm2 entry.

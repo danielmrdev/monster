@@ -93,3 +93,21 @@ export function sslPollerQueue(): Queue {
   }
   return _sslPollerQueue;
 }
+
+/**
+ * BullMQ Queue for daily analytics aggregation jobs.
+ * Named 'analytics-aggregation' — matches the Worker name in AnalyticsAggregationJob.
+ */
+export function createAnalyticsAggregationQueue(): Queue {
+  const connection = createRedisConnection();
+  return new Queue('analytics-aggregation', { connection });
+}
+
+let _analyticsAggregationQueue: Queue | null = null;
+
+export function analyticsAggregationQueue(): Queue {
+  if (!_analyticsAggregationQueue) {
+    _analyticsAggregationQueue = createAnalyticsAggregationQueue();
+  }
+  return _analyticsAggregationQueue;
+}
