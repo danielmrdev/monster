@@ -77,7 +77,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M006/S01
 - Supporting slices: M006/S02
-- Validation: unmapped
+- Validation: M006/S01 — ProductRefreshJob fetches DataForSEO products, writes last_refreshed_at, admin panel shows refresh timestamp with Refresh Now button. M006/S02 — diff engine implemented (price/availability/image rebuild-triggering; rating deferred); conditional GenerateSiteJob enqueue when shouldRebuild && site.status=live; builds + typechecks pass. End-to-end runtime proof (live DFS → real DB diff → actual GenerateSiteJob in queue) deferred to human UAT.
 
 ### R008 — Product availability alerts
 - Class: failure-visibility
@@ -87,7 +87,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M006/S02
 - Supporting slices: M002/S01
-- Validation: unmapped
+- Validation: M006/S02 — alert creation implemented for all three types (unavailable/category_empty/site_degraded) with check-before-insert dedup on (site_id, product_id, alert_type) WHERE status=open; severity column migration applied; builds + typechecks pass. Dashboard alert surface (S03) and dedup live runtime proof deferred to human UAT.
 
 ### R009 — Analytics: lightweight GDPR-friendly tracking
 - Class: primary-user-loop
@@ -266,8 +266,8 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R004 | primary-user-loop | validated | M003/S03 | M003/S01 | M003/S03 |
 | R005 | quality-attribute | validated | M003/S04 | M003/S02 | M003/S04 |
 | R006 | operability | active | M004/S01 | M004/S02 | unmapped |
-| R007 | continuity | active | M006/S01 | M006/S02 | unmapped |
-| R008 | failure-visibility | active | M006/S02 | M002/S01 | unmapped |
+| R007 | continuity | active | M006/S01 | M006/S02 | M006/S01+S02 (partial — end-to-end runtime + human UAT pending) |
+| R008 | failure-visibility | active | M006/S02 | M002/S01 | M006/S02 (partial — dashboard surface S03 + dedup live runtime pending) |
 | R009 | primary-user-loop | active | M005/S01 | M005/S02 | M005/S01+S02 (partial — S03 aggregation + human UAT pending) |
 | R010 | primary-user-loop | active | M007/S01 | none | unmapped |
 | R011 | operability | active | M004/S02 | M004/S01 | unmapped |

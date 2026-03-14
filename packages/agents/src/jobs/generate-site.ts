@@ -244,6 +244,7 @@ export class GenerateSiteJob {
                 review_count: p.reviewCount,
                 is_prime: p.isPrime,
                 availability: 'available',
+                source_image_url: p.imageUrl ?? null,
                 last_checked_at: new Date().toISOString(),
               },
               { onConflict: 'site_id,asin', ignoreDuplicates: false }

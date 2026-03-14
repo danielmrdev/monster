@@ -1,9 +1,9 @@
 # GSD State
 
 **Active Milestone:** M006 — Product Refresh Pipeline
-**Active Slice:** S01 — Worker Fix + Refresh Job Scaffold + Cron Scheduler
-**Phase:** planned
-**Requirements Status:** 15 active · 4 validated · 6 deferred · 3 out of scope
+**Active Slice:** S02 — Diff Engine + Conditional Rebuild + Alert Creation
+**Phase:** execution — T01
+**Requirements Status:** 15 active · 0 validated · 6 deferred · 3 out of scope
 
 ## Milestone Registry
 - ✅ **M001:** Foundation
@@ -16,10 +16,10 @@
 - ⬜ **M008:** M008
 
 ## Recent Decisions
-- None new in S01 planning (D091-D095 from roadmap cover all arch decisions)
+- None recorded
 
 ## Blockers
 - None
 
 ## Next Action
-Execute M006/S01/T01: node-ssh fix + DB migration + queue infrastructure.
+Execute S02/T01: write migrations (alerts_severity + product_source_image), add vitest to packages/agents, implement pure diffProducts() function, write unit tests.

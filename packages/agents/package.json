@@ -18,7 +18,8 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "test": "vitest run --reporter verbose"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -40,6 +41,7 @@
     "@types/node": "^22.0.0",
     "astro": "^6.0.4",
     "tsup": "^8.4.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.0"
   }
 }

@@ -60,7 +60,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Worker Fix + Refresh Job Scaffold + Cron Scheduler** `risk:high` `depends:[]`
   > After this: `monster-worker` starts without errors, `ProductRefreshJob` runs on BullMQ on a configurable schedule (default 48h per site), fetches DataForSEO product data for a live site, writes `last_refreshed_at` to DB, and the admin panel site detail shows "Last refreshed: X hours ago" with a working "Refresh Now" button — verified by manual trigger from the admin panel and pm2 log confirmation.
 
-- [ ] **S02: Diff Engine + Conditional Rebuild + Alert Creation** `risk:high` `depends:[S01]`
+- [x] **S02: Diff Engine + Conditional Rebuild + Alert Creation** `risk:high` `depends:[S01]`
   > After this: the refresh job diffs fetched products against DB, enqueues `GenerateSiteJob` when price/availability/image changes are detected (ratings deferred), and creates deduplicated `product_alerts` rows — verified by simulating a price change in the DB then triggering a refresh and confirming a `GenerateSiteJob` appears in the BullMQ queue and a single open alert exists.
 
 - [ ] **S03: Dashboard Alert Surface + Alert Resolution UI** `risk:low` `depends:[S02]`

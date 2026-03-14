@@ -443,6 +443,7 @@ export type Database = {
           id: string
           product_id: string | null
           resolved_at: string | null
+          severity: string
           site_id: string
           status: string
         }
@@ -453,6 +454,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           resolved_at?: string | null
+          severity?: string
           site_id: string
           status?: string
         }
@@ -463,6 +465,7 @@ export type Database = {
           id?: string
           product_id?: string | null
           resolved_at?: string | null
+          severity?: string
           site_id?: string
           status?: string
         }
@@ -994,6 +997,7 @@ export type Database = {
           review_count: number | null
           site_id: string
           slug: string | null
+          source_image_url: string | null
           title: string | null
           updated_at: string
           user_opinions_summary: string | null
@@ -1017,6 +1021,7 @@ export type Database = {
           review_count?: number | null
           site_id: string
           slug?: string | null
+          source_image_url?: string | null
           title?: string | null
           updated_at?: string
           user_opinions_summary?: string | null
@@ -1040,6 +1045,7 @@ export type Database = {
           review_count?: number | null
           site_id?: string
           slug?: string | null
+          source_image_url?: string | null
           title?: string | null
           updated_at?: string
           user_opinions_summary?: string | null
