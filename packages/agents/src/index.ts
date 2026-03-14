@@ -2,7 +2,7 @@
 // Only exports what the admin panel needs: the queue factory.
 // GenerateSiteJob is NOT exported here — it's only used by the standalone worker process.
 
-export { generateQueue, createGenerateQueue, deployQueue, createDeployQueue, createRedisOptions, createRedisConnection, analyticsAggregationQueue, createAnalyticsAggregationQueue } from './queue.js';
+export { generateQueue, createGenerateQueue, deployQueue, createDeployQueue, createRedisOptions, createRedisConnection, analyticsAggregationQueue, createAnalyticsAggregationQueue, productRefreshQueue, createProductRefreshQueue } from './queue.js';
 
 // DataForSEO client — used by the worker internally, exported for tooling and smoke tests.
 export type { DataForSEOProduct } from './clients/dataforseo.js';

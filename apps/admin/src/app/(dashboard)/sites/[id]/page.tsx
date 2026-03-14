@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { SiteCustomization } from '@monster/shared'
 import { enqueueSiteGeneration, enqueueSiteDeploy, getDeploymentCard } from './actions'
+import { RefreshCard } from './RefreshCard'
 import JobStatus from './JobStatus'
 import DeployStatus from './DeployStatus'
 import DomainManagement from './DomainManagement'
@@ -358,6 +359,17 @@ export default async function SiteDetailPage({ params }: PageProps) {
           Domain Management
         </h2>
         <DomainManagement siteId={site.id} existingDomain={site.domain} />
+      </div>
+
+      {/* Product Refresh */}
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+          Product Refresh
+        </h2>
+        <RefreshCard
+          siteId={site.id}
+          lastRefreshedAt={site.last_refreshed_at ?? null}
+        />
       </div>
 
       {/* SEO Scores */}

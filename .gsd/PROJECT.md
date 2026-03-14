@@ -56,6 +56,6 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M003: TSA Site Generator — Templates, pipeline, ContentGenerator, SEO Scorer. R004/R005/R015 validated.
 - [x] M004: Deployment + Cloudflare — packages/deployment (RsyncService + CaddyService), packages/domains (CloudflareClient + SpaceshipClient), full deploy pipeline (rsync → Caddy → CF zone+A record → ssl_pending → live), DeploySiteJob + SslPollerJob, Domain Management UI with R031-gated registration. All builds exit 0. Pending: apply cf_nameservers migration to remote Supabase; enter live credentials in Settings; live deploy + NS propagation + curl CF-RAY verification (human UAT).
 - [x] M005: Analytics — S01 ✅ Tracker Script + Astro Injection | S02 ✅ Analytics Dashboard | S03 ✅ Daily Aggregation Cron
-- [ ] M006: Product Refresh — Cron pipeline, diff strategy, conditional rebuild, product alerts
+- [x] M006: Product Refresh — S01 ✅ Worker Fix + Refresh Job Scaffold + Cron Scheduler | S02: Diff Engine + Conditional Rebuild + Alert Creation | S03: Dashboard Alert Surface + Alert Resolution UI
 - [ ] M007: Monster Chat + Research Lab — Monster agent (streaming), NicheResearcher agent (autonomous)
 - [ ] M008: Finances + Amazon Revenue — Cost tracking, Amazon CSV import, P&L dashboard

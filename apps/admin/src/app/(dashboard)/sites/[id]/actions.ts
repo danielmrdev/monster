@@ -1,7 +1,7 @@
 'use server';
 
 import { createServiceClient } from '@/lib/supabase/service';
-import { generateQueue, deployQueue } from '@monster/agents';
+import { generateQueue, deployQueue, productRefreshQueue } from '@monster/agents';
 import { SpaceshipClient } from '@monster/domains';
 
 /**
@@ -285,5 +285,30 @@ export async function registerDomain(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { error: message };
+  }
+}
+
+/**
+ * Enqueue a product refresh job for a site.
+ * Fire-and-forget — no ai_jobs row in S01 (job tracking is S02+).
+ * Observability: job appears in BullMQ 'product-refresh' queue in Redis;
+ *   worker logs [ProductRefreshJob] lines; sites.last_refreshed_at updates in DB after completion.
+ */
+export async function enqueueProductRefresh(
+  siteId: string,
+): Promise<{ ok: boolean; jobId?: string; error?: string }> {
+  try {
+    const queue = productRefreshQueue();
+    const job = await queue.add(
+      'refresh-site',
+      { siteId },
+      { removeOnComplete: true, removeOnFail: false },
+    );
+    console.log(`[enqueueProductRefresh] Queued job ${job.id} for site ${siteId}`);
+    return { ok: true, jobId: job.id };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[enqueueProductRefresh] Failed to enqueue for site ${siteId}: ${message}`);
+    return { ok: false, error: message };
   }
 }

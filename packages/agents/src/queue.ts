@@ -111,3 +111,21 @@ export function analyticsAggregationQueue(): Queue {
   }
   return _analyticsAggregationQueue;
 }
+
+/**
+ * BullMQ Queue for product refresh jobs (per-site, on configurable schedule).
+ * Named 'product-refresh' — matches the Worker name in ProductRefreshJob.
+ */
+export function createProductRefreshQueue(): Queue {
+  const connection = createRedisConnection();
+  return new Queue('product-refresh', { connection });
+}
+
+let _productRefreshQueue: Queue | null = null;
+
+export function productRefreshQueue(): Queue {
+  if (!_productRefreshQueue) {
+    _productRefreshQueue = createProductRefreshQueue();
+  }
+  return _productRefreshQueue;
+}

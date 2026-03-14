@@ -852,9 +852,12 @@ export type Database = {
           focus_keyword: string | null
           id: string
           language: string | null
+          last_refreshed_at: string | null
           market: string | null
           name: string
+          next_refresh_at: string | null
           niche: string | null
+          refresh_interval_hours: number
           site_type_slug: string
           status: string
           template_slug: string
@@ -871,9 +874,12 @@ export type Database = {
           focus_keyword?: string | null
           id?: string
           language?: string | null
+          last_refreshed_at?: string | null
           market?: string | null
           name: string
+          next_refresh_at?: string | null
           niche?: string | null
+          refresh_interval_hours?: number
           site_type_slug: string
           status?: string
           template_slug: string
@@ -890,9 +896,12 @@ export type Database = {
           focus_keyword?: string | null
           id?: string
           language?: string | null
+          last_refreshed_at?: string | null
           market?: string | null
           name?: string
+          next_refresh_at?: string | null
           niche?: string | null
+          refresh_interval_hours?: number
           site_type_slug?: string
           status?: string
           template_slug?: string
