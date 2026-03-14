@@ -1,5 +1,177 @@
 import Papa from 'papaparse'
 
+// ---------------------------------------------------------------------------
+// Date range helpers
+// ---------------------------------------------------------------------------
+
+function isValidIsoDate(s: string): boolean {
+  // Accepts YYYY-MM-DD; rejects anything that doesn't produce a valid date
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false
+  const d = new Date(s)
+  return !isNaN(d.getTime())
+}
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function nDaysAgoIso(n: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * Return a validated `{ from, to }` date range (YYYY-MM-DD).
+ * Defaults to last 30 days when params are absent or invalid.
+ */
+export function getDateRange(
+  from?: string,
+  to?: string,
+): { from: string; to: string } {
+  const validFrom = from && isValidIsoDate(from) ? from : nDaysAgoIso(30)
+  const validTo = to && isValidIsoDate(to) ? to : todayIso()
+  // Clamp: from must not be after to
+  if (validFrom > validTo) {
+    return { from: nDaysAgoIso(30), to: todayIso() }
+  }
+  return { from: validFrom, to: validTo }
+}
+
+// ---------------------------------------------------------------------------
+// P&L types
+// ---------------------------------------------------------------------------
+
+export type SitePnL = {
+  site_id: string
+  name: string
+  revenue: number
+  costs: number
+  profit: number
+  roi: number | null // null when costs = 0
+  currency: string
+}
+
+export type PnLResult = {
+  sitePnL: SitePnL[]
+  portfolioRevenue: number
+  portfolioCosts: number
+  portfolioProfit: number
+  mixedCurrencies: boolean
+}
+
+// Minimal row shapes expected by computePnL — matches Supabase query selects
+type CostRow = {
+  site_id: string | null
+  amount: number
+  currency: string
+}
+
+type RevenueAmazonRow = {
+  site_id: string
+  earnings: number
+  currency: string
+}
+
+type RevenueManualRow = {
+  site_id: string | null
+  amount: number
+  currency: string
+}
+
+type SiteRow = {
+  id: string
+  name: string
+}
+
+/**
+ * Pure in-memory P&L aggregator.
+ *
+ * - Groups costs and revenue by site_id.
+ * - Null site_id rows contribute to portfolio totals only (not per-site table).
+ * - ROI = (profit / costs) * 100, null when costs = 0 (no divide-by-zero).
+ * - mixedCurrencies = true when any row has currency !== 'EUR'.
+ * - Returned sitePnL sorted by profit descending.
+ */
+export function computePnL(
+  costs: CostRow[],
+  revenueAmazon: RevenueAmazonRow[],
+  revenueManual: RevenueManualRow[],
+  sites: SiteRow[],
+): PnLResult {
+  // --- accumulate costs per site_id ---
+  const costBySite = new Map<string, number>()
+  let nullSiteCosts = 0
+  let mixedCurrencies = false
+
+  for (const row of costs) {
+    if (row.currency !== 'EUR') mixedCurrencies = true
+    if (row.site_id === null) {
+      nullSiteCosts += row.amount
+    } else {
+      costBySite.set(row.site_id, (costBySite.get(row.site_id) ?? 0) + row.amount)
+    }
+  }
+
+  // --- accumulate revenue per site_id ---
+  const revBySite = new Map<string, number>()
+  let nullSiteRevenue = 0
+
+  for (const row of revenueAmazon) {
+    if (row.currency !== 'EUR') mixedCurrencies = true
+    revBySite.set(row.site_id, (revBySite.get(row.site_id) ?? 0) + row.earnings)
+  }
+
+  for (const row of revenueManual) {
+    if (row.currency !== 'EUR') mixedCurrencies = true
+    if (row.site_id === null) {
+      nullSiteRevenue += row.amount
+    } else {
+      revBySite.set(row.site_id, (revBySite.get(row.site_id) ?? 0) + row.amount)
+    }
+  }
+
+  // --- build per-site P&L, include only sites that appear in costs or revenue ---
+  const siteIds = new Set([...costBySite.keys(), ...revBySite.keys()])
+  const siteNameById = new Map(sites.map((s) => [s.id, s.name]))
+
+  const sitePnL: SitePnL[] = []
+  let portfolioRevenue = nullSiteRevenue
+  let portfolioCosts = nullSiteCosts
+
+  for (const siteId of siteIds) {
+    const revenue = revBySite.get(siteId) ?? 0
+    const siteCosts = costBySite.get(siteId) ?? 0
+    const profit = revenue - siteCosts
+    const roi = siteCosts > 0 ? (profit / siteCosts) * 100 : null
+
+    portfolioRevenue += revenue
+    portfolioCosts += siteCosts
+
+    sitePnL.push({
+      site_id: siteId,
+      name: siteNameById.get(siteId) ?? 'Unknown',
+      revenue,
+      costs: siteCosts,
+      profit,
+      roi,
+      currency: 'EUR',
+    })
+  }
+
+  sitePnL.sort((a, b) => b.profit - a.profit)
+
+  const portfolioProfit = portfolioRevenue - portfolioCosts
+
+  return {
+    sitePnL,
+    portfolioRevenue,
+    portfolioCosts,
+    portfolioProfit,
+    mixedCurrencies,
+  }
+}
+
 /**
  * Maps both English and Spanish Amazon Associates CSV column names
  * to internal canonical keys.

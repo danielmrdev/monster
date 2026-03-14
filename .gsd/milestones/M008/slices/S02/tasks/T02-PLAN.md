@@ -44,6 +44,16 @@ Render the P&L summary cards, per-site breakdown table, domain expiry alerts car
 
 7. Final page section order: `[FinancesFilters] [P&L Summary] [Per-Site P&L + Export Button] [Domain Renewals] [Add Cost Form] [Cost History] [Revenue Forms] [Revenue History]`
 
+## Observability Impact
+
+- **P&L summary card visible on `/finances`**: rendered directly in HTML — no DevTools needed to confirm totals. Green/red profit coloring is a passive signal of data correctness.
+- **Mixed-currency notice**: amber inline notice appears when `mixedCurrencies === true` — a passive, always-visible diagnostic for currency data quality issues.
+- **Domain expiry card visibility**: card presence/absence is itself the diagnostic signal — absence means no `expires_at` within 60 days in DB; no inference required.
+- **Days-remaining color coding**: red (≤14), amber (≤30), yellow (≤60) — urgency visible at a glance without querying the database.
+- **CSV export file**: downloaded file name `pnl-{from}-{to}.csv` encodes the date range; row count in spreadsheet app confirms completeness. No server log needed.
+- **Domains query error**: if the `domains` Supabase fetch fails, the error throws with `Failed to fetch domains: <PG message>` — surfaced by the Next.js error boundary at `/finances`.
+- **Failure state inspection**: after any Supabase error, the error boundary renders a page with the thrown message; restoring a valid env and reloading (no restart) recovers the page.
+
 ## Must-Haves
 
 - [ ] Portfolio P&L summary renders with correct total revenue/costs/profit

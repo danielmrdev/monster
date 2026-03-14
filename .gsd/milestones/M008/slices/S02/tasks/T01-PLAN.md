@@ -52,6 +52,13 @@ Add `computePnL` and `getDateRange` helpers to `lib.ts`, then wire date range fr
 - `pnpm -r typecheck` exit 0
 - Confirm `computePnL` output: with 1 cost row (€50) and 1 revenue row (€80) for the same site, result should have `profit = 30`, `roi ≈ 60`
 
+## Observability Impact
+
+- `getDateRange` returns the active ISO date window; it is passed as props to `FinancesFilters` so the selected range is always reflected in the rendered form inputs — no hidden state.
+- Date filter params appear in the URL (`?from=YYYY-MM-DD&to=YYYY-MM-DD`), making the active query window bookmarkable and inspectable.
+- `computePnL` is a pure in-memory reducer — a future agent can invoke it directly via `node -e` with fixture rows to reproduce and verify a specific output without DB access.
+- If any Supabase query returns an error, the server component throws with a structured message (`Failed to fetch <table>: <pg error>`), surfaced by Next.js error boundary.
+
 ## Inputs
 
 - `apps/admin/src/app/(dashboard)/finances/lib.ts` (S01/T01) — existing `parseAmazonCSV`, `ImportResult` types

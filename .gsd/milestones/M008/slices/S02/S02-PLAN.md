@@ -15,6 +15,16 @@
 - Currency warning: if costs and revenue rows have mixed currencies, surface a notice "Multiple currencies detected — amounts shown in their original currency, not converted"
 - `pnpm -r typecheck` exit 0, `pnpm --filter @monster/admin build` exit 0
 
+## Observability / Diagnostics
+
+- **Date range on page:** Active `from`/`to` ISO dates are visible in the URL after filter submission, confirming which period is in scope.
+- **P&L computation:** `computePnL` is a pure function — can be called with fixture data in a Node REPL (`node -e`) to validate totals independently of the UI.
+- **Mixed-currency notice:** Rendered inline on the P&L page when `mixedCurrencies === true` — visible without opening DevTools.
+- **Domain expiry alerts:** Card only appears when `expires_at IS NOT NULL AND expires_at <= now() + 60 days`. Absence of the card means no such domains exist in DB.
+- **CSV export:** File download triggers a browser save dialog — its filename (`pnl-export.csv`) and row count confirm correctness without server logs.
+- **Failure visibility:** Supabase errors from cost/revenue/domain queries throw (standard Next.js error boundary pattern) — error message includes table name and Postgres error detail. Rendered by Next.js error page with `message`.
+- **Redaction:** No secrets or PII in logs. Supabase service key used server-side only; never passed to client components.
+
 ## Verification
 
 ```bash
@@ -31,11 +41,15 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3004/finances
 # Navigate to /finances — P&L summary shows correct total
 # Manually sum costs and revenue for the period and compare to displayed values
 # Click Export CSV — file downloads, numbers match displayed P&L
+
+# Failure-path check: disconnect Supabase (set invalid URL in env), reload /finances
+# → Next.js error page renders with message "Failed to fetch costs: ..."
+# Restore env and reload — page recovers without restart
 ```
 
 ## Tasks
 
-- [ ] **T01: `computePnL` function + date range filter** `est:1h`
+- [x] **T01: `computePnL` function + date range filter** `est:1h`
   - Why: Pure data aggregation logic isolated from rendering; date filter drives what data is fetched
   - Files: `apps/admin/src/app/(dashboard)/finances/lib.ts`, `apps/admin/src/app/(dashboard)/finances/page.tsx`
   - Do:
@@ -50,7 +64,7 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3004/finances
   - Verify: `pnpm -r typecheck` exit 0; `computePnL` called with mock data in isolation returns correct sums (manual verification or inline console.log during dev)
   - Done when: typecheck passes, `computePnL` exported from `lib.ts`, date range drives data fetch
 
-- [ ] **T02: P&L dashboard UI + domain expiry alerts + CSV export** `est:1.5h`
+- [x] **T02: P&L dashboard UI + domain expiry alerts + CSV export** `est:1.5h`
   - Why: Renders the P&L output and domain alerts — the user-visible deliverable of this slice
   - Files: `apps/admin/src/app/(dashboard)/finances/page.tsx`
   - Do:
