@@ -129,8 +129,8 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M008/S01
 - Supporting slices: M008/S02
-- Validation: unmapped
-- Notes: Amazon API auto-sync deferred to Phase 2.
+- Validation: M008 — CSV import (EN+ES formats, subtag attribution, unattributed warnings), manual revenue entry, computePnL pure aggregator, per-site ROI, domain expiry alerts, CSV export — all implemented, typecheck + build + pm2 reload pass. Human UAT pending (real Amazon Associates CSV + spreadsheet verification of export).
+- Notes: Amazon API auto-sync deferred to Phase 2. Implementation complete; transitions to validated after human UAT confirms real-data correctness.
 
 ### R013 — Admin panel on VPS1 via pm2
 - Class: operability
@@ -271,7 +271,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R009 | primary-user-loop | active | M005/S01 | M005/S02 | M005/S01+S02 (partial — S03 aggregation + human UAT pending) |
 | R010 | primary-user-loop | active | M007/S01 | none | M007/S01 (partial — SSE streaming + MCP tool calls integration-verified via curl; browser UAT pending) |
 | R011 | operability | active | M004/S02 | M004/S01 | unmapped |
-| R012 | admin/support | active | M008/S01 | M008/S02 | unmapped |
+| R012 | admin/support | active | M008/S01 | M008/S02 | M008 (partial — contract + build verified; human UAT with real data pending) |
 | R013 | operability | validated | M001/S04 | M001/S05 | M001/S05 |
 | R014 | constraint | active | M001/S01 | none | unmapped |
 | R015 | differentiator | validated | M003/S01 | M003/S02 | M003/S01 |
