@@ -1,6 +1,7 @@
 import { Worker } from 'bullmq';
 import { createServiceClient } from '@monster/db';
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import type { TablesInsert } from '@monster/db';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRedisOptions } from '../queue.js';
@@ -9,6 +10,8 @@ import { DataForSEOClient } from '../clients/dataforseo.js';
 import type { DataForSEOProduct } from '../clients/dataforseo.js';
 import { processImages } from '../pipeline/images.js';
 import { ContentGenerator } from '../content-generator.js';
+import { scorePage } from '@monster/seo-scorer';
+import type { PageType } from '@monster/seo-scorer';
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -31,6 +34,26 @@ function slugify(text: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+// ---------------------------------------------------------------------------
+// SEO scorer helpers
+// ---------------------------------------------------------------------------
+
+function inferPageType(filePath: string): PageType {
+  const rel = filePath.replace(/\\/g, '/');
+  if (rel === 'index.html') return 'homepage';
+  if (rel.startsWith('categories/')) return 'category';
+  if (rel.startsWith('products/')) return 'product';
+  return 'legal';
+}
+
+function filePathToPagePath(filePath: string): string {
+  // filePath is relative to dist/ (from glob)
+  let p = filePath.replace(/\\/g, '/');
+  p = p.replace(/index\.html$/, '').replace(/\.html$/, '/');
+  if (!p.startsWith('/')) p = '/' + p;
+  return p || '/';
 }
 
 // ---------------------------------------------------------------------------
@@ -513,7 +536,80 @@ export class GenerateSiteJob {
 
         console.log(`[GenerateSiteJob] Astro build complete for "${slug}"`);
 
-        // ── 6. Mark ai_jobs 'completed' ───────────────────────────────────
+        // ── 6. Score pages ────────────────────────────────────────────────
+        await supabase
+          .from('ai_jobs')
+          .update({ payload: { phase: 'score_pages', done: 0, total: 0 } })
+          .eq('bull_job_id', job.id ?? '');
+
+        // Build focus keyword map from siteData (assembled above)
+        const keywordMap = new Map<string, string>();
+        keywordMap.set('/', siteData.site.focus_keyword ?? '');
+        for (const cat of siteData.categories) {
+          keywordMap.set(`/categories/${cat.slug}/`, cat.focus_keyword ?? '');
+        }
+        for (const prod of siteData.products) {
+          keywordMap.set(`/products/${prod.slug}/`, prod.focus_keyword ?? '');
+        }
+
+        const distDir = join(GENERATOR_ROOT, '.generated-sites', slug, 'dist');
+        const { glob } = await import('node:fs/promises');
+        const htmlFiles: string[] = [];
+        for await (const f of glob('**/*.html', { cwd: distDir })) {
+          htmlFiles.push(f);
+        }
+        const total = htmlFiles.length;
+        console.log(`[GenerateSiteJob] score_pages: ${total} pages to score`);
+
+        const scoreRows: TablesInsert<'seo_scores'>[] = [];
+        let done = 0;
+        for (const relPath of htmlFiles) {
+          try {
+            const absPath = join(distDir, relPath);
+            const html = readFileSync(absPath, 'utf-8');
+            const pageType = inferPageType(relPath);
+            const pagePath = filePathToPagePath(relPath);
+            const focusKeyword = keywordMap.get(pagePath) ?? '';
+            const score = scorePage(html, focusKeyword, pageType);
+            console.log(`[GenerateSiteJob] score_pages: ${pagePath} → ${score.overall} (${score.grade})`);
+            scoreRows.push({
+              site_id: site.id,
+              page_path: pagePath,
+              page_type: pageType,
+              overall_score: score.overall,
+              grade: score.grade,
+              content_quality_score: score.content_quality,
+              meta_elements_score: score.meta_elements,
+              structure_score: score.structure,
+              links_score: score.links,
+              media_score: score.media,
+              schema_score: score.schema,
+              technical_score: score.technical,
+              social_score: score.social,
+              suggestions: score.suggestions ?? [],
+            });
+            done++;
+            await supabase
+              .from('ai_jobs')
+              .update({ payload: { phase: 'score_pages', done, total } })
+              .eq('bull_job_id', job.id ?? '');
+          } catch (err) {
+            console.error(`[GenerateSiteJob] score_pages: error scoring ${relPath}:`, err);
+          }
+        }
+
+        if (scoreRows.length > 0) {
+          const { error: upsertError } = await supabase
+            .from('seo_scores')
+            .upsert(scoreRows, { onConflict: 'site_id,page_path' });
+          if (upsertError) {
+            console.error('[GenerateSiteJob] score_pages: upsert error:', upsertError.message);
+          } else {
+            console.log(`[GenerateSiteJob] score_pages: ${scoreRows.length}/${total} pages scored and persisted`);
+          }
+        }
+
+        // ── 7. Mark ai_jobs 'completed' ───────────────────────────────────
         await supabase
           .from('ai_jobs')
           .update({

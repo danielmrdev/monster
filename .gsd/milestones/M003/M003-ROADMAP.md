@@ -62,7 +62,7 @@ This milestone is complete only when all are true:
 - [x] **S03: ContentGenerator** `risk:medium` `depends:[S02]`
   > After this: generation job calls Claude API to produce AI-written SEO texts (~400 words), product descriptions, pros/cons, opinion summaries, and meta descriptions in the site's language — throttle-aware with exponential backoff, writes `focus_keyword` to DB for each entity, content persisted incrementally to Supabase before Astro build.
 
-- [ ] **S04: SEO Scorer** `risk:low` `depends:[S03]`
+- [x] **S04: SEO Scorer** `risk:low` `depends:[S03]`
   > After this: every generated page receives a 0–100 SEO score across 8 categories (title, meta description, headings, content length, readability, keyword density, structured data, internal links), scores persisted to `seo_scores` table, and visible as a score table in the admin panel site detail view.
 
 ## Boundary Map

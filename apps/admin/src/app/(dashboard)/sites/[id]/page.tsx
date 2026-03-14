@@ -4,6 +4,31 @@ import { createServiceClient } from '@/lib/supabase/service'
 import type { SiteCustomization } from '@monster/shared'
 import { enqueueSiteGeneration } from './actions'
 import JobStatus from './JobStatus'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+
+function scoreColor(score: number | null): string {
+  if (score === null) return 'text-gray-400'
+  if (score >= 70) return 'text-green-700'
+  if (score >= 50) return 'text-amber-600'
+  return 'text-red-600'
+}
+
+function gradeBadgeVariant(grade: string | null): 'default' | 'secondary' | 'destructive' | 'outline' {
+  switch (grade) {
+    case 'A': case 'B': return 'default'
+    case 'C': return 'secondary'
+    case 'D': case 'F': return 'destructive'
+    default: return 'outline'
+  }
+}
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -22,6 +47,12 @@ export default async function SiteDetailPage({ params }: PageProps) {
   if (error || !site) {
     notFound()
   }
+
+  const { data: seoScores } = await supabase
+    .from('seo_scores')
+    .select('page_path, page_type, overall_score, grade, content_quality_score, meta_elements_score, structure_score, links_score, media_score, schema_score, technical_score, social_score')
+    .eq('site_id', id)
+    .order('page_path', { ascending: true })
 
   const customization = site.customization as SiteCustomization | null
 
@@ -206,6 +237,63 @@ export default async function SiteDetailPage({ params }: PageProps) {
           Site Generation
         </h2>
         <JobStatus siteId={site.id} />
+      </div>
+
+      {/* SEO Scores */}
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+          SEO Scores
+        </h2>
+        {!seoScores || seoScores.length === 0 ? (
+          <p className="text-sm text-gray-500">No SEO scores yet — generate the site first.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Page</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead className="text-xs">Content</TableHead>
+                  <TableHead className="text-xs">Meta</TableHead>
+                  <TableHead className="text-xs">Structure</TableHead>
+                  <TableHead className="text-xs">Links</TableHead>
+                  <TableHead className="text-xs">Media</TableHead>
+                  <TableHead className="text-xs">Schema</TableHead>
+                  <TableHead className="text-xs">Technical</TableHead>
+                  <TableHead className="text-xs">Social</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {seoScores.map((row) => (
+                  <TableRow key={row.page_path}>
+                    <TableCell className="font-mono text-xs">{row.page_path}</TableCell>
+                    <TableCell className="text-xs text-gray-500">{row.page_type ?? '—'}</TableCell>
+                    <TableCell>
+                      <span className={`font-semibold ${scoreColor(row.overall_score)}`}>
+                        {row.overall_score ?? '—'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={gradeBadgeVariant(row.grade)}>
+                        {row.grade ?? '—'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{row.content_quality_score ?? '—'}</TableCell>
+                    <TableCell className="text-xs">{row.meta_elements_score ?? '—'}</TableCell>
+                    <TableCell className="text-xs">{row.structure_score ?? '—'}</TableCell>
+                    <TableCell className="text-xs">{row.links_score ?? '—'}</TableCell>
+                    <TableCell className="text-xs">{row.media_score ?? '—'}</TableCell>
+                    <TableCell className="text-xs">{row.schema_score ?? '—'}</TableCell>
+                    <TableCell className="text-xs">{row.technical_score ?? '—'}</TableCell>
+                    <TableCell className="text-xs">{row.social_score ?? '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </div>
   )

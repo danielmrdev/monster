@@ -55,8 +55,8 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M003/S04
 - Supporting slices: M003/S02
-- Validation: unmapped
-- Notes: Research in `docs/research/seo-scoring-research.md`. Focus keyword passed explicitly from DB.
+- Validation: contract-verified (M003/S04) — unit tests + build exits pass; operational validation (real seo_scores rows ≥70 on ≥80% of pages) deferred to M003 end-to-end run
+- Notes: Research in `docs/research/seo-scoring-research.md`. Focus keyword passed explicitly from DB. scorePage() with 8 weighted categories implemented; legal exemptions correct; admin panel scores table rendered server-side.
 
 ### R006 — Automated deployment to VPS2 via Cloudflare
 - Class: operability
@@ -263,7 +263,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R002 | constraint | active | M001/S02 | M003/S01, M007/S01 | unmapped |
 | R003 | primary-user-loop | active | M007/S02 | M007/S01 | unmapped |
 | R004 | primary-user-loop | active | M003/S03 | M003/S01 | unmapped |
-| R005 | quality-attribute | active | M003/S04 | M003/S02 | unmapped |
+| R005 | quality-attribute | active | M003/S04 | M003/S02 | contract-verified (M003/S04) |
 | R006 | operability | active | M004/S01 | M004/S02 | unmapped |
 | R007 | continuity | active | M006/S01 | M006/S02 | unmapped |
 | R008 | failure-visibility | active | M006/S02 | M002/S01 | unmapped |
