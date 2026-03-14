@@ -12,6 +12,7 @@ import { DeploySiteJob } from './jobs/deploy-site.js';
 import { SslPollerJob } from './jobs/ssl-poller.js';
 import { AnalyticsAggregationJob } from './jobs/analytics-aggregation.js';
 import { ProductRefreshJob } from './jobs/product-refresh.js';
+import { NicheResearcherJob } from './jobs/niche-researcher.js';
 
 const generateJob = new GenerateSiteJob();
 const generateWorker = generateJob.register();
@@ -41,12 +42,16 @@ const productRefreshJob = new ProductRefreshJob();
 await productRefreshJob.registerScheduler(liveSites ?? []);
 const productRefreshWorker = productRefreshJob.register();
 
+const nicheResearcherJob = new NicheResearcherJob();
+const nicheResearcherWorker = nicheResearcherJob.register();
+
 console.log('[worker] GenerateSiteJob listening on queue "generate"');
 console.log('[worker] DeploySiteJob listening on queue "deploy"');
 console.log('[worker] SslPollerJob listening on queue "ssl-poller"');
 console.log('[worker] AnalyticsAggregationJob listening on queue "analytics-aggregation"');
 console.log(`[worker] ProductRefreshJob scheduler registered (${(liveSites ?? []).length} sites)`);
 console.log('[worker] ProductRefreshJob listening on queue "product-refresh"');
+console.log('[worker] NicheResearcherJob listening on queue "niche-research"');
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
@@ -57,6 +62,7 @@ process.on('SIGTERM', async () => {
     sslPollerWorker.close(),
     analyticsWorker.close(),
     productRefreshWorker.close(),
+    nicheResearcherWorker.close(),
   ]);
   process.exit(0);
 });
@@ -69,6 +75,7 @@ process.on('SIGINT', async () => {
     sslPollerWorker.close(),
     analyticsWorker.close(),
     productRefreshWorker.close(),
+    nicheResearcherWorker.close(),
   ]);
   process.exit(0);
 });

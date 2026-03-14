@@ -1,4 +1,5 @@
 export * from './customization.js';
+export * from './research-report.js';
 
 // ── String-literal union types ─────────────────────────────────────────────
 

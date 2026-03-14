@@ -527,6 +527,7 @@ export type Database = {
           id: string
           market: string | null
           niche_idea: string | null
+          progress: Json | null
           report: Json | null
           status: string
           updated_at: string
@@ -537,6 +538,7 @@ export type Database = {
           id?: string
           market?: string | null
           niche_idea?: string | null
+          progress?: Json | null
           report?: Json | null
           status?: string
           updated_at?: string
@@ -547,6 +549,7 @@ export type Database = {
           id?: string
           market?: string | null
           niche_idea?: string | null
+          progress?: Json | null
           report?: Json | null
           status?: string
           updated_at?: string

@@ -37,6 +37,46 @@ const MARKET_CONFIG: Record<string, MarketConfig> = {
 };
 
 // ---------------------------------------------------------------------------
+// Labs language codes — 2-letter codes required by DataForSEO Labs/SERP APIs.
+// IMPORTANT: Labs endpoints reject 4-letter codes like 'es_ES' (Merchant format).
+// Always use this map for keywordIdeas / serpCompetitors / googleSerpResults.
+// ---------------------------------------------------------------------------
+const LABS_LANGUAGE_CODE: Record<string, string> = {
+  ES: 'es',
+  US: 'en',
+  UK: 'en',
+  DE: 'de',
+  FR: 'fr',
+  IT: 'it',
+};
+
+// ---------------------------------------------------------------------------
+// Labs / SERP response types (local — not exported; consumers get typed arrays)
+// ---------------------------------------------------------------------------
+
+export interface KeywordIdea {
+  keyword: string;
+  search_volume: number | null;
+  cpc: number | null;
+  competition: number | null; // 0–1
+}
+
+export interface SerpCompetitor {
+  domain: string;
+  median_position: number | null;
+  avg_position: number | null;
+  competitor_metrics: Record<string, unknown> | null;
+}
+
+export interface SerpResult {
+  domain: string;
+  url: string;
+  title: string;
+  description: string | null;
+  rank_group: number;
+}
+
+// ---------------------------------------------------------------------------
 // DataForSEO raw response shape (typed minimally — all fields nullable)
 // ---------------------------------------------------------------------------
 
@@ -282,5 +322,164 @@ export class DataForSEOClient {
     }
 
     return products;
+  }
+
+  // ── Labs: keyword ideas (live endpoint) ─────────────────────────────────
+
+  /**
+   * Fetch keyword ideas for a seed keyword via DataForSEO Labs (live endpoint).
+   *
+   * Uses 2-letter language code from LABS_LANGUAGE_CODE — NOT MARKET_CONFIG.language_code.
+   * Returns up to 20 keyword ideas with search_volume, cpc, competition.
+   * Returns [] on empty/missing items without throwing.
+   *
+   * @param keyword - Seed keyword (e.g. "freidoras de aire")
+   * @param market  - AMAZON_MARKETS slug (e.g. "ES")
+   */
+  async keywordIdeas(keyword: string, market: string): Promise<KeywordIdea[]> {
+    const config = MARKET_CONFIG[market];
+    const langCode = LABS_LANGUAGE_CODE[market];
+    if (!config || !langCode) {
+      throw new Error(`DataForSEO: unknown market "${market}" for Labs keywordIdeas`);
+    }
+
+    const auth = await this.fetchAuthHeader();
+    const body = [
+      {
+        keywords: [keyword],
+        location_code: config.location_code,
+        language_code: langCode,
+        limit: 20,
+      },
+    ];
+
+    const response = await this.apiPost<DFSRawResponse>(
+      '/dataforseo_labs/google/keyword_ideas/live',
+      auth,
+      body
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawItems: any[] = (response as any)?.tasks?.[0]?.result?.[0]?.items ?? [];
+
+    if (rawItems.length === 0) {
+      console.log(`[dataforseo] keywordIdeas empty result keyword="${keyword}" market=${market}`);
+      return [];
+    }
+
+    const ideas: KeywordIdea[] = rawItems.map((item: Record<string, unknown>) => ({
+      keyword: String(item['keyword'] ?? ''),
+      search_volume: (item['keyword_info'] as Record<string, unknown> | null)?.['search_volume'] as number | null ?? null,
+      cpc: (item['keyword_info'] as Record<string, unknown> | null)?.['cpc'] as number | null ?? null,
+      competition: (item['keyword_info'] as Record<string, unknown> | null)?.['competition'] as number | null ?? null,
+    }));
+
+    console.log(`[dataforseo] keywordIdeas keyword="${keyword}" market=${market} items=${ideas.length}`);
+    return ideas;
+  }
+
+  // ── Labs: SERP competitors (live endpoint) ───────────────────────────────
+
+  /**
+   * Fetch top SERP competitor domains for a set of keywords (live endpoint).
+   *
+   * @param keywords - Array of seed keywords
+   * @param market   - AMAZON_MARKETS slug (e.g. "ES")
+   */
+  async serpCompetitors(keywords: string[], market: string): Promise<SerpCompetitor[]> {
+    const config = MARKET_CONFIG[market];
+    const langCode = LABS_LANGUAGE_CODE[market];
+    if (!config || !langCode) {
+      throw new Error(`DataForSEO: unknown market "${market}" for Labs serpCompetitors`);
+    }
+
+    const auth = await this.fetchAuthHeader();
+    const body = [
+      {
+        keywords,
+        location_code: config.location_code,
+        language_code: langCode,
+        limit: 10,
+      },
+    ];
+
+    const response = await this.apiPost<DFSRawResponse>(
+      '/dataforseo_labs/google/serp_competitors/live',
+      auth,
+      body
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawItems: any[] = (response as any)?.tasks?.[0]?.result?.[0]?.items ?? [];
+
+    if (rawItems.length === 0) {
+      console.log(`[dataforseo] serpCompetitors empty result market=${market}`);
+      return [];
+    }
+
+    const competitors: SerpCompetitor[] = rawItems.map((item: Record<string, unknown>) => ({
+      domain: String(item['domain'] ?? ''),
+      median_position: (item['median_position'] as number | null) ?? null,
+      avg_position: (item['avg_position'] as number | null) ?? null,
+      competitor_metrics: (item['competitor_metrics'] as Record<string, unknown> | null) ?? null,
+    }));
+
+    console.log(`[dataforseo] serpCompetitors market=${market} items=${competitors.length}`);
+    return competitors;
+  }
+
+  // ── SERP: Google organic results (live endpoint) ─────────────────────────
+
+  /**
+   * Fetch top 10 Google organic SERP results for a keyword (live endpoint).
+   *
+   * Filters by type === 'organic'. Returns [] on empty/missing items.
+   *
+   * @param keyword - Search keyword
+   * @param market  - AMAZON_MARKETS slug (e.g. "ES")
+   */
+  async googleSerpResults(keyword: string, market: string): Promise<SerpResult[]> {
+    const config = MARKET_CONFIG[market];
+    const langCode = LABS_LANGUAGE_CODE[market];
+    if (!config || !langCode) {
+      throw new Error(`DataForSEO: unknown market "${market}" for SERP googleSerpResults`);
+    }
+
+    const auth = await this.fetchAuthHeader();
+    const body = [
+      {
+        keyword,
+        location_code: config.location_code,
+        language_code: langCode,
+        os: 'desktop',
+        depth: 10,
+      },
+    ];
+
+    const response = await this.apiPost<DFSRawResponse>(
+      '/serp/google/organic/live/regular',
+      auth,
+      body
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const allItems: any[] = (response as any)?.tasks?.[0]?.result?.[0]?.items ?? [];
+    const rawItems = allItems.filter((item: Record<string, unknown>) => item['type'] === 'organic');
+
+    if (rawItems.length === 0) {
+      console.log(`[dataforseo] googleSerpResults empty result keyword="${keyword}" market=${market}`);
+      return [];
+    }
+
+    const results: SerpResult[] = rawItems.map((item: Record<string, unknown>) => ({
+      domain: String(item['domain'] ?? ''),
+      url: String(item['url'] ?? ''),
+      title: String(item['title'] ?? ''),
+      description: (item['description'] as string | null) ?? null,
+      rank_group: (item['rank_group'] as number) ?? 0,
+    }));
+
+    console.log(`[dataforseo] googleSerpResults keyword="${keyword}" market=${market} items=${results.length}`);
+    return results;
   }
 }

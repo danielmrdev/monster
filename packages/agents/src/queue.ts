@@ -129,3 +129,21 @@ export function productRefreshQueue(): Queue {
   }
   return _productRefreshQueue;
 }
+
+/**
+ * BullMQ Queue for niche research jobs (one per research session, fire-and-forget).
+ * Named 'niche-research' — matches the Worker name in NicheResearcherJob.
+ */
+export function createNicheResearchQueue(): Queue {
+  const connection = createRedisConnection();
+  return new Queue('niche-research', { connection });
+}
+
+let _nicheResearchQueue: Queue | null = null;
+
+export function nicheResearchQueue(): Queue {
+  if (!_nicheResearchQueue) {
+    _nicheResearchQueue = createNicheResearchQueue();
+  }
+  return _nicheResearchQueue;
+}

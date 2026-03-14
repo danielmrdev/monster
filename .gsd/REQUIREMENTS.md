@@ -34,7 +34,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M007/S02
 - Supporting slices: M007/S01
-- Validation: unmapped
+- Validation: M007/S02 — NicheResearcherJob implemented (BullMQ, lockDuration 600s, maxTurns 15); createNicheResearcherMcpServer with 5 tools (keywordIdeas, serpCompetitors, googleSerpResults, amazonProducts, checkDomainAvailability); per-turn progress writes to research_sessions.progress jsonb; ResearchReportSchema Zod validation; structurally valid report produced from manual enqueue (12 turns, all 10 schema fields present); job survives worker restart; Research Lab UI with 5s polling confirmed via build + code review. Final validation proof (real DataForSEO keyword data in report) requires human UAT with DFS credentials configured in Settings.
 
 ### R004 — AI content generation (batch, SEO-optimized)
 - Class: primary-user-loop
@@ -262,7 +262,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 |---|---|---|---|---|---|
 | R001 | primary-user-loop | active | M003/S02 | M002/S01, M003/S01, M004/S01 | unmapped |
 | R002 | constraint | active | M001/S02 | M003/S01, M007/S01 | unmapped |
-| R003 | primary-user-loop | active | M007/S02 | M007/S01 | unmapped |
+| R003 | primary-user-loop | active | M007/S02 | M007/S01 | M007/S02 (partial — structural proof done; real DFS data pending human UAT) |
 | R004 | primary-user-loop | validated | M003/S03 | M003/S01 | M003/S03 |
 | R005 | quality-attribute | validated | M003/S04 | M003/S02 | M003/S04 |
 | R006 | operability | active | M004/S01 | M004/S02 | unmapped |

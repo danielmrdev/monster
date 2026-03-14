@@ -55,7 +55,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Monster Chat — Streaming Agent + MCP Portfolio Tools** `risk:high` `depends:[]`
   > After this: user can open `/monster`, start or resume a conversation, type a question, and receive a real-time streaming response that references actual portfolio data (site count, site names, statuses) fetched via MCP tools — tokens appear progressively as Claude generates them
 
-- [ ] **S02: NicheResearcher — Background Agent + DataForSEO Research** `risk:high` `depends:[S01]`
+- [x] **S02: NicheResearcher — Background Agent + DataForSEO Research** `risk:high` `depends:[S01]`
   > After this: user can submit a niche idea from Research Lab, watch per-phase progress updates appear as the agent works (via 5-second Supabase poll), and see a completed structured report in `research_sessions.report` containing real DataForSEO keyword data, SERP competitor signals, and Amazon product examples — job survives browser disconnect
 
 - [ ] **S03: Research Report UI + Domain Suggestions + Create Site CTA** `risk:low` `depends:[S02]`

@@ -1,9 +1,9 @@
 # GSD State
 
 **Active Milestone:** M007 — Monster Chat + Research Lab
-**Active Slice:** S01 — Monster Chat — Streaming Agent + MCP Portfolio Tools
-**Phase:** planning complete → ready for execution
-**Requirements Status:** 15 active · 4 validated · 6 deferred · 3 out of scope
+**Active Slice:** S02 — NicheResearcher — Background Agent + DataForSEO Research
+**Phase:** execution — T01 next
+**Requirements Status:** 15 active · 0 validated · 6 deferred · 3 out of scope
 
 ## Milestone Registry
 - ✅ **M001:** Foundation
@@ -16,10 +16,10 @@
 - ⬜ **M008:** M008
 
 ## Recent Decisions
-- D104: `X-Conversation-Id` response header conveys new conversation ID to streaming SSE client
+- None recorded
 
 ## Blockers
 - None
 
 ## Next Action
-Execute S01/T01: install Agent SDK, DB migration, ClaudeSDKClient, Monster MCP server.
+Execute T01: DB migration (`research_sessions.progress` column) + DataForSEO Labs method extensions + `ResearchReport` Zod schema in `packages/shared`.
