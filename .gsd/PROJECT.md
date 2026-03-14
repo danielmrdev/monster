@@ -18,7 +18,7 @@ M001/S05 complete: pm2 runs monster-admin on port 3004 (online, 0 restarts, HTTP
 M002/S01 complete: Sites CRUD fully operational — create/view/edit round-trips to Supabase via service role client. `SiteCustomizationSchema` in `packages/shared` (M003-ready). Server action pattern established (useActionState + 'use client' wrapper, return errors vs throw). Nav active state via NavItem client component. All 13 routes build cleanly. `tsc --noEmit` exits 0. Browser-based visual UAT pending (Playwright not executable on host).
 M002/S02 complete: Dashboard KPIs live — four real Supabase count queries (total sites, live, draft, open alerts) fire in parallel via Promise.all, rendered as KPI cards. Replaces "Coming soon" stub. `tsc --noEmit` exits 0, build clean, pm2 reload clean, 307 on /dashboard confirms route healthy.
 M002/S03 complete: Settings page fully operational — server component reads API keys from Supabase (masked last-4 display), saveSettings server action upserts with onConflict:'key' and { value: rawKey } JSON wrapper, client form uses useActionState with success/error banners. No raw key value in HTML source. Constants-in-sibling pattern established for 'use server' files (D034). `tsc --noEmit` exits 0, build clean, pm2 reload → 307 on /settings.
-M002/S04 complete: Finances shell fully operational — addCost server action (Zod validation + Supabase insert + revalidatePath), CostForm client component (useActionState, native selects, success banner, per-field errors), /finances/page.tsx (parallel fetch of costs/categories/sites, cost list table with empty state, revenue placeholder card). All slice verification checks pass. **M002 Admin Panel MVP milestone complete.**
+M002/S04 complete: Finances shell fully operational — addCost server action (Zod validation + Supabase insert + revalidatePath), CostForm client component (useActionState, native selects, success banner, per-field errors), /finances/page.tsx (parallel fetch of costs/categories/sites, cost list table with empty state, revenue placeholder card). All slice verification checks pass. **M002 Admin Panel MVP milestone complete.** M002-SUMMARY.md written.
 
 ## Architecture / Key Patterns
 
@@ -42,7 +42,7 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 ## Milestone Sequence
 
 - [x] M001: Foundation — Monorepo, worktrees, DB schema, shared packages, admin shell on pm2
-- [ ] M002: Admin Panel MVP — Dashboard, Sites CRUD, Settings, Finances shell
+- [x] M002: Admin Panel MVP — Dashboard, Sites CRUD, Settings, Finances shell
 - [ ] M003: TSA Site Generator — Templates, pipeline, ContentGenerator, SEO Scorer
 - [ ] M004: Deployment + Cloudflare — rsync to VPS2, Cloudflare API, DNS/SSL automation, site lifecycle states
 - [ ] M005: Analytics — Tracking script, Supabase ingestion, analytics dashboard
