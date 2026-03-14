@@ -59,7 +59,7 @@ This milestone is complete only when all are true:
 - [x] **S02: DataForSEO Product Fetch + Image Pipeline** `risk:high` `depends:[S01]`
   > After this: generation job fetches real Amazon product data from DataForSEO Merchant API (async task → poll → get), downloads product images, converts to WebP via Sharp, writes categories and products to Supabase, then builds a real site with live product data and local images — job progress visible in admin panel site detail via `ai_jobs` polling.
 
-- [ ] **S03: ContentGenerator** `risk:medium` `depends:[S02]`
+- [x] **S03: ContentGenerator** `risk:medium` `depends:[S02]`
   > After this: generation job calls Claude API to produce AI-written SEO texts (~400 words), product descriptions, pros/cons, opinion summaries, and meta descriptions in the site's language — throttle-aware with exponential backoff, writes `focus_keyword` to DB for each entity, content persisted incrementally to Supabase before Astro build.
 
 - [ ] **S04: SEO Scorer** `risk:low` `depends:[S03]`

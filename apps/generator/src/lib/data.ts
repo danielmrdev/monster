@@ -20,6 +20,7 @@ export interface SiteInfo {
   affiliate_tag: string;
   template_slug: SiteTemplate;
   customization: SiteCustomization;
+  focus_keyword: string | null;
 }
 
 export interface CategoryData {
@@ -29,6 +30,8 @@ export interface CategoryData {
   seo_text: string;
   category_image: string | null;
   keywords: string[];
+  focus_keyword: string | null;
+  meta_description: string | null;
 }
 
 export interface ProsCons {
@@ -48,6 +51,9 @@ export interface ProductData {
   detailed_description: string | null;
   pros_cons: ProsCons | null;
   category_slug: string;
+  focus_keyword: string | null;
+  user_opinions_summary: string | null;
+  meta_description: string | null;
 }
 
 export interface SiteData {

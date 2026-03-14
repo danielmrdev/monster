@@ -8,6 +8,7 @@ import { Redis } from 'ioredis';
 import { DataForSEOClient } from '../clients/dataforseo.js';
 import type { DataForSEOProduct } from '../clients/dataforseo.js';
 import { processImages } from '../pipeline/images.js';
+import { ContentGenerator } from '../content-generator.js';
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -313,6 +314,87 @@ export class GenerateSiteJob {
           .update({ payload: { phase: 'process_images', done: allProducts.length, total: allProducts.length } })
           .eq('bull_job_id', job.id ?? '');
 
+        // ── generate_content phase ────────────────────────────────────────
+        const contentGenerator = new ContentGenerator();
+        const language = (site.language ?? 'en') as string;
+        const totalContentItems = categories.length + allProducts.length;
+        let contentDone = 0;
+
+        await supabase
+          .from('ai_jobs')
+          .update({ payload: { phase: 'generate_content', done: 0, total: totalContentItems } })
+          .eq('bull_job_id', job.id ?? '');
+
+        // Re-fetch categories to get current focus_keyword for idempotency check
+        const { data: currentCategories } = await supabase
+          .from('tsa_categories')
+          .select('id, name, slug, keywords, focus_keyword')
+          .eq('site_id', siteId);
+
+        for (const cat of currentCategories ?? []) {
+          const keyword = (cat.keywords as string[])?.[0] ?? cat.name;
+          const result = await contentGenerator.generateCategoryContent({
+            name: cat.name,
+            keyword,
+            language,
+            alreadyHasFocusKeyword: cat.focus_keyword !== null,
+          });
+          if (result) {
+            await supabase
+              .from('tsa_categories')
+              .update({
+                focus_keyword: result.focus_keyword,
+                seo_text: result.seo_text,
+                description: result.meta_description,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', cat.id);
+          }
+          contentDone++;
+          await supabase
+            .from('ai_jobs')
+            .update({ payload: { phase: 'generate_content', done: contentDone, total: totalContentItems } })
+            .eq('bull_job_id', job.id ?? '');
+        }
+
+        // Re-fetch products to get current focus_keyword for idempotency check
+        const { data: currentProducts } = await supabase
+          .from('tsa_products')
+          .select('id, asin, title, current_price, focus_keyword')
+          .eq('site_id', siteId);
+
+        const productMetaDescriptions = new Map<string, string>(); // product id → meta_description
+
+        for (const prod of currentProducts ?? []) {
+          const result = await contentGenerator.generateProductContent({
+            asin: prod.asin,
+            title: prod.title ?? prod.asin,
+            price: prod.current_price ?? 0,
+            language,
+            alreadyHasFocusKeyword: prod.focus_keyword !== null,
+          });
+          if (result) {
+            await supabase
+              .from('tsa_products')
+              .update({
+                focus_keyword: result.focus_keyword,
+                detailed_description: result.detailed_description,
+                pros_cons: { pros: result.pros, cons: result.cons },
+                user_opinions_summary: result.user_opinions_summary,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', prod.id);
+            productMetaDescriptions.set(prod.id, result.meta_description);
+          }
+          contentDone++;
+          await supabase
+            .from('ai_jobs')
+            .update({ payload: { phase: 'generate_content', done: contentDone, total: totalContentItems } })
+            .eq('bull_job_id', job.id ?? '');
+        }
+
+        console.log(`[GenerateSiteJob] generate_content: ${contentDone}/${totalContentItems} items generated`);
+
         // ── 6. Assemble SiteData from DB (post-upsert) ────────────────────
         // Fetch fresh rows so we use what's actually in Supabase
         const { data: dbCategories, error: catFetchErr } = await supabase
@@ -371,6 +453,7 @@ export class GenerateSiteJob {
               accentColor: customization?.accentColor ?? '#7c3aed',
               fontFamily: customization?.fontFamily ?? 'sans-serif',
             },
+            focus_keyword: (site.focus_keyword ?? null) as string | null,
             company_name: (site.company_name ?? site.name) as string,
             contact_email: (site.contact_email ?? `contact@${site.domain ?? 'example.com'}`) as string,
           },
@@ -381,6 +464,8 @@ export class GenerateSiteJob {
             seo_text: cat.seo_text ?? '',
             category_image: cat.category_image ?? null,
             keywords: (cat.keywords as string[]) ?? [],
+            focus_keyword: cat.focus_keyword ?? null,
+            meta_description: cat.description ?? null,
           })),
           products: dbProducts
             .filter((p) => productCategorySlug.has(p.id))
@@ -396,6 +481,9 @@ export class GenerateSiteJob {
               detailed_description: p.detailed_description ?? null,
               pros_cons: (p.pros_cons as { pros: string[]; cons: string[] } | null) ?? null,
               category_slug: productCategorySlug.get(p.id) ?? '',
+              focus_keyword: p.focus_keyword ?? null,
+              user_opinions_summary: p.user_opinions_summary ?? null,
+              meta_description: productMetaDescriptions.get(p.id) ?? null,
             })),
         };
 
@@ -436,7 +524,7 @@ export class GenerateSiteJob {
 
         console.log(`[GenerateSiteJob] Job ${job.id} completed`);
       },
-      { connection }
+      { connection, lockDuration: 300000 }
     );
 
     worker.on('failed', async (job, err) => {

@@ -10,9 +10,10 @@ interface Props {
   title: string;
   site: SiteInfo;
   categories: CategoryData[];
+  metaDescription?: string;
 }
 
-const { title, site, categories } = Astro.props;
+const { title, site, categories, metaDescription } = Astro.props;
 const LEGAL_LINKS = [
   { href: "/privacidad/", label: "Privacidad" },
   { href: "/aviso-legal/", label: "Aviso Legal" },
@@ -21,7 +22,7 @@ const LEGAL_LINKS = [
 ];
 ---
 
-<BaseLayout title={title} lang={site.language} customization={site.customization}>
+<BaseLayout title={title} lang={site.language} metaDescription={metaDescription} customization={site.customization}>
   <!-- Classic: top nav bar with site name + category links -->
   <header class="border-b border-gray-200 bg-white shadow-sm">
     <div class="mx-auto max-w-6xl px-4">

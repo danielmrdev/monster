@@ -28,10 +28,11 @@ const title = `${product.title} — ${site.name}`;
 const CURRENCY = site.currency;
 const affiliateUrl = buildAffiliateUrl(product.asin, site.market, site.affiliate_tag);
 const prosCons = product.pros_cons as ProsCons | null;
+const metaDescription = product.meta_description ?? undefined;
 ---
 
 {site.template_slug === "modern" ? (
-  <ModernLayout title={title} site={site} categories={categories}>
+  <ModernLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
     <div class="max-w-3xl mx-auto">
       <!-- Product image -->
       {product.images[0] ? (
@@ -76,7 +77,7 @@ const prosCons = product.pros_cons as ProsCons | null;
     </div>
   </ModernLayout>
 ) : site.template_slug === "minimal" ? (
-  <MinimalLayout title={title} site={site} categories={categories}>
+  <MinimalLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
     <nav class="text-xs text-gray-400 mb-6">
       <a href="/" class="hover:text-gray-600">Inicio</a>
       {" / "}
@@ -125,7 +126,7 @@ const prosCons = product.pros_cons as ProsCons | null;
   </MinimalLayout>
 ) : (
   /* Default: Classic */
-  <ClassicLayout title={title} site={site} categories={categories}>
+  <ClassicLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
     <div class="max-w-2xl">
       <!-- Product image -->
       {product.images[0] ? (

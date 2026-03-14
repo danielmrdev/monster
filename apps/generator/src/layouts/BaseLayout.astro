@@ -2,6 +2,7 @@
 interface Props {
   title: string;
   lang?: string;
+  metaDescription?: string;
   customization?: {
     primaryColor?: string;
     accentColor?: string;
@@ -9,7 +10,7 @@ interface Props {
   };
 }
 
-const { title, lang = "es", customization } = Astro.props;
+const { title, lang = "es", metaDescription, customization } = Astro.props;
 const primary = customization?.primaryColor ?? "#4f46e5";
 const accent = customization?.accentColor ?? "#7c3aed";
 const font = customization?.fontFamily ?? "sans-serif";
@@ -20,6 +21,7 @@ const font = customization?.fontFamily ?? "sans-serif";
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+    {metaDescription && <meta name="description" content={metaDescription} />}
     <style>
       @import "tailwindcss";
     </style>

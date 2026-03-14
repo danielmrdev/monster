@@ -21,13 +21,15 @@
     "dev": "tsup --watch"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@monster/db": "workspace:*",
     "@monster/shared": "workspace:*",
     "bullmq": "^5.71.0",
     "dotenv": "^17.3.1",
     "ioredis": "5.9.3",
     "p-limit": "^7.3.0",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

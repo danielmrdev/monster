@@ -30,10 +30,11 @@ interface Props {
 const { site, categories, category, products } = Astro.props;
 const title = `${category.name} — ${site.name}`;
 const CURRENCY = site.currency;
+const metaDescription = category.meta_description ?? undefined;
 ---
 
 {site.template_slug === "modern" ? (
-  <ModernLayout title={title} site={site} categories={categories}>
+  <ModernLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
     <h1 class="text-3xl font-bold text-gray-900 mb-4">{category.name}</h1>
     <p class="text-gray-600 mb-10 max-w-3xl">{category.seo_text}</p>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -59,7 +60,7 @@ const CURRENCY = site.currency;
     )}
   </ModernLayout>
 ) : site.template_slug === "minimal" ? (
-  <MinimalLayout title={title} site={site} categories={categories}>
+  <MinimalLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
     <h1 class="text-2xl font-bold text-gray-900 mb-2">{category.name}</h1>
     <p class="text-sm text-gray-500 border-b border-gray-100 pb-6 mb-8">{category.seo_text}</p>
     <ul class="divide-y divide-gray-100">
@@ -89,7 +90,7 @@ const CURRENCY = site.currency;
   </MinimalLayout>
 ) : (
   /* Default: Classic */
-  <ClassicLayout title={title} site={site} categories={categories}>
+  <ClassicLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
     <h1 class="text-2xl font-bold text-gray-800 mb-3">{category.name}</h1>
     <p class="text-gray-600 mb-8 max-w-2xl">{category.seo_text}</p>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
