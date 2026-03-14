@@ -63,7 +63,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Diff Engine + Conditional Rebuild + Alert Creation** `risk:high` `depends:[S01]`
   > After this: the refresh job diffs fetched products against DB, enqueues `GenerateSiteJob` when price/availability/image changes are detected (ratings deferred), and creates deduplicated `product_alerts` rows — verified by simulating a price change in the DB then triggering a refresh and confirming a `GenerateSiteJob` appears in the BullMQ queue and a single open alert exists.
 
-- [ ] **S03: Dashboard Alert Surface + Alert Resolution UI** `risk:low` `depends:[S02]`
+- [x] **S03: Dashboard Alert Surface + Alert Resolution UI** `risk:low` `depends:[S02]`
   > After this: the dashboard KPI card shows live open alert count, the site detail page shows a product availability summary with per-product alert status, and the alert list lets the operator mark alerts acknowledged or resolved — fully exercisable through the admin panel without touching the DB directly.
 
 ## Boundary Map

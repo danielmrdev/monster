@@ -21,27 +21,33 @@ export default async function DashboardPage() {
   if (e3) throw new Error('Failed to fetch dashboard KPIs (draft sites): ' + e3.message)
   if (e4) throw new Error('Failed to fetch dashboard KPIs (open alerts): ' + e4.message)
 
+  const alertCount = openAlerts ?? 0
+
   const kpis = [
     { label: 'Total Sites', value: totalSites ?? 0 },
     { label: 'Live Sites', value: liveSites ?? 0 },
     { label: 'Draft Sites', value: draftSites ?? 0 },
-    { label: 'Open Alerts', value: openAlerts ?? 0 },
+    { label: 'Open Alerts', value: alertCount },
   ]
 
   return (
     <div>
       <h1 className="text-2xl font-bold tracking-tight mb-6">Dashboard</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map(({ label, value }) => (
-          <Card key={label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{value}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {kpis.map(({ label, value }) => {
+          const isAlerts = label === 'Open Alerts'
+          const hasAlerts = isAlerts && alertCount > 0
+          return (
+            <Card key={label} className={hasAlerts ? 'border-amber-400' : undefined}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className={`text-3xl font-bold${hasAlerts ? ' text-amber-600' : ''}`}>{value}</p>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )

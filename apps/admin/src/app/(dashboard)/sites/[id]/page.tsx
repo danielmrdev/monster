@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import type { SiteCustomization } from '@monster/shared'
 import { enqueueSiteGeneration, enqueueSiteDeploy, getDeploymentCard } from './actions'
 import { RefreshCard } from './RefreshCard'
+import { SiteAlerts } from './SiteAlerts'
 import JobStatus from './JobStatus'
 import DeployStatus from './DeployStatus'
 import DomainManagement from './DomainManagement'
@@ -51,14 +52,24 @@ export default async function SiteDetailPage({ params }: PageProps) {
     notFound()
   }
 
-  const [seoScoresResult, deployCard] = await Promise.all([
+  const [seoScoresResult, deployCard, siteAlertsResult] = await Promise.all([
     supabase
       .from('seo_scores')
       .select('page_path, page_type, overall_score, grade, content_quality_score, meta_elements_score, structure_score, links_score, media_score, schema_score, technical_score, social_score')
       .eq('site_id', id)
       .order('page_path', { ascending: true }),
     getDeploymentCard(id),
+    supabase
+      .from('product_alerts')
+      .select('*, tsa_products(asin, title)')
+      .eq('site_id', id)
+      .eq('status', 'open')
+      .order('created_at', { ascending: false }),
   ])
+
+  if (siteAlertsResult.error) {
+    throw siteAlertsResult.error
+  }
 
   const seoScores = seoScoresResult.data
   const customization = site.customization as SiteCustomization | null
@@ -370,6 +381,14 @@ export default async function SiteDetailPage({ params }: PageProps) {
           siteId={site.id}
           lastRefreshedAt={site.last_refreshed_at ?? null}
         />
+      </div>
+
+      {/* Product Alerts */}
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+          Product Alerts
+        </h2>
+        <SiteAlerts alerts={siteAlertsResult.data ?? []} />
       </div>
 
       {/* SEO Scores */}

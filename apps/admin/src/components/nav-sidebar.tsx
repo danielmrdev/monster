@@ -8,6 +8,7 @@ const navItems = [
   { href: '/research', label: 'Research Lab' },
   { href: '/analytics', label: 'Analytics' },
   { href: '/finances', label: 'Finances' },
+  { href: '/alerts', label: 'Alerts' },
   { href: '/settings', label: 'Settings' },
 ]
 
