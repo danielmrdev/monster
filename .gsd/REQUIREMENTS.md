@@ -77,7 +77,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M006/S01
 - Supporting slices: M006/S02
-- Validation: M006/S01 — ProductRefreshJob fetches DataForSEO products, writes last_refreshed_at, admin panel shows refresh timestamp with Refresh Now button. M006/S02 — diff engine implemented (price/availability/image rebuild-triggering; rating deferred); conditional GenerateSiteJob enqueue when shouldRebuild && site.status=live; builds + typechecks pass. End-to-end runtime proof (live DFS → real DB diff → actual GenerateSiteJob in queue) deferred to human UAT.
+- Validation: M006/S01 — ProductRefreshJob fetches DataForSEO products, writes last_refreshed_at, admin panel shows refresh timestamp with Refresh Now button. M006/S02 — diff engine implemented (price/availability/image rebuild-triggering; rating deferred); conditional GenerateSiteJob enqueue when shouldRebuild && site.status=live; 10 unit tests pass; builds + typechecks pass. M006/S03 — admin panel refresh card + per-site alert summary visible. End-to-end runtime proof (live DFS → real DB diff → actual GenerateSiteJob in queue) deferred to human UAT (no live sites yet).
 
 ### R008 — Product availability alerts
 - Class: failure-visibility
@@ -87,7 +87,7 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M006/S02
 - Supporting slices: M002/S01
-- Validation: M006/S02 — alert creation implemented for all three types (unavailable/category_empty/site_degraded) with check-before-insert dedup on (site_id, product_id, alert_type) WHERE status=open; severity column migration applied; builds + typechecks pass. Dashboard alert surface (S03) and dedup live runtime proof deferred to human UAT.
+- Validation: M006/S02 — alert creation implemented for all three types (unavailable/category_empty/site_degraded) with check-before-insert dedup on (site_id, product_id, alert_type) WHERE status=open; severity column migration applied; builds + typechecks pass. M006/S03 — global /alerts page with acknowledge/resolve actions, per-site SiteAlerts component, dashboard amber KPI card; builds + typechecks pass. Dedup live runtime proof (two consecutive refresh cycles → exactly one open alert) deferred to human UAT (no live sites yet).
 
 ### R009 — Analytics: lightweight GDPR-friendly tracking
 - Class: primary-user-loop
