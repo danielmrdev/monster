@@ -480,6 +480,17 @@ export class GenerateSiteJob {
             focus_keyword: (site.focus_keyword ?? null) as string | null,
             company_name: (site.company_name ?? site.name) as string,
             contact_email: (site.contact_email ?? `contact@${site.domain ?? 'example.com'}`) as string,
+            id: siteId,
+            supabase_url: (() => {
+              const val = process.env['NEXT_PUBLIC_SUPABASE_URL'] ?? '';
+              if (!val) console.warn('[GenerateSiteJob] NEXT_PUBLIC_SUPABASE_URL is not set — analytics tracker will fail silently');
+              return val;
+            })(),
+            supabase_anon_key: (() => {
+              const val = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] ?? '';
+              if (!val) console.warn('[GenerateSiteJob] NEXT_PUBLIC_SUPABASE_ANON_KEY is not set — analytics tracker will fail silently');
+              return val;
+            })(),
           },
           categories: dbCategories.map((cat) => ({
             id: cat.id,

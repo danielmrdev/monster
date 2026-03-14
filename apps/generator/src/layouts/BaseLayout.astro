@@ -1,4 +1,7 @@
 ---
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 interface Props {
   title: string;
   lang?: string;
@@ -8,12 +11,34 @@ interface Props {
     accentColor?: string;
     fontFamily?: string;
   };
+  /** Analytics: site UUID written into the tracker at build time. */
+  siteId?: string;
+  /** Analytics: Supabase project URL written into the tracker at build time. */
+  supabaseUrl?: string;
+  /** Analytics: Supabase anon key (INSERT-only RLS) written into the tracker at build time. */
+  supabaseAnonKey?: string;
 }
 
-const { title, lang = "es", metaDescription, customization } = Astro.props;
+const { title, lang = "es", metaDescription, customization, siteId, supabaseUrl, supabaseAnonKey } = Astro.props;
 const primary = customization?.primaryColor ?? "#4f46e5";
 const accent = customization?.accentColor ?? "#7c3aed";
 const font = customization?.fontFamily ?? "sans-serif";
+
+// Load the pre-built tracker and substitute build-time placeholders.
+// The path is relative to the monorepo root — process.cwd() during `astro build`
+// is apps/generator/, so we go up two levels to reach packages/analytics/.
+let trackerScript = "";
+try {
+  const trackerPath = join(process.cwd(), "..", "..", "packages", "analytics", "dist", "tracker.min.js");
+  const raw = readFileSync(trackerPath, "utf-8");
+  trackerScript = raw
+    .replace("__SUPABASE_URL__", supabaseUrl ?? "")
+    .replace("__SUPABASE_ANON_KEY__", supabaseAnonKey ?? "")
+    .replace("__SITE_ID__", siteId ?? "");
+} catch (err) {
+  // Non-fatal: site still builds and works without analytics.
+  console.warn("[BaseLayout] Could not load tracker.min.js:", (err as Error).message);
+}
 ---
 
 <html lang={lang}>
@@ -38,5 +63,6 @@ const font = customization?.fontFamily ?? "sans-serif";
   </head>
   <body>
     <slot />
+    {trackerScript && <script is:inline set:html={trackerScript} />}
   </body>
 </html>

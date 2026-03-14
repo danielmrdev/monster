@@ -21,6 +21,12 @@ export interface SiteInfo {
   template_slug: SiteTemplate;
   customization: SiteCustomization;
   focus_keyword: string | null;
+  /** Site UUID — used by the analytics tracker as the `site_id` POST field. */
+  id: string;
+  /** Supabase project URL — baked into the tracker at Astro build time. */
+  supabase_url: string;
+  /** Supabase anon key — INSERT-only RLS, safe to expose in static HTML. */
+  supabase_anon_key: string;
 }
 
 export interface CategoryData {

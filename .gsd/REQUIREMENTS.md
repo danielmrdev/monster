@@ -97,7 +97,8 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Source: user
 - Primary owning slice: M005/S01
 - Supporting slices: M005/S02
-- Validation: unmapped
+- Validation: M005/S01 — tracker built (1343 bytes, ≤2KB), esbuild pipeline exits 0, 3 placeholders preserved, BaseLayout injects tracker inline with credential substitution, data-affiliate on product links, astro check 0 errors; live runtime proof (rows in analytics_events) deferred to human UAT
+- Notes: Country is always null in Phase 1 (D081); CF-IPCountry not available in browser→Supabase direct POST. Transport is fetch+keepalive not sendBeacon (D084) — PostgREST requires custom auth headers that sendBeacon cannot set.
 
 ### R010 — Monster Chat agent
 - Class: primary-user-loop

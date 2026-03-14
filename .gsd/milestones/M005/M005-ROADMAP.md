@@ -52,7 +52,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Tracker Script + Astro Injection** `risk:high` `depends:[]`
+- [x] **S01: Tracker Script + Astro Injection** `risk:high` `depends:[]`
   > After this: every generated Astro site contains a <2KB inline tracker script that POSTs pageview and affiliate-click events to Supabase using sendBeacon on unload and batched fetch every 5s; confirmed by visiting a generated site and seeing rows appear in analytics_events in Supabase dashboard
 - [ ] **S02: Analytics Dashboard** `risk:medium` `depends:[S01]`
   > After this: the admin panel /analytics page shows real data — visits, pageviews, affiliate clicks per site, filterable by date range (today/7d/30d), with top pages per site and country breakdown; data sourced from analytics_events and analytics_daily via service role client

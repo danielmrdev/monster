@@ -47,6 +47,7 @@ const metaDescription = product.meta_description ?? undefined;
         href={affiliateUrl}
         rel="nofollow sponsored"
         target="_blank"
+        data-affiliate={product.asin}
         class="block w-full text-center text-white font-semibold py-3 rounded-xl text-lg mb-8 transition-opacity hover:opacity-90"
         style="background-color: var(--color-accent)"
       >
@@ -94,6 +95,7 @@ const metaDescription = product.meta_description ?? undefined;
       href={affiliateUrl}
       rel="nofollow sponsored"
       target="_blank"
+      data-affiliate={product.asin}
       class="inline-block border border-gray-800 text-gray-800 text-sm px-6 py-2 rounded hover:bg-gray-800 hover:text-white transition-colors mb-8"
     >
       Ver en Amazon →
@@ -144,6 +146,7 @@ const metaDescription = product.meta_description ?? undefined;
         href={affiliateUrl}
         rel="nofollow sponsored"
         target="_blank"
+        data-affiliate={product.asin}
         class="inline-block text-white text-sm font-medium px-6 py-2.5 rounded-lg mb-8 transition-opacity hover:opacity-90"
         style="background-color: var(--color-accent)"
       >

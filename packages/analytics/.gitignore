@@ -1,0 +1,4 @@
+# Intentionally override root gitignore: tracker.min.js is a committed build artifact (D079)
+# Other build outputs are still ignored
+!dist/
+!dist/tracker.min.js
