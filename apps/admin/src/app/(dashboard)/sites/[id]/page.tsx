@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { SiteCustomization } from '@monster/shared'
+import { enqueueSiteGeneration } from './actions'
+import JobStatus from './JobStatus'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -47,12 +49,25 @@ export default async function SiteDetailPage({ params }: PageProps) {
             {site.status ?? 'draft'}
           </span>
         </div>
-        <Link
-          href={`/sites/${site.id}/edit`}
-          className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
-        >
-          Edit
-        </Link>
+        <div className="flex items-center gap-2">
+          <form action={async () => {
+            'use server'
+            await enqueueSiteGeneration(site.id)
+          }}>
+            <button
+              type="submit"
+              className="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+            >
+              Generate Site
+            </button>
+          </form>
+          <Link
+            href={`/sites/${site.id}/edit`}
+            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+          >
+            Edit
+          </Link>
+        </div>
       </div>
 
       {/* Site details card */}
@@ -183,6 +198,14 @@ export default async function SiteDetailPage({ params }: PageProps) {
             </div>
           </dl>
         </div>
+      </div>
+
+      {/* Generation status */}
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          Site Generation
+        </h2>
+        <JobStatus siteId={site.id} />
       </div>
     </div>
   )

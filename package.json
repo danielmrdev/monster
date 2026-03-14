@@ -3,5 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "packageManager": "pnpm@10.30.3",
-  "scripts": {}
+  "scripts": {},
+  "pnpm": {
+    "overrides": {
+      "ioredis": "5.9.3"
+    }
+  }
 }

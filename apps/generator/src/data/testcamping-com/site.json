@@ -1,0 +1,106 @@
+{
+  "site": {
+    "name": "Test Camping Site",
+    "domain": "testcamping.com",
+    "market": "ES",
+    "language": "es",
+    "currency": "EUR",
+    "affiliate_tag": "testcamping-21",
+    "template_slug": "classic",
+    "customization": {
+      "primaryColor": "#2563eb",
+      "accentColor": "#f59e0b",
+      "fontFamily": "Inter"
+    },
+    "company_name": "Test Camping Site",
+    "contact_email": "contact@testcamping.com"
+  },
+  "categories": [
+    {
+      "id": "cat-001",
+      "name": "Camping gear for families - Category 1",
+      "slug": "camping-gear-for-families-category-1",
+      "seo_text": "Explore our curated selection of the best Camping gear for families products. Expert reviews, price comparisons, and honest recommendations to help you make the right choice.",
+      "category_image": null,
+      "keywords": [
+        "camping gear for families",
+        "best camping gear for families",
+        "camping gear for families reviews"
+      ]
+    },
+    {
+      "id": "cat-002",
+      "name": "Camping gear for families - Category 2",
+      "slug": "camping-gear-for-families-category-2",
+      "seo_text": "Discover top-rated Camping gear for families products with detailed comparisons and buying guides. Updated regularly with the latest deals and recommendations.",
+      "category_image": null,
+      "keywords": [
+        "camping gear for families guide",
+        "camping gear for families comparison",
+        "buy camping gear for families"
+      ]
+    }
+  ],
+  "products": [
+    {
+      "id": "prod-001",
+      "asin": "B000000001",
+      "title": "Camping gear for families Product - Model A",
+      "slug": "camping-gear-for-families-product-model-a",
+      "current_price": 49.99,
+      "images": [],
+      "rating": 4.5,
+      "is_prime": true,
+      "detailed_description": null,
+      "pros_cons": null,
+      "category_slug": "camping-gear-for-families-category-1"
+    },
+    {
+      "id": "prod-002",
+      "asin": "B000000002",
+      "title": "Camping gear for families Product - Model B",
+      "slug": "camping-gear-for-families-product-model-b",
+      "current_price": 79.99,
+      "images": [],
+      "rating": 4.3,
+      "is_prime": true,
+      "detailed_description": null,
+      "pros_cons": {
+        "pros": [
+          "Quality build",
+          "Good value"
+        ],
+        "cons": [
+          "Limited availability"
+        ]
+      },
+      "category_slug": "camping-gear-for-families-category-1"
+    },
+    {
+      "id": "prod-003",
+      "asin": "B000000003",
+      "title": "Camping gear for families Premium - Model C",
+      "slug": "camping-gear-for-families-premium-model-c",
+      "current_price": 129.99,
+      "images": [],
+      "rating": 4.7,
+      "is_prime": false,
+      "detailed_description": null,
+      "pros_cons": null,
+      "category_slug": "camping-gear-for-families-category-2"
+    },
+    {
+      "id": "prod-004",
+      "asin": "B000000004",
+      "title": "Camping gear for families Budget - Model D",
+      "slug": "camping-gear-for-families-budget-model-d",
+      "current_price": 29.99,
+      "images": [],
+      "rating": 4.1,
+      "is_prime": true,
+      "detailed_description": null,
+      "pros_cons": null,
+      "category_slug": "camping-gear-for-families-category-2"
+    }
+  ]
+}

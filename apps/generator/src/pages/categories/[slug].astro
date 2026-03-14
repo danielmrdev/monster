@@ -1,0 +1,117 @@
+---
+import ClassicLayout from "../../layouts/classic/Layout.astro";
+import ModernLayout from "../../layouts/modern/Layout.astro";
+import MinimalLayout from "../../layouts/minimal/Layout.astro";
+import { loadSiteData } from "../../lib/data";
+import type { SiteData, SiteInfo, CategoryData, ProductData } from "../../lib/data";
+
+export async function getStaticPaths() {
+  const slug = import.meta.env.SITE_SLUG ?? process.env.SITE_SLUG ?? "default";
+  const data: SiteData = loadSiteData(slug);
+
+  return data.categories.map((category) => ({
+    params: { slug: category.slug },
+    props: {
+      site: data.site,
+      categories: data.categories,
+      category,
+      products: data.products.filter((p) => p.category_slug === category.slug),
+    },
+  }));
+}
+
+interface Props {
+  site: SiteInfo;
+  categories: CategoryData[];
+  category: CategoryData;
+  products: ProductData[];
+}
+
+const { site, categories, category, products } = Astro.props;
+const title = `${category.name} — ${site.name}`;
+const CURRENCY = site.currency;
+---
+
+{site.template_slug === "modern" ? (
+  <ModernLayout title={title} site={site} categories={categories}>
+    <h1 class="text-3xl font-bold text-gray-900 mb-4">{category.name}</h1>
+    <p class="text-gray-600 mb-10 max-w-3xl">{category.seo_text}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {products.map((p) => (
+        <a
+          href={`/products/${p.slug}/`}
+          class="block rounded-xl border border-gray-200 bg-white shadow-md hover:shadow-lg transition-shadow overflow-hidden"
+        >
+          {p.images[0] ? (
+            <img src={p.images[0]} alt={p.title} class="w-full h-44 object-cover" />
+          ) : (
+            <div class="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Sin imagen</div>
+          )}
+          <div class="p-4">
+            <p class="font-semibold text-gray-800 line-clamp-2">{p.title}</p>
+            <p class="text-lg font-bold mt-1" style="color: var(--color-primary)">{CURRENCY} {p.current_price.toFixed(2)}</p>
+          </div>
+        </a>
+      ))}
+    </div>
+    {products.length === 0 && (
+      <p class="text-gray-500 mt-8">No hay productos en esta categoría aún.</p>
+    )}
+  </ModernLayout>
+) : site.template_slug === "minimal" ? (
+  <MinimalLayout title={title} site={site} categories={categories}>
+    <h1 class="text-2xl font-bold text-gray-900 mb-2">{category.name}</h1>
+    <p class="text-sm text-gray-500 border-b border-gray-100 pb-6 mb-8">{category.seo_text}</p>
+    <ul class="divide-y divide-gray-100">
+      {products.map((p) => (
+        <li>
+          <a
+            href={`/products/${p.slug}/`}
+            class="flex items-center gap-4 py-4 hover:bg-gray-50 transition-colors"
+          >
+            {p.images[0] ? (
+              <img src={p.images[0]} alt={p.title} class="w-14 h-14 object-cover rounded border border-gray-200 shrink-0" />
+            ) : (
+              <div class="w-14 h-14 rounded border border-gray-100 bg-gray-50 shrink-0" />
+            )}
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-800 truncate">{p.title}</p>
+              <p class="text-sm text-gray-500">{CURRENCY} {p.current_price.toFixed(2)}</p>
+            </div>
+            <span class="text-gray-400 text-sm">→</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+    {products.length === 0 && (
+      <p class="text-sm text-gray-400 mt-6">No hay productos en esta categoría aún.</p>
+    )}
+  </MinimalLayout>
+) : (
+  /* Default: Classic */
+  <ClassicLayout title={title} site={site} categories={categories}>
+    <h1 class="text-2xl font-bold text-gray-800 mb-3">{category.name}</h1>
+    <p class="text-gray-600 mb-8 max-w-2xl">{category.seo_text}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {products.map((p) => (
+        <a
+          href={`/products/${p.slug}/`}
+          class="block rounded-lg border border-gray-200 bg-white overflow-hidden hover:border-gray-300 hover:shadow-sm transition"
+        >
+          {p.images[0] ? (
+            <img src={p.images[0]} alt={p.title} class="w-full h-40 object-cover" />
+          ) : (
+            <div class="w-full h-40 bg-gray-50 flex items-center justify-center text-gray-300 text-xs">Sin imagen</div>
+          )}
+          <div class="p-3">
+            <p class="text-sm font-medium text-gray-800 line-clamp-2">{p.title}</p>
+            <p class="text-sm font-bold mt-1" style="color: var(--color-primary)">{CURRENCY} {p.current_price.toFixed(2)}</p>
+          </div>
+        </a>
+      ))}
+    </div>
+    {products.length === 0 && (
+      <p class="text-gray-500 mt-6">No hay productos en esta categoría aún.</p>
+    )}
+  </ClassicLayout>
+)}

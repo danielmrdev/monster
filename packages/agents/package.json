@@ -2,8 +2,35 @@
   "name": "@monster/agents",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "exports": {},
-  "scripts": {}
+  "typesVersions": {},
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./worker": {
+      "import": "./dist/worker.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsup --watch"
+  },
+  "dependencies": {
+    "@monster/db": "workspace:*",
+    "@monster/shared": "workspace:*",
+    "bullmq": "^5.71.0",
+    "dotenv": "^17.3.1",
+    "ioredis": "5.9.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "astro": "^6.0.4",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.2"
+  }
 }

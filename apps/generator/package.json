@@ -2,5 +2,21 @@
   "name": "@monster/generator",
   "version": "0.0.1",
   "private": true,
-  "scripts": {}
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "check": "astro check",
+    "dev": "astro dev"
+  },
+  "dependencies": {
+    "@monster/shared": "workspace:*",
+    "@tailwindcss/vite": "^4.2.1",
+    "astro": "^6.0.4",
+    "sharp": "^0.33.0",
+    "tailwindcss": "^4.2.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.7",
+    "typescript": "^5.8.0"
+  }
 }

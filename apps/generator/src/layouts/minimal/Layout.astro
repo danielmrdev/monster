@@ -1,0 +1,66 @@
+---
+/**
+ * Minimal Layout — Centered container, tight typography, subtle borders, no decorative elements.
+ * Visual identity: max-w-4xl content column, readable prose scale, hairline dividers, no colors.
+ */
+import BaseLayout from "../BaseLayout.astro";
+import type { SiteInfo, CategoryData } from "../../lib/data";
+
+interface Props {
+  title: string;
+  site: SiteInfo;
+  categories: CategoryData[];
+}
+
+const { title, site, categories } = Astro.props;
+const LEGAL_LINKS = [
+  { href: "/privacidad/", label: "Privacidad" },
+  { href: "/aviso-legal/", label: "Aviso Legal" },
+  { href: "/cookies/", label: "Cookies" },
+  { href: "/contacto/", label: "Contacto" },
+];
+---
+
+<BaseLayout title={title} lang={site.language} customization={site.customization}>
+  <!-- Minimal: understated top bar, centered, text-only nav -->
+  <header class="border-b border-gray-100">
+    <div class="mx-auto max-w-4xl px-4 py-4 flex items-center justify-between">
+      <a href="/" class="text-sm font-semibold text-gray-800 tracking-wide uppercase">
+        {site.name}
+      </a>
+      <nav class="flex gap-5">
+        {categories.map((cat) => (
+          <a
+            href={`/categories/${cat.slug}/`}
+            class="text-xs text-gray-500 hover:text-gray-800 transition-colors tracking-wide"
+          >
+            {cat.name}
+          </a>
+        ))}
+      </nav>
+    </div>
+  </header>
+
+  <!-- Centered narrow content column -->
+  <main class="mx-auto max-w-4xl px-4 py-10">
+    <slot />
+  </main>
+
+  <!-- Minimal footer: hairline top, compact legal links, tiny text -->
+  <footer class="border-t border-gray-100 mt-16">
+    <div class="mx-auto max-w-4xl px-4 py-6">
+      <div class="flex flex-wrap items-center gap-4">
+        {LEGAL_LINKS.map((link) => (
+          <a href={link.href} class="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+            {link.label}
+          </a>
+        ))}
+        <span class="text-xs text-gray-300">·</span>
+        <span class="text-xs text-gray-400">© {new Date().getFullYear()} {site.name}</span>
+      </div>
+      <p class="text-xs text-gray-400 mt-3">
+        Como Asociado de Amazon, obtenemos ingresos por las compras adscritas que cumplen los requisitos aplicables.
+      </p>
+    </div>
+  </footer>
+</BaseLayout>

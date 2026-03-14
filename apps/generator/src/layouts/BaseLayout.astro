@@ -1,0 +1,40 @@
+---
+interface Props {
+  title: string;
+  lang?: string;
+  customization?: {
+    primaryColor?: string;
+    accentColor?: string;
+    fontFamily?: string;
+  };
+}
+
+const { title, lang = "es", customization } = Astro.props;
+const primary = customization?.primaryColor ?? "#4f46e5";
+const accent = customization?.accentColor ?? "#7c3aed";
+const font = customization?.fontFamily ?? "sans-serif";
+---
+
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <style>
+      @import "tailwindcss";
+    </style>
+    <style define:vars={{ primary, accent, font }}>
+      :root {
+        --color-primary: var(--primary);
+        --color-accent: var(--accent);
+        --font-body: var(--font);
+      }
+      body {
+        font-family: var(--font-body, sans-serif);
+      }
+    </style>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

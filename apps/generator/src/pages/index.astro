@@ -1,0 +1,175 @@
+---
+import ClassicLayout from "../layouts/classic/Layout.astro";
+import ModernLayout from "../layouts/modern/Layout.astro";
+import MinimalLayout from "../layouts/minimal/Layout.astro";
+import { loadSiteData, buildAffiliateUrl } from "../lib/data";
+
+// Read SITE_SLUG from env — set before build() is called.
+// process.cwd() = generator project root during `astro build`.
+const slug = import.meta.env.SITE_SLUG ?? process.env["SITE_SLUG"] ?? "default";
+const data = loadSiteData(slug);
+const { site, categories, products } = data;
+const featuredProducts = products.slice(0, 4);
+
+const title = `${site.name} — Inicio`;
+const heroUrl =
+  "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=80";
+
+const CURRENCY = site.currency;
+const MARKET = site.market;
+const TAG = site.affiliate_tag;
+---
+
+{site.template_slug === "modern" ? (
+  <ModernLayout title={title} site={site} categories={categories} heroImageUrl={heroUrl}>
+    <!-- Category grid -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Categorías</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {categories.map((cat) => (
+          <a
+            href={`/categories/${cat.slug}/`}
+            class="block rounded-xl border border-gray-200 bg-white p-6 shadow-md hover:shadow-lg transition-shadow"
+          >
+            <h3 class="font-semibold text-gray-800">{cat.name}</h3>
+            <p class="text-sm text-gray-500 mt-1 line-clamp-2">{cat.seo_text}</p>
+          </a>
+        ))}
+      </div>
+    </section>
+    <!-- Featured products -->
+    <section>
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Productos Destacados</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {featuredProducts.map((p) => (
+          <div class="rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            {p.images[0] ? (
+              <img src={p.images[0]} alt={p.title} class="w-full h-40 object-cover" />
+            ) : (
+              <div class="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Sin imagen</div>
+            )}
+            <div class="p-4">
+              <p class="text-sm font-medium text-gray-800 line-clamp-2">{p.title}</p>
+              <p class="text-base font-bold mt-1" style="color: var(--color-primary)">{CURRENCY} {p.current_price.toFixed(2)}</p>
+              <a
+                href={buildAffiliateUrl(p.asin, MARKET, TAG)}
+                rel="nofollow sponsored"
+                target="_blank"
+                class="mt-3 block text-center text-sm font-medium text-white py-2 rounded-lg transition-opacity hover:opacity-90"
+                style="background-color: var(--color-accent)"
+              >
+                Ver en Amazon
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  </ModernLayout>
+) : site.template_slug === "minimal" ? (
+  <MinimalLayout title={title} site={site} categories={categories}>
+    <!-- Minimal hero: just a headline -->
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">{site.name}</h1>
+    <p class="text-gray-500 mb-10 text-sm border-b border-gray-100 pb-6">
+      Tu guía de freidoras de aire y accesorios.
+    </p>
+    <!-- Category list -->
+    <section class="mb-10">
+      <h2 class="text-xs uppercase tracking-widest text-gray-400 mb-4">Categorías</h2>
+      <ul class="divide-y divide-gray-100">
+        {categories.map((cat) => (
+          <li>
+            <a
+              href={`/categories/${cat.slug}/`}
+              class="flex items-center justify-between py-3 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              <span>{cat.name}</span>
+              <span class="text-gray-400">→</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+    <!-- Featured products: text list -->
+    <section>
+      <h2 class="text-xs uppercase tracking-widest text-gray-400 mb-4">Destacados</h2>
+      <ul class="divide-y divide-gray-100">
+        {featuredProducts.map((p) => (
+          <li class="py-4 flex items-start gap-4">
+            {p.images[0] ? (
+              <img src={p.images[0]} alt={p.title} class="w-16 h-16 object-cover rounded border border-gray-200 shrink-0" />
+            ) : (
+              <div class="w-16 h-16 rounded border border-gray-200 bg-gray-50 shrink-0" />
+            )}
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-800 truncate">{p.title}</p>
+              <p class="text-sm text-gray-500">{CURRENCY} {p.current_price.toFixed(2)}</p>
+              <a
+                href={buildAffiliateUrl(p.asin, MARKET, TAG)}
+                rel="nofollow sponsored"
+                target="_blank"
+                class="text-xs underline text-gray-500 hover:text-gray-700"
+              >
+                Amazon →
+              </a>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </MinimalLayout>
+) : (
+  /* Default: Classic */
+  <ClassicLayout title={title} site={site} categories={categories}>
+    <!-- Classic hero: image banner -->
+    <div class="rounded-xl overflow-hidden mb-10 relative h-56">
+      <img src={heroUrl} alt={site.name} class="w-full h-full object-cover" />
+      <div class="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex items-center px-8">
+        <h1 class="text-3xl font-bold text-white">{site.name}</h1>
+      </div>
+    </div>
+    <!-- Category grid -->
+    <section class="mb-10">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Categorías</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {categories.map((cat) => (
+          <a
+            href={`/categories/${cat.slug}/`}
+            class="block rounded-lg border border-gray-200 bg-white p-5 hover:border-gray-300 hover:shadow-sm transition"
+          >
+            <h3 class="font-semibold text-gray-800">{cat.name}</h3>
+            <p class="text-sm text-gray-500 mt-1 line-clamp-2">{cat.seo_text}</p>
+          </a>
+        ))}
+      </div>
+    </section>
+    <!-- Featured products -->
+    <section>
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Productos Destacados</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {featuredProducts.map((p) => (
+          <div class="rounded-lg border border-gray-200 bg-white overflow-hidden hover:shadow-sm transition">
+            {p.images[0] ? (
+              <img src={p.images[0]} alt={p.title} class="w-full h-36 object-cover" />
+            ) : (
+              <div class="w-full h-36 bg-gray-50 flex items-center justify-center text-gray-300 text-xs">Sin imagen</div>
+            )}
+            <div class="p-3">
+              <p class="text-sm font-medium text-gray-800 line-clamp-2 mb-1">{p.title}</p>
+              <p class="text-sm font-bold" style="color: var(--color-primary)">{CURRENCY} {p.current_price.toFixed(2)}</p>
+              <a
+                href={buildAffiliateUrl(p.asin, MARKET, TAG)}
+                rel="nofollow sponsored"
+                target="_blank"
+                class="mt-2 block text-center text-xs text-white py-1.5 rounded transition-opacity hover:opacity-90"
+                style="background-color: var(--color-accent)"
+              >
+                Ver en Amazon
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  </ClassicLayout>
+)}

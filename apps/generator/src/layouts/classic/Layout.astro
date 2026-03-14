@@ -1,0 +1,68 @@
+---
+/**
+ * Classic Layout — Traditional top nav + sidebar-ready main + footer.
+ * Visual identity: horizontal nav bar, bordered card grid, standard footer with legal links.
+ */
+import BaseLayout from "../BaseLayout.astro";
+import type { SiteInfo, CategoryData } from "../../lib/data";
+
+interface Props {
+  title: string;
+  site: SiteInfo;
+  categories: CategoryData[];
+}
+
+const { title, site, categories } = Astro.props;
+const LEGAL_LINKS = [
+  { href: "/privacidad/", label: "Privacidad" },
+  { href: "/aviso-legal/", label: "Aviso Legal" },
+  { href: "/cookies/", label: "Cookies" },
+  { href: "/contacto/", label: "Contacto" },
+];
+---
+
+<BaseLayout title={title} lang={site.language} customization={site.customization}>
+  <!-- Classic: top nav bar with site name + category links -->
+  <header class="border-b border-gray-200 bg-white shadow-sm">
+    <div class="mx-auto max-w-6xl px-4">
+      <nav class="flex h-14 items-center gap-6">
+        <a href="/" class="text-lg font-bold" style="color: var(--color-primary)">
+          {site.name}
+        </a>
+        <div class="flex gap-4">
+          {categories.map((cat) => (
+            <a
+              href={`/categories/${cat.slug}/`}
+              class="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              {cat.name}
+            </a>
+          ))}
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main content area -->
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    <slot />
+  </main>
+
+  <!-- Classic footer with legal links and copyright -->
+  <footer class="border-t border-gray-200 bg-gray-50 mt-12">
+    <div class="mx-auto max-w-6xl px-4 py-8">
+      <!-- Amazon affiliate disclosure -->
+      <p class="text-xs text-gray-500 mb-4">
+        Como Asociado de Amazon, obtenemos ingresos por las compras adscritas que cumplen los requisitos aplicables.
+      </p>
+      <div class="flex flex-wrap gap-4">
+        {LEGAL_LINKS.map((link) => (
+          <a href={link.href} class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+            {link.label}
+          </a>
+        ))}
+      </div>
+      <p class="text-xs text-gray-400 mt-4">© {new Date().getFullYear()} {site.name}</p>
+    </div>
+  </footer>
+</BaseLayout>

@@ -10,6 +10,7 @@
   "dependencies": {
     "@base-ui/react": "^1.3.0",
     "@hookform/resolvers": "^5.2.2",
+    "@monster/agents": "workspace:*",
     "@monster/db": "workspace:*",
     "@monster/shared": "workspace:*",
     "@supabase/ssr": "^0.9.0",

@@ -1,0 +1,88 @@
+---
+/**
+ * Modern Layout — Full-width hero, sticky header, wide card grid with drop shadows.
+ * Visual identity: bold colored header, hero banner section, card-heavy design with elevation.
+ */
+import BaseLayout from "../BaseLayout.astro";
+import type { SiteInfo, CategoryData } from "../../lib/data";
+
+interface Props {
+  title: string;
+  site: SiteInfo;
+  categories: CategoryData[];
+  heroImageUrl?: string;
+}
+
+const { title, site, categories, heroImageUrl } = Astro.props;
+const LEGAL_LINKS = [
+  { href: "/privacidad/", label: "Privacidad" },
+  { href: "/aviso-legal/", label: "Aviso Legal" },
+  { href: "/cookies/", label: "Cookies" },
+  { href: "/contacto/", label: "Contacto" },
+];
+---
+
+<BaseLayout title={title} lang={site.language} customization={site.customization}>
+  <!-- Modern: sticky colored header -->
+  <header
+    class="sticky top-0 z-50 shadow-md"
+    style="background-color: var(--color-primary);"
+  >
+    <div class="mx-auto max-w-7xl px-6">
+      <nav class="flex h-16 items-center justify-between">
+        <a href="/" class="text-xl font-extrabold text-white tracking-tight">
+          {site.name}
+        </a>
+        <div class="flex gap-6">
+          {categories.map((cat) => (
+            <a
+              href={`/categories/${cat.slug}/`}
+              class="text-sm font-medium text-white/90 hover:text-white transition-colors"
+            >
+              {cat.name}
+            </a>
+          ))}
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Full-width hero band (only if heroImageUrl provided) -->
+  {heroImageUrl && (
+    <div
+      class="w-full h-64 bg-cover bg-center relative"
+      style={`background-image: url('${heroImageUrl}');`}
+    >
+      <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+        <h1 class="text-4xl font-extrabold text-white text-center drop-shadow-lg">{site.name}</h1>
+      </div>
+    </div>
+  )}
+
+  <!-- Wide main content area -->
+  <main class="mx-auto max-w-7xl px-6 py-10">
+    <slot />
+  </main>
+
+  <!-- Modern footer: two-tone, bold columns -->
+  <footer style="background-color: var(--color-primary);" class="mt-12">
+    <div class="mx-auto max-w-7xl px-6 py-10">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div>
+          <p class="text-lg font-bold text-white">{site.name}</p>
+          <p class="text-xs text-white/70 mt-1 max-w-md">
+            Como Asociado de Amazon, obtenemos ingresos por las compras adscritas que cumplen los requisitos aplicables.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-4">
+          {LEGAL_LINKS.map((link) => (
+            <a href={link.href} class="text-sm text-white/80 hover:text-white transition-colors">
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </div>
+      <p class="text-xs text-white/50 mt-6">© {new Date().getFullYear()} {site.name}</p>
+    </div>
+  </footer>
+</BaseLayout>

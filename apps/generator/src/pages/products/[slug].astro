@@ -1,0 +1,175 @@
+---
+import ClassicLayout from "../../layouts/classic/Layout.astro";
+import ModernLayout from "../../layouts/modern/Layout.astro";
+import MinimalLayout from "../../layouts/minimal/Layout.astro";
+import { loadSiteData, buildAffiliateUrl } from "../../lib/data";
+import type { SiteData, SiteInfo, CategoryData, ProductData, ProsCons } from "../../lib/data";
+
+export async function getStaticPaths() {
+  const slug = import.meta.env.SITE_SLUG ?? process.env.SITE_SLUG ?? "default";
+  const data: SiteData = loadSiteData(slug);
+
+  return data.products.map((product) => ({
+    params: { slug: product.slug },
+    props: {
+      site: data.site,
+      categories: data.categories,
+      product,
+    },
+  }));
+}
+
+const { site, categories, product } = Astro.props as {
+  site: SiteInfo;
+  categories: CategoryData[];
+  product: ProductData;
+};
+const title = `${product.title} — ${site.name}`;
+const CURRENCY = site.currency;
+const affiliateUrl = buildAffiliateUrl(product.asin, site.market, site.affiliate_tag);
+const prosCons = product.pros_cons as ProsCons | null;
+---
+
+{site.template_slug === "modern" ? (
+  <ModernLayout title={title} site={site} categories={categories}>
+    <div class="max-w-3xl mx-auto">
+      <!-- Product image -->
+      {product.images[0] ? (
+        <img src={product.images[0]} alt={product.title} class="w-full max-h-96 object-contain rounded-xl border border-gray-200 bg-white shadow-md mb-8" />
+      ) : (
+        <div class="w-full h-64 rounded-xl border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-400 mb-8">Sin imagen</div>
+      )}
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
+      <p class="text-2xl font-extrabold mb-4" style="color: var(--color-primary)">{CURRENCY} {product.current_price.toFixed(2)}</p>
+      {product.is_prime && <span class="inline-block text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded mb-4">Prime</span>}
+      <a
+        href={affiliateUrl}
+        rel="nofollow sponsored"
+        target="_blank"
+        class="block w-full text-center text-white font-semibold py-3 rounded-xl text-lg mb-8 transition-opacity hover:opacity-90"
+        style="background-color: var(--color-accent)"
+      >
+        Comprar en Amazon →
+      </a>
+      {product.detailed_description && (
+        <div class="prose prose-gray max-w-none mb-8">
+          <h2 class="text-xl font-semibold text-gray-800 mb-2">Descripción</h2>
+          <p class="text-gray-600">{product.detailed_description}</p>
+        </div>
+      )}
+      {prosCons && (
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+          <div class="rounded-xl border border-green-200 bg-green-50 p-5">
+            <h3 class="font-semibold text-green-800 mb-3">Ventajas</h3>
+            <ul class="space-y-1">
+              {prosCons.pros.map((pro) => <li class="text-sm text-green-700 flex gap-2"><span>✓</span><span>{pro}</span></li>)}
+            </ul>
+          </div>
+          <div class="rounded-xl border border-red-200 bg-red-50 p-5">
+            <h3 class="font-semibold text-red-800 mb-3">Inconvenientes</h3>
+            <ul class="space-y-1">
+              {prosCons.cons.map((con) => <li class="text-sm text-red-700 flex gap-2"><span>✗</span><span>{con}</span></li>)}
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  </ModernLayout>
+) : site.template_slug === "minimal" ? (
+  <MinimalLayout title={title} site={site} categories={categories}>
+    <nav class="text-xs text-gray-400 mb-6">
+      <a href="/" class="hover:text-gray-600">Inicio</a>
+      {" / "}
+      <span class="text-gray-600">{product.title}</span>
+    </nav>
+    {product.images[0] ? (
+      <img src={product.images[0]} alt={product.title} class="w-full max-h-72 object-contain border border-gray-100 rounded mb-6" />
+    ) : (
+      <div class="w-full h-48 border border-gray-100 bg-gray-50 rounded mb-6" />
+    )}
+    <h1 class="text-2xl font-bold text-gray-900 mb-1">{product.title}</h1>
+    <p class="text-xl font-semibold text-gray-700 mb-4">{CURRENCY} {product.current_price.toFixed(2)}</p>
+    <a
+      href={affiliateUrl}
+      rel="nofollow sponsored"
+      target="_blank"
+      class="inline-block border border-gray-800 text-gray-800 text-sm px-6 py-2 rounded hover:bg-gray-800 hover:text-white transition-colors mb-8"
+    >
+      Ver en Amazon →
+    </a>
+    {product.detailed_description && (
+      <div class="border-t border-gray-100 pt-6 mb-6">
+        <h2 class="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">Descripción</h2>
+        <p class="text-sm text-gray-600 leading-relaxed">{product.detailed_description}</p>
+      </div>
+    )}
+    {prosCons && (
+      <div class="border-t border-gray-100 pt-6 mb-6">
+        <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Pros y Contras</h2>
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <p class="text-xs text-gray-400 uppercase tracking-wide mb-2">Ventajas</p>
+            <ul class="space-y-1">
+              {prosCons.pros.map((pro) => <li class="text-sm text-gray-600">+ {pro}</li>)}
+            </ul>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 uppercase tracking-wide mb-2">Inconvenientes</p>
+            <ul class="space-y-1">
+              {prosCons.cons.map((con) => <li class="text-sm text-gray-600">- {con}</li>)}
+            </ul>
+          </div>
+        </div>
+      </div>
+    )}
+  </MinimalLayout>
+) : (
+  /* Default: Classic */
+  <ClassicLayout title={title} site={site} categories={categories}>
+    <div class="max-w-2xl">
+      <!-- Product image -->
+      {product.images[0] ? (
+        <img src={product.images[0]} alt={product.title} class="w-full max-h-80 object-contain rounded-lg border border-gray-200 bg-white mb-6" />
+      ) : (
+        <div class="w-full h-56 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-300 mb-6">Sin imagen</div>
+      )}
+      <h1 class="text-2xl font-bold text-gray-800 mb-2">{product.title}</h1>
+      <div class="flex items-center gap-3 mb-4">
+        <p class="text-xl font-bold" style="color: var(--color-primary)">{CURRENCY} {product.current_price.toFixed(2)}</p>
+        {product.is_prime && <span class="text-xs font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">Prime</span>}
+        {product.rating && <span class="text-sm text-gray-500">★ {product.rating}</span>}
+      </div>
+      <a
+        href={affiliateUrl}
+        rel="nofollow sponsored"
+        target="_blank"
+        class="inline-block text-white text-sm font-medium px-6 py-2.5 rounded-lg mb-8 transition-opacity hover:opacity-90"
+        style="background-color: var(--color-accent)"
+      >
+        Comprar en Amazon →
+      </a>
+      {product.detailed_description && (
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold text-gray-800 mb-2">Descripción</h2>
+          <p class="text-gray-600 text-sm leading-relaxed">{product.detailed_description}</p>
+        </div>
+      )}
+      {prosCons && (
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div class="rounded-lg border border-green-200 bg-green-50 p-4">
+            <h3 class="font-semibold text-green-800 text-sm mb-2">✓ Ventajas</h3>
+            <ul class="space-y-1">
+              {prosCons.pros.map((pro) => <li class="text-sm text-green-700">{pro}</li>)}
+            </ul>
+          </div>
+          <div class="rounded-lg border border-red-200 bg-red-50 p-4">
+            <h3 class="font-semibold text-red-800 text-sm mb-2">✗ Inconvenientes</h3>
+            <ul class="space-y-1">
+              {prosCons.cons.map((con) => <li class="text-sm text-red-700">{con}</li>)}
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  </ClassicLayout>
+)}
