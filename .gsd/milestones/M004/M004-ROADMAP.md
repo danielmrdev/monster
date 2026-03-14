@@ -56,7 +56,7 @@ This milestone is complete only when all are true:
 - [x] **S01: rsync + Caddy Deployment Service** `risk:high` `depends:[]`
   > After this: a built Astro site can be rsynced to VPS2 over Tailscale SSH and served by Caddy at VPS2's direct IP — provable by opening `http://<vps2-ip>/<slug>` in a browser and seeing the site render
 
-- [ ] **S02: Cloudflare Automation + Deploy Pipeline** `risk:medium` `depends:[S01]`
+- [x] **S02: Cloudflare Automation + Deploy Pipeline** `risk:medium` `depends:[S01]`
   > After this: clicking "Deploy" in admin panel rsyncs the site to VPS2, creates a Cloudflare zone + A record, and tracks the site through `deploying → dns_pending → ssl_pending → live`; `curl -I https://<domain>` shows `CF-RAY` header once NS propagates
 
 - [ ] **S03: Domain Management + Spaceship Integration** `risk:low` `depends:[S02]`

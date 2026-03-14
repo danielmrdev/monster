@@ -384,6 +384,7 @@ export type Database = {
       }
       domains: {
         Row: {
+          cf_nameservers: string[] | null
           cf_zone_id: string | null
           created_at: string
           dns_status: string
@@ -397,6 +398,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cf_nameservers?: string[] | null
           cf_zone_id?: string | null
           created_at?: string
           dns_status?: string
@@ -410,6 +412,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cf_nameservers?: string[] | null
           cf_zone_id?: string | null
           created_at?: string
           dns_status?: string

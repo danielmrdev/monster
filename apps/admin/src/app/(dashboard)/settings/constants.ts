@@ -6,6 +6,8 @@ export const SETTINGS_KEYS = [
   'vps2_host',
   'vps2_user',
   'vps2_sites_root',
+  'cloudflare_api_token',
+  'vps2_ip',
 ] as const
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[number]

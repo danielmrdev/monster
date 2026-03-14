@@ -57,3 +57,39 @@ export function generateQueue(): Queue {
   }
   return _queue;
 }
+
+/**
+ * BullMQ Queue for standalone site deploy jobs (re-deploys without regeneration).
+ * Named 'deploy' — matches the Worker name in DeploySiteJob.
+ */
+export function createDeployQueue(): Queue {
+  const connection = createRedisConnection();
+  return new Queue('deploy', { connection });
+}
+
+let _deployQueue: Queue | null = null;
+
+export function deployQueue(): Queue {
+  if (!_deployQueue) {
+    _deployQueue = createDeployQueue();
+  }
+  return _deployQueue;
+}
+
+/**
+ * BullMQ Queue for SSL polling jobs (delayed re-enqueues, short-lived workers).
+ * Named 'ssl-poller' — matches the Worker name in SslPollerJob.
+ */
+export function createSslPollerQueue(): Queue {
+  const connection = createRedisConnection();
+  return new Queue('ssl-poller', { connection });
+}
+
+let _sslPollerQueue: Queue | null = null;
+
+export function sslPollerQueue(): Queue {
+  if (!_sslPollerQueue) {
+    _sslPollerQueue = createSslPollerQueue();
+  }
+  return _sslPollerQueue;
+}

@@ -12,6 +12,7 @@ import { processImages } from '../pipeline/images.js';
 import { ContentGenerator } from '../content-generator.js';
 import { scorePage } from '@monster/seo-scorer';
 import type { PageType } from '@monster/seo-scorer';
+import { runDeployPhase } from './deploy-site.js';
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -609,7 +610,13 @@ export class GenerateSiteJob {
           }
         }
 
-        // ── 7. Mark ai_jobs 'completed' ───────────────────────────────────
+        // ── 7. Deploy phase ───────────────────────────────────────────────
+        // Runs AFTER the Astro build try/finally — cwd is restored to monorepo root.
+        // If site.domain is null, runDeployPhase logs a warning and skips gracefully.
+        console.log(`[GenerateSiteJob] deploy phase: starting for site ${siteId}`);
+        await runDeployPhase(siteId, site, job.id, supabase);
+
+        // ── 8. Mark ai_jobs 'completed' ───────────────────────────────────
         await supabase
           .from('ai_jobs')
           .update({

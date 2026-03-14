@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { SiteCustomization } from '@monster/shared'
-import { enqueueSiteGeneration } from './actions'
+import { enqueueSiteGeneration, enqueueSiteDeploy, getDeploymentCard } from './actions'
 import JobStatus from './JobStatus'
+import DeployStatus from './DeployStatus'
 import {
   Table,
   TableBody,
@@ -48,12 +49,16 @@ export default async function SiteDetailPage({ params }: PageProps) {
     notFound()
   }
 
-  const { data: seoScores } = await supabase
-    .from('seo_scores')
-    .select('page_path, page_type, overall_score, grade, content_quality_score, meta_elements_score, structure_score, links_score, media_score, schema_score, technical_score, social_score')
-    .eq('site_id', id)
-    .order('page_path', { ascending: true })
+  const [seoScoresResult, deployCard] = await Promise.all([
+    supabase
+      .from('seo_scores')
+      .select('page_path, page_type, overall_score, grade, content_quality_score, meta_elements_score, structure_score, links_score, media_score, schema_score, technical_score, social_score')
+      .eq('site_id', id)
+      .order('page_path', { ascending: true }),
+    getDeploymentCard(id),
+  ])
 
+  const seoScores = seoScoresResult.data
   const customization = site.customization as SiteCustomization | null
 
   return (
@@ -92,6 +97,28 @@ export default async function SiteDetailPage({ params }: PageProps) {
               Generate Site
             </button>
           </form>
+          {site.domain ? (
+            <form action={async () => {
+              'use server'
+              await enqueueSiteDeploy(site.id)
+            }}>
+              <button
+                type="submit"
+                className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+              >
+                Deploy
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              disabled
+              title="Set a domain first"
+              className="inline-flex items-center rounded-md bg-blue-300 px-4 py-2 text-sm font-medium text-white cursor-not-allowed opacity-60"
+            >
+              Deploy
+            </button>
+          )}
           <Link
             href={`/sites/${site.id}/edit`}
             className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
@@ -237,6 +264,91 @@ export default async function SiteDetailPage({ params }: PageProps) {
           Site Generation
         </h2>
         <JobStatus siteId={site.id} />
+      </div>
+
+      {/* Deployment status */}
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          Deployment
+        </h2>
+
+        {/* Site pipeline status badge */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs font-medium text-gray-500">Pipeline status:</span>
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            deployCard.siteStatus === 'live'
+              ? 'bg-green-100 text-green-800'
+              : deployCard.siteStatus === 'error'
+                ? 'bg-red-100 text-red-800'
+                : deployCard.siteStatus === 'deploying'
+                  ? 'bg-blue-100 text-blue-700'
+                  : deployCard.siteStatus === 'dns_pending' || deployCard.siteStatus === 'ssl_pending'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : deployCard.siteStatus === 'paused'
+                      ? 'bg-gray-100 text-gray-600'
+                      : 'bg-gray-100 text-gray-800'
+          }`}>
+            {deployCard.siteStatus ?? 'draft'}
+          </span>
+        </div>
+
+        {/* Latest deployment row */}
+        {deployCard.latestDeployment ? (
+          <div className="mb-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700">Last deployment:</span>
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                deployCard.latestDeployment.status === 'succeeded'
+                  ? 'bg-green-100 text-green-800'
+                  : deployCard.latestDeployment.status === 'failed'
+                    ? 'bg-red-100 text-red-800'
+                    : deployCard.latestDeployment.status === 'running'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {deployCard.latestDeployment.status}
+              </span>
+            </div>
+            {deployCard.latestDeployment.deployed_at && (
+              <div className="text-gray-500">
+                <span className="font-medium">Deployed:</span>{' '}
+                {new Date(deployCard.latestDeployment.deployed_at).toLocaleString()}
+              </div>
+            )}
+            {deployCard.latestDeployment.duration_ms !== null && deployCard.latestDeployment.duration_ms !== undefined && (
+              <div className="text-gray-500">
+                <span className="font-medium">Duration:</span>{' '}
+                {Math.round(deployCard.latestDeployment.duration_ms / 1000)}s
+              </div>
+            )}
+            {deployCard.latestDeployment.error && (
+              <div className="text-red-600 text-xs font-mono break-all">
+                {deployCard.latestDeployment.error}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 mb-3">No deployments yet.</p>
+        )}
+
+        {/* Cloudflare nameservers — shown when domains row has cf_nameservers populated */}
+        {deployCard.domain?.cf_nameservers && deployCard.domain.cf_nameservers.length > 0 && (
+          <div className="mb-3">
+            <p className="text-xs font-medium text-gray-500 mb-1">
+              Point your domain to these nameservers:
+            </p>
+            <ul className="space-y-0.5">
+              {deployCard.domain.cf_nameservers.map((ns) => (
+                <li key={ns} className="font-mono text-xs text-gray-700 bg-gray-50 rounded px-2 py-1 border border-gray-200">
+                  {ns}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Live deploy job progress — polls ai_jobs for job_type='deploy_site' */}
+        <DeployStatus siteId={site.id} />
       </div>
 
       {/* SEO Scores */}

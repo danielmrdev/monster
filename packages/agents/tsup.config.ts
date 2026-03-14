@@ -10,7 +10,7 @@ export default defineConfig([
     clean: true,
     splitting: false,
     noExternal: [/@monster\/.*/],
-    external: ['astro'],
+    external: ['astro', 'node-ssh', 'cloudflare'],
   },
   // worker.ts — standalone Node entrypoint, no DTS needed
   {
@@ -19,6 +19,6 @@ export default defineConfig([
     dts: false,
     splitting: false,
     noExternal: [/@monster\/.*/],
-    external: ['astro'],
+    external: ['astro', 'node-ssh', 'cloudflare'],
   },
 ]);

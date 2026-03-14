@@ -191,6 +191,51 @@ export function SettingsForm({ maskedDisplay }: SettingsFormProps) {
         </CardContent>
       </Card>
 
+      {/* Cloudflare */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Cloudflare</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Used to create Cloudflare zones and A records automatically during deployment.
+            Requires a Cloudflare API token with Zone:Edit permissions.
+          </p>
+
+          {/* Cloudflare API Token */}
+          <div className="space-y-1.5">
+            <Label htmlFor="cloudflare_api_token">Cloudflare API Token</Label>
+            <Input
+              id="cloudflare_api_token"
+              name="cloudflare_api_token"
+              type="password"
+              autoComplete="off"
+              placeholder="Enter new token to update"
+              defaultValue=""
+              aria-invalid={!!errors?.cloudflare_api_token}
+            />
+            <MaskedIndicator last4={maskedDisplay['cloudflare_api_token']} />
+            <FieldError messages={errors?.cloudflare_api_token} />
+          </div>
+
+          {/* VPS2 Public IP */}
+          <div className="space-y-1.5">
+            <Label htmlFor="vps2_ip">VPS2 Public IP</Label>
+            <Input
+              id="vps2_ip"
+              name="vps2_ip"
+              type="text"
+              autoComplete="off"
+              placeholder="e.g. 1.2.3.4"
+              defaultValue=""
+              aria-invalid={!!errors?.vps2_ip}
+            />
+            <MaskedIndicator last4={maskedDisplay['vps2_ip']} />
+            <FieldError messages={errors?.vps2_ip} />
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={isPending}>
           {isPending ? 'Saving…' : 'Save Settings'}

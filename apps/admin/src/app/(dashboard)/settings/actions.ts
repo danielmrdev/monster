@@ -13,6 +13,8 @@ const SaveSettingsSchema = z.object({
   vps2_host: z.string().optional(),
   vps2_user: z.string().optional(),
   vps2_sites_root: z.string().optional(),
+  cloudflare_api_token: z.string().optional(),
+  vps2_ip: z.string().optional(),
 })
 
 export type SaveSettingsErrors = {
@@ -23,6 +25,8 @@ export type SaveSettingsErrors = {
   vps2_host?: string[]
   vps2_user?: string[]
   vps2_sites_root?: string[]
+  cloudflare_api_token?: string[]
+  vps2_ip?: string[]
   _form?: string[]
 }
 
