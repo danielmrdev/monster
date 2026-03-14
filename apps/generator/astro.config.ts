@@ -6,6 +6,7 @@ const slug = process.env.SITE_SLUG ?? "default";
 export default defineConfig({
   output: "static",
   outDir: `.generated-sites/${slug}/dist`,
+  publicDir: `.generated-sites/${slug}/public`,
   vite: {
     plugins: [tailwindcss()],
   },

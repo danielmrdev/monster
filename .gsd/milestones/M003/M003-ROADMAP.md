@@ -56,7 +56,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Astro Templates + Build Pipeline** `risk:high` `depends:[]`
   > After this: user clicks "Generate Site" in admin panel for a site with fixture data, a BullMQ job runs, Astro builds three template variants (Classic, Modern, Minimal) producing a real `dist/` with homepage, category, product, and legal pages — browsable locally with correct CSS theming, affiliate link structure, and no broken routes.
 
-- [ ] **S02: DataForSEO Product Fetch + Image Pipeline** `risk:high` `depends:[S01]`
+- [x] **S02: DataForSEO Product Fetch + Image Pipeline** `risk:high` `depends:[S01]`
   > After this: generation job fetches real Amazon product data from DataForSEO Merchant API (async task → poll → get), downloads product images, converts to WebP via Sharp, writes categories and products to Supabase, then builds a real site with live product data and local images — job progress visible in admin panel site detail via `ai_jobs` polling.
 
 - [ ] **S03: ContentGenerator** `risk:medium` `depends:[S02]`

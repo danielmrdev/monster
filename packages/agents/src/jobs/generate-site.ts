@@ -1,10 +1,13 @@
 import { Worker } from 'bullmq';
 import { createServiceClient } from '@monster/db';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRedisOptions } from '../queue.js';
 import { Redis } from 'ioredis';
+import { DataForSEOClient } from '../clients/dataforseo.js';
+import type { DataForSEOProduct } from '../clients/dataforseo.js';
+import { processImages } from '../pipeline/images.js';
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -19,136 +22,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const GENERATOR_ROOT = resolve(__dirname, '../../../apps/generator');
 
 // ---------------------------------------------------------------------------
-// Fixture data assembler (S01 stub — no DataForSEO yet)
+// Slug helper
 // ---------------------------------------------------------------------------
-
-interface SiteRow {
-  id: string;
-  name: string;
-  domain: string | null;
-  market: string | null;
-  language: string | null;
-  currency: string | null;
-  affiliate_tag: string | null;
-  template_slug: string;
-  customization: Record<string, unknown> | null;
-  niche: string | null;
-  company_name: string | null;
-  contact_email: string | null;
-  focus_keyword: string | null;
-}
-
-/**
- * Build a minimal fixture SiteData JSON from the sites row.
- * S01 stub: 2 placeholder categories + 4 placeholder products.
- * Real product fetch (DataForSEO) is S02's job.
- */
-function buildFixtureSiteData(site: SiteRow) {
-  const niche = site.niche ?? 'General';
-  const slug1 = slugify(`${niche} Category 1`);
-  const slug2 = slugify(`${niche} Category 2`);
-
-  const categories = [
-    {
-      id: 'cat-001',
-      name: `${niche} - Category 1`,
-      slug: slug1,
-      seo_text: `Explore our curated selection of the best ${niche} products. Expert reviews, price comparisons, and honest recommendations to help you make the right choice.`,
-      category_image: null,
-      keywords: [niche.toLowerCase(), `best ${niche.toLowerCase()}`, `${niche.toLowerCase()} reviews`],
-    },
-    {
-      id: 'cat-002',
-      name: `${niche} - Category 2`,
-      slug: slug2,
-      seo_text: `Discover top-rated ${niche} products with detailed comparisons and buying guides. Updated regularly with the latest deals and recommendations.`,
-      category_image: null,
-      keywords: [`${niche.toLowerCase()} guide`, `${niche.toLowerCase()} comparison`, `buy ${niche.toLowerCase()}`],
-    },
-  ];
-
-  const products = [
-    {
-      id: 'prod-001',
-      asin: 'B000000001',
-      title: `${niche} Product - Model A`,
-      slug: `${slugify(niche)}-product-model-a`,
-      current_price: 49.99,
-      images: [],
-      rating: 4.5,
-      is_prime: true,
-      detailed_description: null,
-      pros_cons: null,
-      category_slug: slug1,
-    },
-    {
-      id: 'prod-002',
-      asin: 'B000000002',
-      title: `${niche} Product - Model B`,
-      slug: `${slugify(niche)}-product-model-b`,
-      current_price: 79.99,
-      images: [],
-      rating: 4.3,
-      is_prime: true,
-      detailed_description: null,
-      pros_cons: { pros: ['Quality build', 'Good value'], cons: ['Limited availability'] },
-      category_slug: slug1,
-    },
-    {
-      id: 'prod-003',
-      asin: 'B000000003',
-      title: `${niche} Premium - Model C`,
-      slug: `${slugify(niche)}-premium-model-c`,
-      current_price: 129.99,
-      images: [],
-      rating: 4.7,
-      is_prime: false,
-      detailed_description: null,
-      pros_cons: null,
-      category_slug: slug2,
-    },
-    {
-      id: 'prod-004',
-      asin: 'B000000004',
-      title: `${niche} Budget - Model D`,
-      slug: `${slugify(niche)}-budget-model-d`,
-      current_price: 29.99,
-      images: [],
-      rating: 4.1,
-      is_prime: true,
-      detailed_description: null,
-      pros_cons: null,
-      category_slug: slug2,
-    },
-  ];
-
-  const customization = site.customization as {
-    primaryColor?: string;
-    accentColor?: string;
-    fontFamily?: string;
-  } | null;
-
-  return {
-    site: {
-      name: site.name,
-      domain: site.domain ?? `${slugify(site.name)}.example.com`,
-      market: (site.market ?? 'US') as string,
-      language: (site.language ?? 'en') as string,
-      currency: site.currency ?? 'USD',
-      affiliate_tag: site.affiliate_tag ?? 'default-20',
-      template_slug: site.template_slug as string,
-      customization: {
-        primaryColor: customization?.primaryColor ?? '#4f46e5',
-        accentColor: customization?.accentColor ?? '#7c3aed',
-        fontFamily: customization?.fontFamily ?? 'sans-serif',
-      },
-      company_name: site.company_name ?? site.name,
-      contact_email: site.contact_email ?? `contact@${site.domain ?? 'example.com'}`,
-    },
-    categories,
-    products,
-  };
-}
 
 function slugify(text: string): string {
   return text
@@ -195,7 +70,6 @@ export class GenerateSiteJob {
         console.log(`[GenerateSiteJob] Site: "${site.name}", slug: "${slug}"`);
 
         // ── 2. Insert or update ai_jobs row to 'running' ─────────────────
-        // Try updating an existing row with this bull_job_id first; if none, insert new.
         const { data: existingJob } = await supabase
           .from('ai_jobs')
           .select('id')
@@ -208,7 +82,7 @@ export class GenerateSiteJob {
             .update({
               status: 'running',
               started_at: new Date().toISOString(),
-              payload: { phase: 'build', slug },
+              payload: { phase: 'fetch_products', slug },
             })
             .eq('id', existingJob.id);
         } else {
@@ -220,7 +94,7 @@ export class GenerateSiteJob {
               site_id: siteId,
               status: 'running',
               started_at: new Date().toISOString(),
-              payload: { phase: 'build', slug },
+              payload: { phase: 'fetch_products', slug },
             });
           if (insertErr) {
             console.error(`[GenerateSiteJob] Failed to insert ai_jobs: ${insertErr.message}`);
@@ -228,25 +102,321 @@ export class GenerateSiteJob {
           }
         }
 
-        // ── 3. Assemble fixture SiteData ──────────────────────────────────
-        console.log(`[GenerateSiteJob] Assembling fixture site data for "${slug}"`);
-        const siteData = buildFixtureSiteData(site as SiteRow);
+        // ── 3. fetch_products phase ───────────────────────────────────────
+        const niche = (site.niche ?? site.name) as string;
+        const market = (site.market ?? 'ES') as string;
+
+        await supabase
+          .from('ai_jobs')
+          .update({ payload: { phase: 'fetch_products', done: 0, total: 2 } })
+          .eq('bull_job_id', job.id ?? '');
+
+        console.log(`[GenerateSiteJob] fetch_products: niche="${niche}", market="${market}"`);
+
+        const client = new DataForSEOClient();
+
+        // Primary keyword fetch — required, throws on failure
+        const keyword1 = niche;
+        const products1 = await client.searchProducts(keyword1, market);
+        console.log(`[GenerateSiteJob] fetch_products: fetched ${products1.length} products for "${keyword1}"`);
+
+        // Secondary keyword fetch — non-fatal; job continues with one category if it fails
+        const keyword2 = `accesorios ${niche}`;
+        let products2: DataForSEOProduct[] = [];
+        try {
+          products2 = await client.searchProducts(keyword2, market);
+          console.log(`[GenerateSiteJob] fetch_products: fetched ${products2.length} products for "${keyword2}"`);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.log(`[GenerateSiteJob] fetch_products: secondary keyword failed (non-fatal) — ${msg}`);
+        }
+
+        await supabase
+          .from('ai_jobs')
+          .update({ payload: { phase: 'fetch_products', done: 2, total: 2 } })
+          .eq('bull_job_id', job.id ?? '');
+
+        // De-dupe across both lists by ASIN
+        const seenAsins = new Set<string>();
+        const cat1Products: DataForSEOProduct[] = [];
+        for (const p of products1) {
+          if (!seenAsins.has(p.asin)) {
+            seenAsins.add(p.asin);
+            cat1Products.push(p);
+          }
+        }
+        const cat2Products: DataForSEOProduct[] = [];
+        for (const p of products2) {
+          if (!seenAsins.has(p.asin)) {
+            seenAsins.add(p.asin);
+            cat2Products.push(p);
+          }
+        }
+
+        // Top 15 per category
+        const cat1 = cat1Products.slice(0, 15);
+        const cat2 = cat2Products.slice(0, 15);
+        const allProducts = [...cat1, ...cat2];
+
+        console.log(`[GenerateSiteJob] fetch_products: ${cat1.length} cat1 products, ${cat2.length} cat2 products`);
+
+        // ── 4. Upsert categories + products to Supabase ───────────────────
+        const categories: Array<{ id: string; name: string; slug: string; keyword: string; products: DataForSEOProduct[] }> = [];
+
+        const catDefs = [
+          { keyword: keyword1, products: cat1 },
+          ...(cat2.length > 0 ? [{ keyword: keyword2, products: cat2 }] : []),
+        ];
+
+        for (const catDef of catDefs) {
+          const catName = catDef.keyword;
+          const catSlug = slugify(catName);
+
+          const { data: catRow, error: catErr } = await supabase
+            .from('tsa_categories')
+            .upsert(
+              {
+                site_id: siteId,
+                name: catName,
+                slug: catSlug,
+                seo_text: '',
+                keywords: [catDef.keyword],
+                category_image: null,
+              },
+              { onConflict: 'site_id,slug', ignoreDuplicates: false }
+            )
+            .select('id')
+            .single();
+
+          if (catErr || !catRow) {
+            throw new Error(`Failed to upsert category "${catName}": ${catErr?.message ?? 'null row'}`);
+          }
+
+          categories.push({
+            id: catRow.id,
+            name: catName,
+            slug: catSlug,
+            keyword: catDef.keyword,
+            products: catDef.products,
+          });
+        }
+
+        // Upsert products — images: [] initially; imageUrl stored in local map only
+        const productIdMap = new Map<string, string>(); // asin → db product id
+
+        for (const p of allProducts) {
+          const { data: prodRow, error: prodErr } = await supabase
+            .from('tsa_products')
+            .upsert(
+              {
+                site_id: siteId,
+                asin: p.asin,
+                title: p.title,
+                slug: slugify(p.title || p.asin),
+                current_price: p.price ?? 0,
+                images: [] as string[],
+                rating: p.rating,
+                review_count: p.reviewCount,
+                is_prime: p.isPrime,
+                availability: 'available',
+                last_checked_at: new Date().toISOString(),
+              },
+              { onConflict: 'site_id,asin', ignoreDuplicates: false }
+            )
+            .select('id')
+            .single();
+
+          if (prodErr || !prodRow) {
+            console.log(`[GenerateSiteJob] product upsert warning for ASIN ${p.asin}: ${prodErr?.message ?? 'null row'}`);
+            continue;
+          }
+
+          productIdMap.set(p.asin, prodRow.id);
+        }
+
+        // Upsert category_products join rows
+        for (const cat of categories) {
+          for (let i = 0; i < cat.products.length; i++) {
+            const p = cat.products[i];
+            const productId = productIdMap.get(p.asin);
+            if (!productId) continue;
+
+            const { error: joinErr } = await supabase
+              .from('category_products')
+              .upsert(
+                { category_id: cat.id, product_id: productId, position: i },
+                { onConflict: 'category_id,product_id', ignoreDuplicates: true }
+              );
+
+            if (joinErr) {
+              console.log(`[GenerateSiteJob] category_products upsert warning: ${joinErr.message}`);
+            }
+          }
+        }
+
+        // ── 5. process_images phase ───────────────────────────────────────
+        const publicDir = join(GENERATOR_ROOT, '.generated-sites', slug, 'public');
+        mkdirSync(publicDir, { recursive: true });
+
+        await supabase
+          .from('ai_jobs')
+          .update({ payload: { phase: 'process_images', done: 0, total: allProducts.length } })
+          .eq('bull_job_id', job.id ?? '');
+
+        console.log(`[GenerateSiteJob] process_images: processing ${allProducts.length} product images`);
+
+        const imageMap = await processImages(allProducts, publicDir);
+
+        // Update tsa_products with local WebP paths
+        for (const [asin, localPaths] of imageMap.entries()) {
+          if (localPaths.length === 0) continue;
+
+          const { error: imgErr } = await supabase
+            .from('tsa_products')
+            .update({ images: localPaths })
+            .eq('site_id', siteId)
+            .eq('asin', asin);
+
+          if (imgErr) {
+            console.log(`[GenerateSiteJob] process_images: image update warning for ASIN ${asin}: ${imgErr.message}`);
+          }
+        }
+
+        // Set category_image on each category (first product's first image)
+        for (const cat of categories) {
+          let categoryImage: string | null = null;
+          for (const p of cat.products) {
+            const paths = imageMap.get(p.asin);
+            if (paths && paths.length > 0) {
+              categoryImage = paths[0];
+              break;
+            }
+          }
+
+          if (categoryImage) {
+            const { error: catImgErr } = await supabase
+              .from('tsa_categories')
+              .update({ category_image: categoryImage })
+              .eq('id', cat.id);
+
+            if (catImgErr) {
+              console.log(`[GenerateSiteJob] process_images: category_image update warning for "${cat.name}": ${catImgErr.message}`);
+            }
+          }
+        }
+
+        const imagesDownloaded = [...imageMap.values()].filter((p) => p.length > 0).length;
+        console.log(`[GenerateSiteJob] process_images: ${imagesDownloaded}/${allProducts.length} images downloaded`);
+
+        await supabase
+          .from('ai_jobs')
+          .update({ payload: { phase: 'process_images', done: allProducts.length, total: allProducts.length } })
+          .eq('bull_job_id', job.id ?? '');
+
+        // ── 6. Assemble SiteData from DB (post-upsert) ────────────────────
+        // Fetch fresh rows so we use what's actually in Supabase
+        const { data: dbCategories, error: catFetchErr } = await supabase
+          .from('tsa_categories')
+          .select('*')
+          .eq('site_id', siteId);
+
+        if (catFetchErr || !dbCategories) {
+          throw new Error(`Failed to fetch categories for site ${siteId}: ${catFetchErr?.message ?? 'null'}`);
+        }
+
+        const { data: dbProducts, error: prodFetchErr } = await supabase
+          .from('tsa_products')
+          .select('*')
+          .eq('site_id', siteId);
+
+        if (prodFetchErr || !dbProducts) {
+          throw new Error(`Failed to fetch products for site ${siteId}: ${prodFetchErr?.message ?? 'null'}`);
+        }
+
+        // Build a map of category_id → first product ASIN for category_slug assignment
+        const { data: catProducts } = await supabase
+          .from('category_products')
+          .select('category_id, product_id, position')
+          .in('category_id', dbCategories.map((c) => c.id))
+          .order('position');
+
+        // Map product_id → category slug (first category wins)
+        const productCategorySlug = new Map<string, string>();
+        for (const cp of catProducts ?? []) {
+          if (!productCategorySlug.has(cp.product_id)) {
+            const cat = dbCategories.find((c) => c.id === cp.category_id);
+            if (cat) {
+              productCategorySlug.set(cp.product_id, cat.slug);
+            }
+          }
+        }
+
+        const customization = site.customization as {
+          primaryColor?: string;
+          accentColor?: string;
+          fontFamily?: string;
+        } | null;
+
+        const siteData = {
+          site: {
+            name: site.name as string,
+            domain: (site.domain ?? `${slugify(site.name as string)}.example.com`) as string,
+            market: (site.market ?? 'US') as string,
+            language: (site.language ?? 'en') as string,
+            currency: (site.currency ?? 'USD') as string,
+            affiliate_tag: (site.affiliate_tag ?? 'default-20') as string,
+            template_slug: site.template_slug as string,
+            customization: {
+              primaryColor: customization?.primaryColor ?? '#4f46e5',
+              accentColor: customization?.accentColor ?? '#7c3aed',
+              fontFamily: customization?.fontFamily ?? 'sans-serif',
+            },
+            company_name: (site.company_name ?? site.name) as string,
+            contact_email: (site.contact_email ?? `contact@${site.domain ?? 'example.com'}`) as string,
+          },
+          categories: dbCategories.map((cat) => ({
+            id: cat.id,
+            name: cat.name,
+            slug: cat.slug,
+            seo_text: cat.seo_text ?? '',
+            category_image: cat.category_image ?? null,
+            keywords: (cat.keywords as string[]) ?? [],
+          })),
+          products: dbProducts
+            .filter((p) => productCategorySlug.has(p.id))
+            .map((p) => ({
+              id: p.id,
+              asin: p.asin,
+              title: p.title,
+              slug: p.slug,
+              current_price: p.current_price ?? 0,
+              images: (p.images as string[]) ?? [],
+              rating: p.rating ?? 0,
+              is_prime: p.is_prime ?? false,
+              detailed_description: p.detailed_description ?? null,
+              pros_cons: (p.pros_cons as { pros: string[]; cons: string[] } | null) ?? null,
+              category_slug: productCategorySlug.get(p.id) ?? '',
+            })),
+        };
 
         // ── 4. Write site.json to apps/generator/src/data/<slug>/ ─────────
         const dataDir = join(GENERATOR_ROOT, 'src', 'data', slug);
         mkdirSync(dataDir, { recursive: true });
         writeFileSync(join(dataDir, 'site.json'), JSON.stringify(siteData, null, 2), 'utf-8');
-        console.log(`[GenerateSiteJob] Wrote site.json to ${dataDir}`);
+        console.log(`[GenerateSiteJob] Wrote site.json to ${dataDir} (${siteData.categories.length} categories, ${siteData.products.length} products)`);
 
         // ── 5. Run Astro build programmatically ───────────────────────────
-        console.log(`[GenerateSiteJob] Running Astro build for slug "${slug}"`);
+        await supabase
+          .from('ai_jobs')
+          .update({ payload: { phase: 'build', done: 0, total: 1 } })
+          .eq('bull_job_id', job.id ?? '');
+
+        console.log(`[GenerateSiteJob] build: starting Astro build for slug "${slug}"`);
         process.env.SITE_SLUG = slug;
 
-        // process.chdir() so loadSiteData's process.cwd() resolves correctly inside the build
         const prevCwd = process.cwd();
         process.chdir(GENERATOR_ROOT);
         try {
-          // Dynamic import avoids top-level resolution; Astro reads SITE_SLUG at config load
           const { build } = await import('astro');
           await build({ root: GENERATOR_ROOT });
         } finally {
