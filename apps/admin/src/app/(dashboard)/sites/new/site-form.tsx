@@ -77,7 +77,7 @@ function NativeSelect({
   )
 }
 
-export function SiteForm() {
+export function SiteForm({ defaultValues }: { defaultValues?: { niche?: string; market?: string } } = {}) {
   const [state, formAction, isPending] = useActionState<CreateSiteState, FormData>(
     createSite,
     null
@@ -130,6 +130,7 @@ export function SiteForm() {
               name="niche"
               placeholder="Describe the site niche (e.g. camping gear for families)"
               rows={2}
+              defaultValue={defaultValues?.niche ?? ''}
               aria-invalid={!!errors?.niche}
             />
             <FieldError messages={errors?.niche} />
@@ -139,7 +140,7 @@ export function SiteForm() {
             {/* Market */}
             <div className="space-y-1.5">
               <Label htmlFor="market">Amazon Market</Label>
-              <NativeSelect name="market" defaultValue="">
+              <NativeSelect name="market" defaultValue={defaultValues?.market ?? ''}>
                 <option value="">— Select market —</option>
                 {AMAZON_MARKETS.map(({ value, label }) => (
                   <option key={value} value={value}>

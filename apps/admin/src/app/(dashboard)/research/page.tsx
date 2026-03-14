@@ -2,6 +2,9 @@ import Link from 'next/link';
 import { getResearchSessions, getResearchSessionStatus } from './actions';
 import ResearchForm from './ResearchForm';
 import ResearchSessionStatus from './ResearchSessionStatus';
+import ResearchReportViewer from './ResearchReportViewer';
+import { ResearchReportSchema } from '@monster/shared';
+import { SpaceshipClient } from '@monster/domains';
 
 interface ResearchPageProps {
   searchParams: Promise<{ session?: string }>;
@@ -36,6 +39,15 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
     activeSessionId ? getResearchSessionStatus(activeSessionId) : Promise.resolve(null),
   ]);
 
+  // ── Completed session: resolve domains + parse report ─────────────────────
+  // Only runs when the selected session is completed.
+  // Domain checks use Promise.allSettled — a single Spaceship error never crashes the page.
+  let resolvedReport: Awaited<ReturnType<typeof renderCompletedSession>> | null = null;
+
+  if (activeSession?.status === 'completed') {
+    resolvedReport = await renderCompletedSession(activeSession.report);
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -46,7 +58,7 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        {/* Left: form + active session status */}
+        {/* Left: form + active session status / completed report */}
         <div className="space-y-6">
           {/* Submission form */}
           <div className="rounded-lg border bg-card p-6 shadow-sm">
@@ -54,19 +66,54 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
             <ResearchForm />
           </div>
 
-          {/* Active session status */}
+          {/* Active session: completed → full report; running/pending/failed → polling UI */}
           {activeSessionId && (
             <div className="rounded-lg border bg-card p-6 shadow-sm">
-              <h2 className="text-base font-semibold mb-4">Session Status</h2>
-              {activeSession ? (
-                <ResearchSessionStatus
-                  sessionId={activeSessionId}
-                  initialStatus={activeSession.status}
-                />
+              {activeSession?.status === 'completed' && resolvedReport ? (
+                <>
+                  <h2 className="text-base font-semibold mb-4">Research Report</h2>
+                  {resolvedReport.type === 'ok' ? (
+                    <ResearchReportViewer
+                      report={resolvedReport.report}
+                      domains={resolvedReport.domains}
+                    />
+                  ) : (
+                    /* Parse-failure graceful fallback */
+                    <div className="space-y-3">
+                      <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+                        <span className="font-semibold">Report parse error:</span>{' '}
+                        The stored report could not be validated.{' '}
+                        {resolvedReport.zodIssues && (
+                          <span className="font-mono text-xs">
+                            {resolvedReport.zodIssues}
+                          </span>
+                        )}
+                      </div>
+                      <details>
+                        <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900">
+                          Raw report JSON
+                        </summary>
+                        <pre className="mt-2 rounded-md bg-gray-900 text-gray-100 text-xs p-4 overflow-x-auto whitespace-pre-wrap break-all">
+                          {JSON.stringify(resolvedReport.raw, null, 2)}
+                        </pre>
+                      </details>
+                    </div>
+                  )}
+                </>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  Session not found. It may have been deleted.
-                </p>
+                <>
+                  <h2 className="text-base font-semibold mb-4">Session Status</h2>
+                  {activeSession ? (
+                    <ResearchSessionStatus
+                      sessionId={activeSessionId}
+                      initialStatus={activeSession.status}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Session not found. It may have been deleted.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -126,4 +173,52 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
       </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// renderCompletedSession
+//
+// Validates the raw report JSON and resolves domain availability.
+// Isolated as a named function so the main component body stays readable.
+//
+// Returns a discriminated union:
+//   { type: 'ok', report, domains }         — parsed successfully
+//   { type: 'parse_error', raw, zodIssues } — schema validation failed
+//
+// Domain checks: Promise.allSettled ensures a single Spaceship error never
+// causes this function to throw. Failed checks map to available: null.
+// Observability: SpaceshipClient logs "[SpaceshipClient] checkAvailability: domain=..." per call.
+// ---------------------------------------------------------------------------
+type CompletedResult =
+  | { type: 'ok'; report: import('@monster/shared').ResearchReport; domains: { domain: string; available: boolean | null; price?: string }[] }
+  | { type: 'parse_error'; raw: unknown; zodIssues: string | null };
+
+async function renderCompletedSession(rawReport: unknown): Promise<CompletedResult> {
+  const parsed = ResearchReportSchema.safeParse(rawReport);
+
+  if (!parsed.success) {
+    const zodIssues = parsed.error.issues
+      .map((i) => `${i.path.join('.')}: ${i.message}`)
+      .join('; ');
+    return { type: 'parse_error', raw: rawReport, zodIssues: zodIssues || null };
+  }
+
+  const report = parsed.data;
+  const client = new SpaceshipClient();
+
+  // Resolve availability for each suggested domain — errors → available: null
+  const domainResults = await Promise.allSettled(
+    report.domain_suggestions.map((s) => client.checkAvailability(s.domain)),
+  );
+
+  const domains = report.domain_suggestions.map((s, i) => {
+    const result = domainResults[i];
+    if (result.status === 'fulfilled') {
+      return { domain: s.domain, available: result.value.available, price: result.value.price };
+    }
+    // Rejected: Spaceship error — render as "Unknown"
+    return { domain: s.domain, available: null as null };
+  });
+
+  return { type: 'ok', report, domains };
 }

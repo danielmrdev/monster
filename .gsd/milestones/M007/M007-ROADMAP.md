@@ -58,7 +58,7 @@ This milestone is complete only when all are true:
 - [x] **S02: NicheResearcher — Background Agent + DataForSEO Research** `risk:high` `depends:[S01]`
   > After this: user can submit a niche idea from Research Lab, watch per-phase progress updates appear as the agent works (via 5-second Supabase poll), and see a completed structured report in `research_sessions.report` containing real DataForSEO keyword data, SERP competitor signals, and Amazon product examples — job survives browser disconnect
 
-- [ ] **S03: Research Report UI + Domain Suggestions + Create Site CTA** `risk:low` `depends:[S02]`
+- [x] **S03: Research Report UI + Domain Suggestions + Create Site CTA** `risk:low` `depends:[S02]`
   > After this: completed research sessions display a full formatted report in the admin panel with keyword table, competitor list, Amazon products, domain suggestions with live Spaceship availability badges, viability score, and a "Create site from this research" button that navigates to `/sites/new` with the form pre-filled
 
 ## Boundary Map

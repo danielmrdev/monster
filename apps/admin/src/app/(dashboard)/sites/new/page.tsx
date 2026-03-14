@@ -1,7 +1,13 @@
 import Link from 'next/link'
 import { SiteForm } from './site-form'
 
-export default function NewSitePage() {
+interface PageProps {
+  searchParams: Promise<{ niche?: string; market?: string }>
+}
+
+export default async function NewSitePage({ searchParams }: PageProps) {
+  const { niche, market } = await searchParams
+
   return (
     <div className="max-w-2xl">
       <div className="flex items-center gap-3 mb-6">
@@ -14,7 +20,7 @@ export default function NewSitePage() {
         <span className="text-muted-foreground">/</span>
         <h1 className="text-2xl font-bold tracking-tight">New Site</h1>
       </div>
-      <SiteForm />
+      <SiteForm defaultValues={{ niche, market }} />
     </div>
   )
 }
