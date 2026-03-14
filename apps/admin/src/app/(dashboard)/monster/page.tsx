@@ -1,8 +1,51 @@
-export default function MonsterPage() {
+import { Suspense } from 'react';
+import { getConversations, getMessages } from './actions';
+import { ConversationList } from './ConversationList';
+import { ChatWindow } from './ChatWindow';
+
+interface MonsterPageProps {
+  searchParams: Promise<{ c?: string }>;
+}
+
+/**
+ * Monster Chat page — async server component.
+ *
+ * Layout: two-column sidebar + main.
+ * Left: ConversationList (conversation history, server-rendered).
+ * Right: ChatWindow (streaming SSE client component).
+ *
+ * ?c=<id> activates a specific conversation and loads its messages.
+ */
+export default async function MonsterPage({ searchParams }: MonsterPageProps) {
+  const params = await searchParams;
+  const activeId = typeof params.c === 'string' && params.c ? params.c : undefined;
+
+  // Parallel fetch: conversation list + messages (if conversation active)
+  const [conversations, messages] = await Promise.all([
+    getConversations(),
+    activeId ? getMessages(activeId) : Promise.resolve([]),
+  ]);
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Monster Chat</h1>
-      <p className="text-gray-500">Coming soon.</p>
+    <div className="flex h-full -m-8 overflow-hidden">
+      {/* Sidebar */}
+      <ConversationList conversations={conversations} activeId={activeId} />
+
+      {/* Chat area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
+        <Suspense
+          fallback={
+            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+              Loading…
+            </div>
+          }
+        >
+          <ChatWindow
+            initialMessages={messages}
+            conversationId={activeId ?? null}
+          />
+        </Suspense>
+      </div>
     </div>
-  )
+  );
 }

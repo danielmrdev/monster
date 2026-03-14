@@ -207,6 +207,7 @@ export type Database = {
       }
       chat_conversations: {
         Row: {
+          agent_session_id: string | null
           created_at: string
           id: string
           site_id: string | null
@@ -215,6 +216,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          agent_session_id?: string | null
           created_at?: string
           id?: string
           site_id?: string | null
@@ -223,6 +225,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          agent_session_id?: string | null
           created_at?: string
           id?: string
           site_id?: string | null

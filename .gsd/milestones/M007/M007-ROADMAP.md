@@ -52,7 +52,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Monster Chat — Streaming Agent + MCP Portfolio Tools** `risk:high` `depends:[]`
+- [x] **S01: Monster Chat — Streaming Agent + MCP Portfolio Tools** `risk:high` `depends:[]`
   > After this: user can open `/monster`, start or resume a conversation, type a question, and receive a real-time streaming response that references actual portfolio data (site count, site names, statuses) fetched via MCP tools — tokens appear progressively as Claude generates them
 
 - [ ] **S02: NicheResearcher — Background Agent + DataForSEO Research** `risk:high` `depends:[S01]`
