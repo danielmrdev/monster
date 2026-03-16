@@ -6,6 +6,8 @@ import ResearchReportViewer from './ResearchReportViewer';
 import { ResearchReportSchema } from '@monster/shared';
 import { SpaceshipClient } from '@monster/domains';
 
+export const dynamic = 'force-dynamic'
+
 interface ResearchPageProps {
   searchParams: Promise<{ session?: string }>;
 }
@@ -90,7 +92,7 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
                         )}
                       </div>
                       <details>
-                        <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900">
+                        <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
                           Raw report JSON
                         </summary>
                         <pre className="mt-2 rounded-md bg-gray-900 text-gray-100 text-xs p-4 overflow-x-auto whitespace-pre-wrap break-all">

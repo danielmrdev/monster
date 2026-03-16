@@ -106,24 +106,24 @@ export default function ResearchSessionStatus({ sessionId, initialStatus }: Prop
       {/* Progress log */}
       {progress.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
             Progress log
           </h4>
           <ol className="space-y-1.5">
             {progress.map((entry) => (
               <li
                 key={entry.turn}
-                className="flex items-start gap-3 text-sm text-gray-700"
+                className="flex items-start gap-3 text-sm text-foreground/80"
               >
-                <span className="mt-0.5 flex-shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-gray-100 text-xs font-mono text-gray-500">
+                <span className="mt-0.5 flex-shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-muted/50 text-xs font-mono text-muted-foreground">
                   {entry.turn}
                 </span>
                 <span className="flex-1">
-                  <span className="text-gray-500 text-xs mr-1.5">{entry.phase}</span>
+                  <span className="text-muted-foreground text-xs mr-1.5">{entry.phase}</span>
                   {entry.summary}
                 </span>
                 {entry.timestamp && (
-                  <span className="flex-shrink-0 text-xs text-gray-400">{fmt(entry.timestamp)}</span>
+                  <span className="flex-shrink-0 text-xs text-muted-foreground/70">{fmt(entry.timestamp)}</span>
                 )}
               </li>
             ))}
@@ -133,13 +133,13 @@ export default function ResearchSessionStatus({ sessionId, initialStatus }: Prop
 
       {/* Pending/running placeholder when no progress yet */}
       {!isTerminal(status) && progress.length === 0 && (
-        <p className="text-sm text-gray-400">Waiting for agent to start…</p>
+        <p className="text-sm text-muted-foreground/70">Waiting for agent to start…</p>
       )}
 
       {/* Raw report JSON — collapsed, S03 will render properly */}
       {status === 'completed' && report != null && (
         <details className="mt-4">
-          <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-900">
+          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
             Raw report JSON
           </summary>
           <pre className="mt-2 rounded-md bg-gray-900 text-gray-100 text-xs p-4 overflow-x-auto whitespace-pre-wrap break-all">

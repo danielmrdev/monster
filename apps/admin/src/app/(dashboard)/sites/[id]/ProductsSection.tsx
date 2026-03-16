@@ -1,0 +1,144 @@
+import Link from 'next/link'
+import Image from 'next/image'
+import { DeleteProductButton } from './products/DeleteProductButton'
+
+interface Product {
+  id: string
+  asin: string
+  title: string | null
+  current_price: number | null
+  rating: number | null
+  review_count: number | null
+  is_prime: boolean
+  source_image_url: string | null
+  images: string[] | null
+}
+
+interface Props {
+  siteId: string
+  products: Product[]
+}
+
+function StarRating({ rating }: { rating: number }) {
+  const stars = Math.round(rating * 2) / 2
+  return (
+    <span className="text-amber-400 text-xs">
+      {'★'.repeat(Math.floor(stars))}
+      {stars % 1 !== 0 ? '½' : ''}
+      {'☆'.repeat(5 - Math.ceil(stars))}
+    </span>
+  )
+}
+
+export function ProductsSection({ siteId, products }: Props) {
+  return (
+    <div id="products" className="rounded-xl border border-border bg-card px-6 py-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Products
+          {products.length > 0 && (
+            <span className="ml-2 font-normal normal-case text-foreground/60">
+              {products.length}
+            </span>
+          )}
+        </h2>
+        <Link
+          href={`/sites/${siteId}/products/new`}
+          className="inline-flex items-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors"
+        >
+          <span className="text-base leading-none">+</span> Add Product
+        </Link>
+      </div>
+
+      {products.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No products yet.{' '}
+          <Link
+            href={`/sites/${siteId}/products/new`}
+            className="text-foreground underline underline-offset-2 hover:no-underline"
+          >
+            Add your first product
+          </Link>{' '}
+          by pasting an ASIN.
+        </p>
+      ) : (
+        <div className="divide-y divide-border -mx-6">
+          {products.map((product) => {
+            const imageUrl =
+              product.source_image_url ??
+              (product.images && product.images.length > 0 ? product.images[0] : null)
+
+            return (
+              <div
+                key={product.id}
+                className="px-6 py-3 flex items-center gap-4 hover:bg-muted/10 transition-colors"
+              >
+                {/* Thumbnail */}
+                <div className="shrink-0 w-12 h-12 rounded-md border border-border bg-muted/30 overflow-hidden flex items-center justify-center">
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt={product.title ?? product.asin}
+                      width={48}
+                      height={48}
+                      className="object-contain w-full h-full"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="text-lg text-muted-foreground/40">📦</span>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-xs text-muted-foreground bg-muted/40 rounded px-1.5 py-0.5 border border-border">
+                      {product.asin}
+                    </span>
+                    {product.is_prime && (
+                      <span className="text-xs text-blue-400 font-semibold">Prime</span>
+                    )}
+                    {product.current_price != null && (
+                      <span className="text-sm font-medium text-foreground">
+                        {product.current_price.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  {product.title && (
+                    <p className="text-sm text-foreground mt-0.5 line-clamp-1">{product.title}</p>
+                  )}
+                  {product.rating != null && (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <StarRating rating={product.rating} />
+                      <span className="text-xs text-muted-foreground">{product.rating}</span>
+                      {product.review_count != null && (
+                        <span className="text-xs text-muted-foreground/60">
+                          ({product.review_count.toLocaleString()} reviews)
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <Link
+                    href={`/sites/${siteId}/products/${product.id}/edit`}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Edit
+                  </Link>
+                  <DeleteProductButton
+                    siteId={siteId}
+                    productId={product.id}
+                    asin={product.asin}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}

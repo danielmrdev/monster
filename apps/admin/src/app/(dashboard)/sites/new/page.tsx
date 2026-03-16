@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { SiteForm } from './site-form'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   searchParams: Promise<{ niche?: string; market?: string }>
 }

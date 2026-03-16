@@ -12,6 +12,8 @@ import { AnalyticsFilters } from './AnalyticsFilters'
 import { AggregationTrigger } from './AggregationTrigger'
 import { createServiceClient } from '@/lib/supabase/service'
 
+export const dynamic = 'force-dynamic'
+
 interface AnalyticsPageProps {
   searchParams: Promise<{ site?: string; range?: string }>
 }

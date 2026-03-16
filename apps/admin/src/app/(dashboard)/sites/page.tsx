@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/table'
 import type { SiteStatus } from '@monster/shared'
 
+export const dynamic = 'force-dynamic'
+
 function statusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (status as SiteStatus) {
     case 'live':

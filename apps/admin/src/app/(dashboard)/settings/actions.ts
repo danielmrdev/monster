@@ -10,8 +10,6 @@ const SaveSettingsSchema = z.object({
   spaceship_api_secret: z.string().optional(),
   spaceship_contact_id: z.string().optional(),
   dataforseo_api_key: z.string().optional(),
-  claude_api_key: z.string().optional(),
-  amazon_affiliate_tag: z.string().optional(),
   vps2_host: z.string().optional(),
   vps2_user: z.string().optional(),
   vps2_sites_root: z.string().optional(),
@@ -24,8 +22,6 @@ export type SaveSettingsErrors = {
   spaceship_api_secret?: string[]
   spaceship_contact_id?: string[]
   dataforseo_api_key?: string[]
-  claude_api_key?: string[]
-  amazon_affiliate_tag?: string[]
   vps2_host?: string[]
   vps2_user?: string[]
   vps2_sites_root?: string[]

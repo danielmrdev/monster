@@ -60,12 +60,12 @@ export function RefreshCard({ siteId, lastRefreshedAt }: RefreshCardProps) {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-foreground/80">
           <span className="font-medium">Last refreshed:</span>{' '}
           {formatRelativeTime(lastRefreshedAt)}
         </p>
         {lastRefreshedAt && (
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-muted-foreground/70 mt-0.5">
             {new Date(lastRefreshedAt).toLocaleString()}
           </p>
         )}

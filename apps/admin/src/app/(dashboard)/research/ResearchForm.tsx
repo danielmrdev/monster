@@ -16,7 +16,7 @@ export default function ResearchForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div className="space-y-1.5">
-        <label htmlFor="nicheIdea" className="text-sm font-medium text-gray-700">
+        <label htmlFor="nicheIdea" className="text-sm font-medium text-foreground/80">
           Niche idea
         </label>
         <input
@@ -32,7 +32,7 @@ export default function ResearchForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="market" className="text-sm font-medium text-gray-700">
+        <label htmlFor="market" className="text-sm font-medium text-foreground/80">
           Market
         </label>
         <select

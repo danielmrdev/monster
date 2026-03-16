@@ -3,6 +3,8 @@ import { getConversations, getMessages } from './actions';
 import { ConversationList } from './ConversationList';
 import { ChatWindow } from './ChatWindow';
 
+export const dynamic = 'force-dynamic'
+
 interface MonsterPageProps {
   searchParams: Promise<{ c?: string }>;
 }

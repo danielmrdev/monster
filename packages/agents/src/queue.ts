@@ -3,36 +3,44 @@ import { Redis } from 'ioredis';
 import type { RedisOptions } from 'ioredis';
 
 /**
- * Build the Upstash Redis connection options.
+ * Build Redis connection options from REDIS_URL.
+ * Supports both local (redis://) and TLS (rediss://) URLs.
  * Reads env vars at call time — not at module scope (D021).
- * Upstash requires enableOfflineQueue:false + maxRetriesPerRequest:null.
  */
 export function createRedisOptions(): RedisOptions {
-  const url = process.env.UPSTASH_REDIS_URL;
-  const token = process.env.UPSTASH_REDIS_TOKEN;
+  const url = process.env.REDIS_URL;
 
   if (!url) {
-    throw new Error('Missing required environment variable: UPSTASH_REDIS_URL');
-  }
-  if (!token) {
-    throw new Error('Missing required environment variable: UPSTASH_REDIS_TOKEN');
+    throw new Error('Missing required environment variable: REDIS_URL');
   }
 
-  // Expected format: rediss://:TOKEN@HOST:PORT
   const parsed = new URL(url);
-  return {
+  const isTls = parsed.protocol === 'rediss:';
+
+  const options: RedisOptions = {
     host: parsed.hostname,
-    port: parseInt(parsed.port || '6380', 10),
-    password: token,
-    tls: { rejectUnauthorized: false },
+    port: parseInt(parsed.port || (isTls ? '6380' : '6379'), 10),
+    // BullMQ requirement: never queue commands when disconnected
     enableOfflineQueue: false,
     maxRetriesPerRequest: null,
   };
+
+  if (parsed.password) {
+    options.password = decodeURIComponent(parsed.password);
+  }
+  if (parsed.username && parsed.username !== 'default') {
+    options.username = parsed.username;
+  }
+  if (isTls) {
+    options.tls = { rejectUnauthorized: false };
+  }
+
+  return options;
 }
 
 /**
- * Create a new IORedis connection to Upstash.
- * Each worker should call this independently.
+ * Create a new IORedis connection.
+ * Each worker/queue should call this independently.
  */
 export function createRedisConnection(): Redis {
   return new Redis(createRedisOptions());

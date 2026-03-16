@@ -67,7 +67,7 @@ export default function DomainManagement({ siteId, existingDomain }: DomainManag
             placeholder="example.com"
             defaultValue={checkState?.domain ?? ''}
             required
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="flex-1 rounded-md border border-border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
           <button
             type="submit"
@@ -89,7 +89,7 @@ export default function DomainManagement({ siteId, existingDomain }: DomainManag
                   ✓ Available
                 </span>
                 {checkState.price && (
-                  <span className="text-sm text-gray-600">{checkState.price}</span>
+                  <span className="text-sm text-muted-foreground">{checkState.price}</span>
                 )}
               </div>
             ) : (

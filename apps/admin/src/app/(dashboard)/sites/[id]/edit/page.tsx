@@ -4,6 +4,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import type { SiteCustomization } from '@monster/shared'
 import { EditForm } from './edit-form'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>
 }

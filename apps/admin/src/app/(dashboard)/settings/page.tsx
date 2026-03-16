@@ -2,6 +2,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { SETTINGS_KEYS } from './constants'
 import { SettingsForm } from './settings-form'
 
+export const dynamic = 'force-dynamic'
+
 export default async function SettingsPage() {
   const supabase = createServiceClient()
 

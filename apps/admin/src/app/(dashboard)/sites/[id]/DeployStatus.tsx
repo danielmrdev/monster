@@ -48,12 +48,12 @@ export default function DeployStatus({ siteId }: Props) {
 
   if (!job) {
     return (
-      <p className="text-sm text-gray-400 mt-2">No deploy jobs yet.</p>
+      <p className="text-sm text-muted-foreground/70 mt-2">No deploy jobs yet.</p>
     );
   }
 
   const status = job.status as JobStatus;
-  const badge = BADGE[status] ?? { label: status, className: 'bg-gray-100 text-gray-700' };
+  const badge = BADGE[status] ?? { label: status, className: 'bg-muted/50 text-foreground/80' };
 
   // payload.phase and progress tracking for running jobs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,9 +63,9 @@ export default function DeployStatus({ siteId }: Props) {
   const total = payload?.total as number | undefined;
 
   return (
-    <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm space-y-1">
+    <div className="mt-3 rounded-md border border-border bg-muted/30 px-4 py-3 text-sm space-y-1">
       <div className="flex items-center gap-2">
-        <span className="font-medium text-gray-700">Last deploy:</span>
+        <span className="font-medium text-foreground/80">Last deploy:</span>
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}
         >
@@ -79,10 +79,10 @@ export default function DeployStatus({ siteId }: Props) {
           {done !== undefined && total !== undefined ? ` (${done}/${total})` : ''}
         </div>
       )}
-      <div className="text-gray-500">
+      <div className="text-muted-foreground">
         <span className="font-medium">Started:</span> {fmt(job.started_at)}
       </div>
-      <div className="text-gray-500">
+      <div className="text-muted-foreground">
         <span className="font-medium">Completed:</span> {fmt(job.completed_at)}
       </div>
       {status === 'failed' && job.error && (

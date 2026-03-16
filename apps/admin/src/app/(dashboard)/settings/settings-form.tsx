@@ -121,46 +121,6 @@ export function SettingsForm({ maskedDisplay }: SettingsFormProps) {
             <MaskedIndicator last4={maskedDisplay['dataforseo_api_key']} />
             <FieldError messages={errors?.dataforseo_api_key} />
           </div>
-
-          {/* Claude API Key */}
-          <div className="space-y-1.5">
-            <Label htmlFor="claude_api_key">Claude API Key</Label>
-            <Input
-              id="claude_api_key"
-              name="claude_api_key"
-              type="password"
-              autoComplete="off"
-              placeholder="Enter new key to update"
-              defaultValue=""
-              aria-invalid={!!errors?.claude_api_key}
-            />
-            <MaskedIndicator last4={maskedDisplay['claude_api_key']} />
-            <FieldError messages={errors?.claude_api_key} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Affiliate Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Affiliate Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Amazon Affiliate Tag */}
-          <div className="space-y-1.5">
-            <Label htmlFor="amazon_affiliate_tag">Amazon Affiliate Tag</Label>
-            <Input
-              id="amazon_affiliate_tag"
-              name="amazon_affiliate_tag"
-              type="text"
-              autoComplete="off"
-              placeholder="Enter new tag to update (e.g. yourtag-21)"
-              defaultValue=""
-              aria-invalid={!!errors?.amazon_affiliate_tag}
-            />
-            <MaskedIndicator last4={maskedDisplay['amazon_affiliate_tag']} />
-            <FieldError messages={errors?.amazon_affiliate_tag} />
-          </div>
         </CardContent>
       </Card>
 

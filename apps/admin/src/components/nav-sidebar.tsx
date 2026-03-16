@@ -1,43 +1,77 @@
-import { NavItem } from './nav-item'
-import { signOut } from '@/app/(auth)/login/actions'
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import {
+  LayoutDashboard,
+  Globe,
+  MessageSquare,
+  FlaskConical,
+  BarChart2,
+  DollarSign,
+  Bell,
+  Settings,
+  Zap,
+} from 'lucide-react'
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/sites', label: 'Sites' },
-  { href: '/monster', label: 'Monster Chat' },
-  { href: '/research', label: 'Research Lab' },
-  { href: '/analytics', label: 'Analytics' },
-  { href: '/finances', label: 'Finances' },
-  { href: '/alerts', label: 'Alerts' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/sites',      label: 'Sites',          icon: Globe },
+  { href: '/monster',    label: 'Monster Chat',   icon: MessageSquare },
+  { href: '/research',   label: 'Research Lab',   icon: FlaskConical },
+  { href: '/analytics',  label: 'Analytics',      icon: BarChart2 },
+  { href: '/finances',   label: 'Finances',       icon: DollarSign },
+  { href: '/alerts',     label: 'Alerts',         icon: Bell },
+  { href: '/settings',   label: 'Settings',       icon: Settings },
 ]
 
 export function NavSidebar() {
+  const pathname = usePathname()
+
   return (
-    <aside className="w-60 shrink-0 flex flex-col bg-gray-900 text-gray-100 h-full">
-      {/* Logo / brand */}
-      <div className="px-6 py-5 border-b border-gray-700">
-        <span className="text-lg font-bold tracking-tight text-white">BuilderMonster</span>
+    <aside className="w-[220px] shrink-0 flex flex-col h-full bg-sidebar border-r border-sidebar-border">
+      {/* Brand */}
+      <div className="px-5 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+          <Zap className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
+        </div>
+        <span className="text-[15px] font-semibold tracking-tight text-foreground">
+          BuilderMonster
+        </span>
       </div>
 
-      {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ href, label }) => (
-          <NavItem key={href} href={href} label={label} />
-        ))}
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive =
+            pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={[
+                'flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors duration-150',
+                isActive
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-sidebar-foreground hover:bg-white/5 hover:text-foreground',
+              ].join(' ')}
+            >
+              <Icon
+                className={[
+                  'h-4 w-4 shrink-0',
+                  isActive ? 'text-primary' : 'text-muted-foreground',
+                ].join(' ')}
+                strokeWidth={isActive ? 2 : 1.75}
+              />
+              {label}
+              {isActive && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+              )}
+            </Link>
+          )
+        })}
       </nav>
-
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-gray-700">
-        <form action={signOut}>
-          <button
-            type="submit"
-            className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white text-left"
-          >
-            Log out
-          </button>
-        </form>
-      </div>
     </aside>
   )
 }

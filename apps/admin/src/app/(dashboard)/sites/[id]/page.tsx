@@ -1,13 +1,18 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { SiteCustomization } from '@monster/shared'
-import { enqueueSiteGeneration, enqueueSiteDeploy, getDeploymentCard } from './actions'
+import { enqueueSiteDeploy, getDeploymentCard } from './actions'
 import { RefreshCard } from './RefreshCard'
 import { SiteAlerts } from './SiteAlerts'
 import JobStatus from './JobStatus'
+import { GenerateSiteButton } from './GenerateSiteButton'
 import DeployStatus from './DeployStatus'
 import DomainManagement from './DomainManagement'
+import { CategoriesSection } from './CategoriesSection'
+import { ProductsSection } from './ProductsSection'
 import {
   Table,
   TableBody,
@@ -18,11 +23,13 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 
+export const dynamic = 'force-dynamic'
+
 function scoreColor(score: number | null): string {
-  if (score === null) return 'text-gray-400'
-  if (score >= 70) return 'text-green-700'
-  if (score >= 50) return 'text-amber-600'
-  return 'text-red-600'
+  if (score === null) return 'text-muted-foreground'
+  if (score >= 70) return 'text-green-400'
+  if (score >= 50) return 'text-amber-400'
+  return 'text-red-400'
 }
 
 function gradeBadgeVariant(grade: string | null): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -48,11 +55,16 @@ export default async function SiteDetailPage({ params }: PageProps) {
     .eq('id', id)
     .single()
 
-  if (error || !site) {
-    notFound()
-  }
+  if (error || !site) notFound()
 
-  const [seoScoresResult, deployCard, siteAlertsResult] = await Promise.all([
+  // Check if a generated dist/ exists for the Preview button
+  const GENERATOR_ROOT = join(process.cwd(), '..', 'generator')
+  const siteSlug = site.domain ? site.domain.replace(/\./g, '-') : null
+  const hasPreview = siteSlug
+    ? existsSync(join(GENERATOR_ROOT, '.generated-sites', siteSlug, 'dist', 'index.html'))
+    : false
+
+  const [seoScoresResult, deployCard, siteAlertsResult, categoriesResult, productsResult] = await Promise.all([
     supabase
       .from('seo_scores')
       .select('page_path, page_type, overall_score, grade, content_quality_score, meta_elements_score, structure_score, links_score, media_score, schema_score, technical_score, social_score')
@@ -65,51 +77,83 @@ export default async function SiteDetailPage({ params }: PageProps) {
       .eq('site_id', id)
       .eq('status', 'open')
       .order('created_at', { ascending: false }),
+    supabase
+      .from('tsa_categories')
+      .select('id, name, slug, focus_keyword, keywords, seo_text')
+      .eq('site_id', id)
+      .order('name', { ascending: true }),
+    supabase
+      .from('tsa_products')
+      .select('id, asin, title, current_price, rating, review_count, is_prime, source_image_url, images')
+      .eq('site_id', id)
+      .order('created_at', { ascending: false }),
   ])
 
-  if (siteAlertsResult.error) {
-    throw siteAlertsResult.error
-  }
+  if (siteAlertsResult.error) throw siteAlertsResult.error
 
   const seoScores = seoScoresResult.data
   const customization = site.customization as SiteCustomization | null
+  const categories = categoriesResult.data ?? []
+  const products = productsResult.data ?? []
+
+  const statusBadge = (status: string | null) => {
+    const s = status ?? 'draft'
+    const map: Record<string, string> = {
+      active:      'bg-green-500/15 text-green-400 ring-1 ring-green-500/30',
+      live:        'bg-green-500/15 text-green-400 ring-1 ring-green-500/30',
+      draft:       'bg-white/8 text-muted-foreground ring-1 ring-white/10',
+      error:       'bg-red-500/15 text-red-400 ring-1 ring-red-500/30',
+      deploying:   'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30',
+      running:     'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30',
+      dns_pending: 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30',
+      ssl_pending: 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30',
+      paused:      'bg-white/8 text-muted-foreground ring-1 ring-white/10',
+      succeeded:   'bg-green-500/15 text-green-400 ring-1 ring-green-500/30',
+      failed:      'bg-red-500/15 text-red-400 ring-1 ring-red-500/30',
+    }
+    return `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${map[s] ?? map.draft}`
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
             href="/sites"
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Sites
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">{site.name}</h1>
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              site.status === 'active'
-                ? 'bg-green-100 text-green-800'
-                : site.status === 'draft'
-                  ? 'bg-gray-100 text-gray-800'
-                  : 'bg-yellow-100 text-yellow-800'
-            }`}
-          >
-            {site.status ?? 'draft'}
-          </span>
+          <h1 className="text-2xl font-bold tracking-tight">{site.name}</h1>
+          <span className={statusBadge(site.status)}>{site.status ?? 'draft'}</span>
         </div>
         <div className="flex items-center gap-2">
-          <form action={async () => {
-            'use server'
-            await enqueueSiteGeneration(site.id)
-          }}>
-            <button
-              type="submit"
-              className="inline-flex items-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+          {hasPreview ? (
+            <Link
+              href={`/sites/${site.id}/preview`}
+              className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors"
             >
-              Generate Site
-            </button>
-          </form>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              Preview
+            </Link>
+          ) : (
+            <span
+              title="Generate the site first"
+              className="inline-flex items-center gap-1.5 rounded-md bg-secondary/40 px-4 py-2 text-sm font-medium text-secondary-foreground/40 cursor-not-allowed"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              Preview
+            </span>
+          )}
+          <GenerateSiteButton siteId={site.id} />
           {site.domain ? (
             <form action={async () => {
               'use server'
@@ -117,7 +161,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
             }}>
               <button
                 type="submit"
-                className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
               >
                 Deploy
               </button>
@@ -127,14 +171,14 @@ export default async function SiteDetailPage({ params }: PageProps) {
               type="button"
               disabled
               title="Set a domain first"
-              className="inline-flex items-center rounded-md bg-blue-300 px-4 py-2 text-sm font-medium text-white cursor-not-allowed opacity-60"
+              className="inline-flex items-center rounded-md bg-primary/30 px-4 py-2 text-sm font-medium text-primary-foreground/50 cursor-not-allowed"
             >
               Deploy
             </button>
           )}
           <Link
             href={`/sites/${site.id}/edit`}
-            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors"
           >
             Edit
           </Link>
@@ -142,264 +186,186 @@ export default async function SiteDetailPage({ params }: PageProps) {
       </div>
 
       {/* Site details card */}
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm divide-y divide-gray-100">
+      <div className="rounded-xl border border-border bg-card divide-y divide-border">
+
         {/* Core info */}
-        <div className="px-6 py-4">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Site Info
-          </h2>
+        <Section title="Site Info">
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Domain</dt>
-              <dd className="mt-1 text-sm text-gray-900">{site.domain ?? '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Niche</dt>
-              <dd className="mt-1 text-sm text-gray-900">{site.niche ?? '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Market</dt>
-              <dd className="mt-1 text-sm text-gray-900">{site.market ?? '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Language</dt>
-              <dd className="mt-1 text-sm text-gray-900">{site.language ?? '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Currency</dt>
-              <dd className="mt-1 text-sm text-gray-900">{site.currency ?? '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Affiliate Tag</dt>
-              <dd className="mt-1 text-sm text-gray-900">{site.affiliate_tag ?? '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Template</dt>
-              <dd className="mt-1 text-sm text-gray-900">{site.template_slug ?? '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Site Type</dt>
-              <dd className="mt-1 text-sm text-gray-900">{site.site_type_slug ?? '—'}</dd>
-            </div>
+            {[
+              ['Domain',        site.domain],
+              ['Niche',         site.niche],
+              ['Market',        site.market],
+              ['Language',      site.language],
+              ['Currency',      site.currency],
+              ['Affiliate Tag', site.affiliate_tag],
+              ['Template',      site.template_slug],
+              ['Site Type',     site.site_type_slug],
+            ].map(([label, value]) => (
+              <div key={label as string}>
+                <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+                <dd className="mt-1 text-sm text-foreground">{value ?? '—'}</dd>
+              </div>
+            ))}
           </dl>
-        </div>
+        </Section>
 
         {/* Customization */}
-        <div className="px-6 py-4">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Customization
-          </h2>
+        <Section title="Customization">
           {customization ? (
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
               <div>
-                <dt className="text-xs font-medium text-gray-500">Primary Color</dt>
-                <dd className="mt-1 flex items-center gap-2 text-sm text-gray-900">
+                <dt className="text-xs font-medium text-muted-foreground">Primary Color</dt>
+                <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
                   {customization.primaryColor ? (
                     <>
                       <span
-                        className="inline-block w-4 h-4 rounded-sm border border-gray-200"
+                        className="inline-block w-4 h-4 rounded-sm border border-border"
                         style={{ backgroundColor: customization.primaryColor }}
                       />
                       {customization.primaryColor}
                     </>
-                  ) : (
-                    '—'
-                  )}
+                  ) : '—'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-medium text-gray-500">Accent Color</dt>
-                <dd className="mt-1 flex items-center gap-2 text-sm text-gray-900">
+                <dt className="text-xs font-medium text-muted-foreground">Accent Color</dt>
+                <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
                   {customization.accentColor ? (
                     <>
                       <span
-                        className="inline-block w-4 h-4 rounded-sm border border-gray-200"
+                        className="inline-block w-4 h-4 rounded-sm border border-border"
                         style={{ backgroundColor: customization.accentColor }}
                       />
                       {customization.accentColor}
                     </>
-                  ) : (
-                    '—'
-                  )}
+                  ) : '—'}
                 </dd>
               </div>
-              <div>
-                <dt className="text-xs font-medium text-gray-500">Font Family</dt>
-                <dd className="mt-1 text-sm text-gray-900">{customization.fontFamily ?? '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-gray-500">Logo URL</dt>
-                <dd className="mt-1 text-sm text-gray-900 truncate">
-                  {customization.logoUrl ?? '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-gray-500">Favicon URL</dt>
-                <dd className="mt-1 text-sm text-gray-900 truncate">
-                  {customization.faviconUrl ?? '—'}
-                </dd>
-              </div>
+              {[
+                ['Font Family', customization.fontFamily],
+                ['Logo URL',    customization.logoUrl],
+                ['Favicon URL', customization.faviconUrl],
+              ].map(([label, value]) => (
+                <div key={label as string}>
+                  <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+                  <dd className="mt-1 text-sm text-foreground truncate">{value ?? '—'}</dd>
+                </div>
+              ))}
             </dl>
           ) : (
-            <p className="text-sm text-gray-500">No customization set.</p>
+            <p className="text-sm text-muted-foreground">No customization set.</p>
           )}
-        </div>
+        </Section>
 
-        {/* Timestamps */}
-        <div className="px-6 py-4">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Metadata
-          </h2>
+        {/* Metadata */}
+        <Section title="Metadata">
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Created</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {site.created_at
-                  ? new Date(site.created_at).toLocaleString()
-                  : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-gray-500">Updated</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {site.updated_at
-                  ? new Date(site.updated_at).toLocaleString()
-                  : '—'}
-              </dd>
-            </div>
+            {[
+              ['Created', site.created_at],
+              ['Updated', site.updated_at],
+            ].map(([label, value]) => (
+              <div key={label as string}>
+                <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+                <dd className="mt-1 text-sm text-foreground">
+                  {value ? new Date(value as string).toLocaleString() : '—'}
+                </dd>
+              </div>
+            ))}
           </dl>
-        </div>
+        </Section>
       </div>
 
       {/* Generation status */}
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-          Site Generation
-        </h2>
+      <Card title="Site Generation">
         <JobStatus siteId={site.id} />
-      </div>
+      </Card>
 
       {/* Deployment status */}
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-          Deployment
-        </h2>
+      <Card title="Deployment">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Pipeline status:</span>
+            <span className={statusBadge(deployCard.siteStatus)}>
+              {deployCard.siteStatus ?? 'draft'}
+            </span>
+          </div>
 
-        {/* Site pipeline status badge */}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs font-medium text-gray-500">Pipeline status:</span>
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-            deployCard.siteStatus === 'live'
-              ? 'bg-green-100 text-green-800'
-              : deployCard.siteStatus === 'error'
-                ? 'bg-red-100 text-red-800'
-                : deployCard.siteStatus === 'deploying'
-                  ? 'bg-blue-100 text-blue-700'
-                  : deployCard.siteStatus === 'dns_pending' || deployCard.siteStatus === 'ssl_pending'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : deployCard.siteStatus === 'paused'
-                      ? 'bg-gray-100 text-gray-600'
-                      : 'bg-gray-100 text-gray-800'
-          }`}>
-            {deployCard.siteStatus ?? 'draft'}
-          </span>
-        </div>
-
-        {/* Latest deployment row */}
-        {deployCard.latestDeployment ? (
-          <div className="mb-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-gray-700">Last deployment:</span>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                deployCard.latestDeployment.status === 'succeeded'
-                  ? 'bg-green-100 text-green-800'
-                  : deployCard.latestDeployment.status === 'failed'
-                    ? 'bg-red-100 text-red-800'
-                    : deployCard.latestDeployment.status === 'running'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {deployCard.latestDeployment.status}
-              </span>
+          {deployCard.latestDeployment ? (
+            <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-muted-foreground">Last deployment:</span>
+                <span className={statusBadge(deployCard.latestDeployment.status)}>
+                  {deployCard.latestDeployment.status}
+                </span>
+              </div>
+              {deployCard.latestDeployment.deployed_at && (
+                <div className="text-muted-foreground">
+                  <span className="font-medium">Deployed:</span>{' '}
+                  {new Date(deployCard.latestDeployment.deployed_at).toLocaleString()}
+                </div>
+              )}
+              {deployCard.latestDeployment.duration_ms != null && (
+                <div className="text-muted-foreground">
+                  <span className="font-medium">Duration:</span>{' '}
+                  {Math.round(deployCard.latestDeployment.duration_ms / 1000)}s
+                </div>
+              )}
+              {deployCard.latestDeployment.error && (
+                <div className="text-red-400 text-xs font-mono break-all">
+                  {deployCard.latestDeployment.error}
+                </div>
+              )}
             </div>
-            {deployCard.latestDeployment.deployed_at && (
-              <div className="text-gray-500">
-                <span className="font-medium">Deployed:</span>{' '}
-                {new Date(deployCard.latestDeployment.deployed_at).toLocaleString()}
-              </div>
-            )}
-            {deployCard.latestDeployment.duration_ms !== null && deployCard.latestDeployment.duration_ms !== undefined && (
-              <div className="text-gray-500">
-                <span className="font-medium">Duration:</span>{' '}
-                {Math.round(deployCard.latestDeployment.duration_ms / 1000)}s
-              </div>
-            )}
-            {deployCard.latestDeployment.error && (
-              <div className="text-red-600 text-xs font-mono break-all">
-                {deployCard.latestDeployment.error}
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400 mb-3">No deployments yet.</p>
-        )}
+          ) : (
+            <p className="text-sm text-muted-foreground">No deployments yet.</p>
+          )}
 
-        {/* Cloudflare nameservers — shown when domains row has cf_nameservers populated */}
-        {deployCard.domain?.cf_nameservers && deployCard.domain.cf_nameservers.length > 0 && (
-          <div className="mb-3">
-            <p className="text-xs font-medium text-gray-500 mb-1">
-              Point your domain to these nameservers:
-            </p>
-            <ul className="space-y-0.5">
-              {deployCard.domain.cf_nameservers.map((ns) => (
-                <li key={ns} className="font-mono text-xs text-gray-700 bg-gray-50 rounded px-2 py-1 border border-gray-200">
-                  {ns}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+          {deployCard.domain?.cf_nameservers && deployCard.domain.cf_nameservers.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">
+                Point your domain to these nameservers:
+              </p>
+              <ul className="space-y-0.5">
+                {deployCard.domain.cf_nameservers.map((ns) => (
+                  <li key={ns} className="font-mono text-xs text-foreground bg-muted/40 rounded px-2 py-1 border border-border">
+                    {ns}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-        {/* Live deploy job progress — polls ai_jobs for job_type='deploy_site' */}
-        <DeployStatus siteId={site.id} />
-      </div>
+          <DeployStatus siteId={site.id} />
+        </div>
+      </Card>
 
       {/* Domain Management */}
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-          Domain Management
-        </h2>
+      <Card title="Domain Management">
         <DomainManagement siteId={site.id} existingDomain={site.domain} />
-      </div>
+      </Card>
 
       {/* Product Refresh */}
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-          Product Refresh
-        </h2>
-        <RefreshCard
-          siteId={site.id}
-          lastRefreshedAt={site.last_refreshed_at ?? null}
-        />
-      </div>
+      <Card title="Product Refresh">
+        <RefreshCard siteId={site.id} lastRefreshedAt={site.last_refreshed_at ?? null} />
+      </Card>
 
       {/* Product Alerts */}
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-          Product Alerts
-        </h2>
+      <Card title="Product Alerts">
         <SiteAlerts alerts={siteAlertsResult.data ?? []} />
-      </div>
+      </Card>
+
+      {/* Categories */}
+      <CategoriesSection siteId={id} categories={categories} />
+
+      {/* Products */}
+      <ProductsSection siteId={id} products={products} />
 
       {/* SEO Scores */}
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm px-6 py-4">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-          SEO Scores
-        </h2>
+      <Card title="SEO Scores">
         {!seoScores || seoScores.length === 0 ? (
-          <p className="text-sm text-gray-500">No SEO scores yet — generate the site first.</p>
+          <p className="text-sm text-muted-foreground">No SEO scores yet — generate the site first.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-6">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -421,7 +387,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
                 {seoScores.map((row) => (
                   <TableRow key={row.page_path}>
                     <TableCell className="font-mono text-xs">{row.page_path}</TableCell>
-                    <TableCell className="text-xs text-gray-500">{row.page_type ?? '—'}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{row.page_type ?? '—'}</TableCell>
                     <TableCell>
                       <span className={`font-semibold ${scoreColor(row.overall_score)}`}>
                         {row.overall_score ?? '—'}
@@ -446,7 +412,32 @@ export default async function SiteDetailPage({ params }: PageProps) {
             </Table>
           </div>
         )}
-      </div>
+      </Card>
+
+    </div>
+  )
+}
+
+// ── Local layout helpers ──────────────────────────────────────────────────────
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="px-6 py-5">
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+        {title}
+      </h2>
+      {children}
+    </div>
+  )
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-6 py-5">
+      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+        {title}
+      </h2>
+      {children}
     </div>
   )
 }

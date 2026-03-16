@@ -116,7 +116,7 @@ export function SiteAlerts({ alerts }: SiteAlertsProps) {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium text-gray-700">
+      <p className="text-sm font-medium text-foreground/80">
         {count} open alert{count === 1 ? '' : 's'}
       </p>
       <Table>

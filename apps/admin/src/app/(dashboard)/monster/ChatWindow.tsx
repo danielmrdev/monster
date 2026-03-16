@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -341,20 +342,63 @@ function MessageBubble({ message }: { message: Message }) {
       )}
       <div
         className={cn(
-          'max-w-[75%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words',
+          'max-w-[75%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed break-words',
           isUser
-            ? 'bg-primary text-primary-foreground rounded-tr-sm'
+            ? 'bg-primary text-primary-foreground rounded-tr-sm whitespace-pre-wrap'
             : message.isError
-              ? 'bg-destructive/10 text-destructive border border-destructive/20 rounded-tl-sm'
+              ? 'bg-destructive/10 text-destructive border border-destructive/20 rounded-tl-sm whitespace-pre-wrap'
               : 'bg-muted text-foreground rounded-tl-sm',
         )}
       >
-        {message.content}
-        {message.isStreaming && (
-          <span className="inline-block w-[2px] h-[1em] bg-current opacity-70 ml-0.5 align-middle animate-pulse" />
+        {isUser || message.isError ? (
+          <>
+            {message.content}
+            {message.isStreaming && !message.content && (
+              <span className="text-muted-foreground italic text-xs">Thinking…</span>
+            )}
+          </>
+        ) : (
+          <>
+            {message.content ? (
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-0.5">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-0.5">{children}</ol>,
+                  li: ({ children }) => <li className="text-sm">{children}</li>,
+                  h1: ({ children }) => <h1 className="text-base font-bold mb-1 mt-2">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-sm font-bold mb-1 mt-2">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 mt-1">{children}</h3>,
+                  code: ({ children, className }) => {
+                    const isBlock = className?.includes('language-');
+                    return isBlock ? (
+                      <code className="block bg-black/30 rounded px-2 py-1.5 text-xs font-mono whitespace-pre-wrap my-1">{children}</code>
+                    ) : (
+                      <code className="bg-black/30 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
+                    );
+                  },
+                  pre: ({ children }) => <pre className="my-1 overflow-x-auto">{children}</pre>,
+                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                  em: ({ children }) => <em className="italic">{children}</em>,
+                  a: ({ href, children }) => (
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{children}</a>
+                  ),
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-2 border-muted-foreground/40 pl-2 italic text-muted-foreground my-1">{children}</blockquote>
+                  ),
+                  hr: () => <hr className="border-muted-foreground/20 my-2" />,
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            ) : null}
+            {message.isStreaming && !message.content && (
+              <span className="text-muted-foreground italic text-xs">Thinking…</span>
+            )}
+          </>
         )}
-        {message.isStreaming && !message.content && (
-          <span className="text-muted-foreground italic text-xs">Thinking…</span>
+        {message.isStreaming && message.content && (
+          <span className="inline-block w-[2px] h-[1em] bg-current opacity-70 ml-0.5 align-middle animate-pulse" />
         )}
       </div>
     </div>

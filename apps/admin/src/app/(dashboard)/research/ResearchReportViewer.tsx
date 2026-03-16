@@ -35,7 +35,7 @@ function viabilityVariant(score: number): 'default' | 'secondary' | 'destructive
 
 function domainBadge(available: boolean | null): { label: string; className: string } {
   if (available === true)  return { label: 'Available', className: 'bg-green-100 text-green-800 border-green-200' };
-  if (available === false) return { label: 'Taken',     className: 'bg-gray-100 text-gray-600 border-gray-200'   };
+  if (available === false) return { label: 'Taken',     className: 'bg-muted/50 text-muted-foreground border-border'   };
   return                          { label: 'Unknown',   className: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
 }
 

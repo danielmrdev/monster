@@ -14,6 +14,8 @@ import { FinancesFilters } from './finances-filters'
 import { PnLExportButton } from './pnl-export-button'
 import { getDateRange, computePnL } from './lib'
 
+export const dynamic = 'force-dynamic'
+
 // D120 pattern: searchParams is a Promise in Next.js 15 App Router
 export default async function FinancesPage({
   searchParams,

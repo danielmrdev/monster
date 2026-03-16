@@ -59,7 +59,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: UX Fixes + Dashboard Enhancements** `risk:low` `depends:[]`
+- [x] **S01: UX Fixes + Dashboard Enhancements** `risk:low` `depends:[]`
   > After this: Generate Site button shows loading + job status polling; Preview link fixed; chat renders markdown; claude_api_key removed from Settings; Dashboard shows failed jobs, open alerts, and P&L summary widget.
 
 - [ ] **S02: AI SEO Generation + Prompt Editor** `risk:medium` `depends:[S01]`
