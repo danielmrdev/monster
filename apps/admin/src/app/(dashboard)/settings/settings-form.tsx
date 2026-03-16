@@ -1,14 +1,23 @@
 'use client'
 
 import { useActionState } from 'react'
-import { saveSettings, type SaveSettingsState } from './actions'
+import { saveSettings, saveAgentPrompts, type SaveSettingsState, type SaveAgentPromptsState } from './actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+
+interface AgentKeyConfig {
+  key: string
+  label: string
+  hint: string
+}
 
 interface SettingsFormProps {
   maskedDisplay: Record<string, string>
+  agentPrompts: Record<string, string>
+  agentKeys: AgentKeyConfig[]
 }
 
 function MaskedIndicator({ last4 }: { last4?: string }) {
@@ -25,15 +34,20 @@ function FieldError({ messages }: { messages?: string[] }) {
   return <p className="text-xs text-destructive mt-1">{messages[0]}</p>
 }
 
-export function SettingsForm({ maskedDisplay }: SettingsFormProps) {
+export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys }: SettingsFormProps) {
   const [state, formAction, isPending] = useActionState<SaveSettingsState, FormData>(
     saveSettings,
+    null
+  )
+  const [promptState, promptFormAction, promptPending] = useActionState<SaveAgentPromptsState, FormData>(
+    saveAgentPrompts,
     null
   )
 
   const errors = state?.errors
 
   return (
+    <>
     <form action={formAction} className="space-y-6">
       {/* Success banner */}
       {state?.success && (
@@ -240,5 +254,53 @@ export function SettingsForm({ maskedDisplay }: SettingsFormProps) {
         </p>
       </div>
     </form>
+
+    {/* Agent Prompts — separate form so it doesn't interfere with API key save */}
+    <form action={promptFormAction} className="space-y-6 pt-2">
+      {promptState?.success && (
+        <div className="rounded-lg border border-green-600/30 bg-green-600/10 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+          Agent prompts saved.
+        </div>
+      )}
+      {promptState?.error && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {promptState.error}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Agent System Prompts</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-xs text-muted-foreground">
+            Override the default system prompts for each agent. Leave a field empty to restore the built-in default.
+          </p>
+          {agentKeys.map(({ key, label, hint }) => (
+            <div key={key} className="space-y-1.5">
+              <Label htmlFor={`agent_prompt_${key}`}>{label}</Label>
+              <Textarea
+                id={`agent_prompt_${key}`}
+                name={`agent_prompt_${key}`}
+                defaultValue={agentPrompts[key] ?? ''}
+                placeholder={`Leave empty to use the built-in default prompt for ${label}.`}
+                rows={4}
+              />
+              <p className="text-xs text-muted-foreground">{hint}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center gap-3">
+        <Button type="submit" disabled={promptPending}>
+          {promptPending ? 'Saving…' : 'Save Agent Prompts'}
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Empty = use built-in default. Changes take effect on the next job run.
+        </p>
+      </div>
+    </form>
+    </>
   )
 }

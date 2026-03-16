@@ -50,6 +50,7 @@ export default async function EditProductPage({ params }: PageProps) {
       <div className="rounded-xl border border-border bg-card px-6 py-5">
         <ProductForm
           siteId={siteId}
+          productId={prodId}
           categories={categoriesResult.data ?? []}
           action={action}
           mode="edit"

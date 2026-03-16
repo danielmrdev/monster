@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, useTransition } from 'react'
+import { useActionState, useEffect, useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -32,6 +32,7 @@ interface AsinData {
 
 interface ProductFormProps {
   siteId: string
+  productId?: string  // present in edit mode
   categories: Category[]
   action: (prev: ProductFormState, formData: FormData) => Promise<ProductFormState>
   defaultValues?: {
@@ -49,10 +50,14 @@ interface ProductFormProps {
   mode: 'create' | 'edit'
 }
 
-export function ProductForm({ siteId, categories, action, defaultValues, mode }: ProductFormProps) {
+export function ProductForm({ siteId, productId, categories, action, defaultValues, mode }: ProductFormProps) {
   const router = useRouter()
   const [state, formAction, isPending] = useActionState<ProductFormState, FormData>(action, null)
   const [lookupPending, startLookup] = useTransition()
+  const [isGenerating, startGenerate] = useTransition()
+  const [generateError, setGenerateError] = useState<string | null>(null)
+  const [generatedDescription, setGeneratedDescription] = useState<string>('')
+  const descPreviewRef = useRef<HTMLTextAreaElement>(null)
 
   const [asinData, setAsinData] = useState<AsinData | null>(null)
   const [lookupError, setLookupError] = useState<string | null>(null)
@@ -113,8 +118,52 @@ export function ProductForm({ siteId, categories, action, defaultValues, mode }:
     })
   }
 
-  function toggleCategory(id: string) {
-    setSelectedCategories((prev) =>
+  function generateDescription() {
+    if (!productId) return
+    setGenerateError(null)
+    setGeneratedDescription('')
+    startGenerate(async () => {
+      try {
+        const res = await fetch(`/api/sites/${siteId}/generate-seo-text`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ field: 'product_description', contextId: productId }),
+        })
+
+        if (!res.ok || !res.body) {
+          const text = await res.text().catch(() => `HTTP ${res.status}`)
+          setGenerateError(text)
+          return
+        }
+
+        const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
+        let buffer = ''
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done) break
+          buffer += value
+          const parts = buffer.split('\n\n')
+          buffer = parts.pop() ?? ''
+          for (const part of parts) {
+            const line = part.trim()
+            if (!line.startsWith('data: ')) continue
+            try {
+              const event = JSON.parse(line.slice(6))
+              if (event.type === 'text' && event.text) {
+                setGeneratedDescription((prev) => prev + event.text)
+              } else if (event.type === 'error') {
+                setGenerateError(event.error ?? 'Generation failed')
+              }
+            } catch { /* ignore parse errors */ }
+          }
+        }
+      } catch (e) {
+        setGenerateError(e instanceof Error ? e.message : 'Generation failed')
+      }
+    })
+  }
+
+  function toggleCategory(id: string) {    setSelectedCategories((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     )
   }
@@ -278,6 +327,50 @@ export function ProductForm({ siteId, categories, action, defaultValues, mode }:
           placeholder="best air fryer 2024"
         />
       </div>
+
+      {/* AI description preview — edit mode only */}
+      {mode === 'edit' && productId && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label>AI Description Preview</Label>
+            <button
+              type="button"
+              onClick={generateDescription}
+              disabled={isGenerating}
+              className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGenerating ? (
+                <>
+                  <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Generating…
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                  </svg>
+                  Generate with AI
+                </>
+              )}
+            </button>
+          </div>
+          <textarea
+            ref={descPreviewRef}
+            readOnly
+            value={generatedDescription}
+            placeholder="Click 'Generate with AI' to preview the AI-generated description for this product. Run 'Generate Site' to apply it."
+            rows={5}
+            className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus-visible:outline-none"
+          />
+          {generateError && (
+            <p className="text-xs text-destructive">{generateError}</p>
+          )}
+          <p className="text-xs text-muted-foreground">Preview only — run "Generate Site" to apply AI content to all products.</p>
+        </div>
+      )}
 
       {/* Category assignment */}
       {categories.length > 0 && (

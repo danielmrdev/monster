@@ -26,3 +26,7 @@ export { DataForSEOClient } from './clients/dataforseo.js';
 export type { StreamEvent, StreamOptions } from './clients/claude-sdk.js';
 export { ClaudeSDKClient } from './clients/claude-sdk.js';
 export { createMonsterMcpServer } from './mcp/monster-server.js';
+
+// Agent prompt helpers — DB-backed prompt overrides
+export { getAgentPrompt, AGENT_KEYS } from './agent-prompts.js';
+export type { AgentKey } from './agent-prompts.js';

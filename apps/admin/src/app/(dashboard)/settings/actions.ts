@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/service'
 import { SETTINGS_KEYS } from './constants'
+import { AGENT_KEYS } from '@monster/agents'
 
 const SaveSettingsSchema = z.object({
   spaceship_api_key: z.string().optional(),
@@ -69,6 +70,53 @@ export async function saveSettings(
       throw new Error(
         `Failed to upsert setting '${key}': ${error.message} (code: ${error.code})`
       )
+    }
+  }
+
+  revalidatePath('/settings')
+  return { success: true }
+}
+
+// ---------------------------------------------------------------------------
+// Agent Prompts
+// ---------------------------------------------------------------------------
+
+export type SaveAgentPromptsState = {
+  success?: boolean
+  error?: string
+} | null
+
+export async function saveAgentPrompts(
+  _prevState: SaveAgentPromptsState,
+  formData: FormData,
+): Promise<SaveAgentPromptsState> {
+  const supabase = createServiceClient()
+  const now = new Date().toISOString()
+  const agentKeyValues = Object.values(AGENT_KEYS)
+
+  for (const agentKey of agentKeyValues) {
+    const content = (formData.get(`agent_prompt_${agentKey}`) as string | null)?.trim() ?? ''
+    // Empty = delete the override (restore to default)
+    if (!content) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('agent_prompts')
+        .delete()
+        .eq('agent_key', agentKey)
+        .eq('prompt_type', 'system')
+      continue
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('agent_prompts')
+      .upsert(
+        { agent_key: agentKey, prompt_type: 'system', content, updated_at: now },
+        { onConflict: 'agent_key,prompt_type' },
+      )
+
+    if (error) {
+      return { error: `Failed to save prompt for ${agentKey}: ${error.message}` }
     }
   }
 

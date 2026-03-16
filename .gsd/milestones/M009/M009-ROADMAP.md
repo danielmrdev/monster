@@ -62,7 +62,7 @@ This milestone is complete only when all are true:
 - [x] **S01: UX Fixes + Dashboard Enhancements** `risk:low` `depends:[]`
   > After this: Generate Site button shows loading + job status polling; Preview link fixed; chat renders markdown; claude_api_key removed from Settings; Dashboard shows failed jobs, open alerts, and P&L summary widget.
 
-- [ ] **S02: AI SEO Generation + Prompt Editor** `risk:medium` `depends:[S01]`
+- [x] **S02: AI SEO Generation + Prompt Editor** `risk:medium` `depends:[S01]`
   > After this: "Generate with AI" button in CategoryForm and ProductForm calls a new API route and streams AI-generated SEO text with site/category context; System prompts editable in Settings and stored in DB.
 
 - [ ] **S03: Global Chat Sidebar** `risk:medium` `depends:[S01]`
