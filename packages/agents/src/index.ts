@@ -30,3 +30,7 @@ export { createMonsterMcpServer } from './mcp/monster-server.js';
 // Agent prompt helpers — DB-backed prompt overrides
 export { getAgentPrompt, AGENT_KEYS } from './agent-prompts.js';
 export type { AgentKey } from './agent-prompts.js';
+
+// Amazon scraper — product search without DataForSEO
+export { AmazonScraper, AmazonBlockedError } from './clients/amazon-scraper.js';
+export type { ScrapedProduct } from './clients/amazon-scraper.js';

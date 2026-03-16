@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { DataForSEOClient } from '@monster/agents'
+import { AmazonScraper, AmazonBlockedError } from '@monster/agents'
+import type { ScrapedProduct } from '@monster/agents'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -48,8 +49,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   const market = site.market ?? 'ES'
 
   try {
-    const client = new DataForSEOClient()
-    const products = await client.searchProducts(q, market)
+    const scraper = new AmazonScraper()
+    const scraped: ScrapedProduct[] = await scraper.search(q, market)
 
     // Fetch existing ASINs for this site to flag already-added ones
     const { data: existing } = await supabase
@@ -59,20 +60,23 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const existingAsins = new Set((existing ?? []).map((r) => r.asin))
 
-    const results: SearchResultItem[] = products.map((p) => ({
+    const results: SearchResultItem[] = scraped.map((p) => ({
       asin: p.asin,
       title: p.title,
       imageUrl: p.imageUrl,
       price: p.price,
-      rating: p.rating,
-      reviewCount: p.reviewCount,
+      rating: p.rating ?? 0,
+      reviewCount: p.reviewCount ?? 0,
       isPrime: p.isPrime,
-      isBestSeller: p.isBestSeller,
+      isBestSeller: false,
       alreadyAdded: existingAsins.has(p.asin),
     }))
 
     return NextResponse.json({ results, market })
   } catch (err) {
+    if (err instanceof AmazonBlockedError) {
+      return NextResponse.json({ error: err.message }, { status: 503 })
+    }
     const message = err instanceof Error ? err.message : String(err)
     console.error(`[product-search] siteId=${siteId} q="${q}" error=${message}`)
     return NextResponse.json({ error: message }, { status: 500 })

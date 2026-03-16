@@ -68,7 +68,7 @@ This milestone is complete only when all are true:
 - [x] **S03: Global Chat Sidebar** `risk:medium` `depends:[S01]`
   > After this: Chat panel slides in from the right on any dashboard page; toggle button in nav; page context (current route label) sent with every message; /monster page unchanged for conversation history.
 
-- [ ] **S04: Amazon Product Scraper** `risk:medium` `depends:[]`
+- [x] **S04: Amazon Product Scraper** `risk:medium` `depends:[]`
   > After this: Product search uses Amazon scraper (cheerio + Node fetch); real product results appear in the search UI; DFS ASIN lookup still called when adding a selected product.
 
 - [ ] **S05: SEO Files + Search Engine Ping** `risk:low` `depends:[]`
