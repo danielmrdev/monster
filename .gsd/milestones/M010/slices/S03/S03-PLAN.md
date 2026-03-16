@@ -12,16 +12,9 @@
 - `pnpm build` and `pnpm typecheck` exit 0 (no TypeScript changes here, but validate no regressions).
 - `bash -n scripts/setup-vps1.sh` and `bash -n scripts/deploy.sh` syntax checks pass.
 
-## Verification
-
-- `bash -n scripts/setup-vps1.sh` exits 0
-- `bash -n scripts/deploy.sh` exits 0
-- shellcheck both scripts if available on VPS1
-- Human review: setup-vps1.sh covers all required steps for a fresh VPS1; deploy.sh pre-flight check is clearly readable
-
 ## Tasks
 
-- [ ] **T01: Write setup-vps1.sh** `est:30m`
+- [x] **T01: Write setup-vps1.sh** `est:30m`
   - Why: VPS1 reprovisioning currently requires tribal knowledge. A script makes it a 15-minute task.
   - Files: `scripts/setup-vps1.sh`
   - Do: Write `set -euo pipefail` script. Section 1: Tailscale install + join (same apt pattern as setup-vps2.sh; accepts `--tailscale-key`). Section 2: nvm install (curl from nvm.sh) + `nvm install 22 && nvm use 22 && nvm alias default 22`. Section 3: `npm install -g pnpm pm2`. Section 4: git clone `https://github.com/<user>/monster` → `/home/daniel/monster` (or skip if exists). Section 5: `cd /home/daniel/monster && pnpm install --frozen-lockfile && pnpm -r build`. Section 6: `pm2 start ecosystem.config.js && pm2 save && pm2 startup`. Add clear comments above each section. Use idempotency checks (skip if already installed).
@@ -34,6 +27,25 @@
   - Do: At the top of `deploy.sh` (before `git pull`), add a pre-flight section. Read `vps2_host` and `vps2_user` from environment or from a local `.vps2.env` file (if present — not committed). Run `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 "$VPS2_USER@$VPS2_HOST" 'systemctl is-active caddy'` and capture exit code. If non-zero, print actionable error: `[pre-flight] ERROR: VPS2 SSH check failed. Verify vps2_host/vps2_user settings and Tailscale connection.` and exit 1. If 0, print `[pre-flight] VPS2 reachable, Caddy active.` and continue. Make VPS2_HOST/VPS2_USER overrideable via env vars so the check can be skipped in CI/local by setting `SKIP_VPS2_CHECK=1`.
   - Verify: `bash -n scripts/deploy.sh` exits 0; review pre-flight logic is readable
   - Done when: deploy.sh has pre-flight, SKIP_VPS2_CHECK escape hatch, actionable error message
+
+## Observability / Diagnostics
+
+- **setup-vps1.sh** emits structured log lines: `[setup-vps1] [step N/6] [timestamp] LEVEL: message` — parseable by agents.
+- Tailscale key is always logged as `[REDACTED]` — never printed to stdout.
+- Each step ends with a `✓` log line on success, providing a clear audit trail.
+- On failure, `set -euo pipefail` ensures the script exits immediately with the failing command's exit code — the last log line indicates which step failed.
+- Summary banner at script end prints installed versions (Node.js, pnpm, pm2, Tailscale) for verification.
+- **deploy.sh pre-flight** prints `[pre-flight] OK:` or `[pre-flight] ERROR:` lines — agents can grep for these to determine deploy readiness.
+- `SKIP_VPS2_CHECK=1` env var disables pre-flight for CI/local environments — logged when active.
+
+## Verification
+
+- `bash -n scripts/setup-vps1.sh` exits 0
+- `bash -n scripts/deploy.sh` exits 0
+- shellcheck both scripts if available on VPS1
+- Human review: setup-vps1.sh covers all required steps for a fresh VPS1; deploy.sh pre-flight check is clearly readable
+- **Diagnostic check:** `bash scripts/setup-vps1.sh --help` prints usage without executing any provisioning
+- **Failure-path check:** `bash scripts/setup-vps1.sh` (no args) exits non-zero with `ERROR: --tailscale-key is required`
 
 ## Files Likely Touched
 

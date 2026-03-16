@@ -50,3 +50,11 @@ Write `scripts/setup-vps1.sh` — a `set -euo pipefail` bash script that provisi
 ## Expected Output
 
 - `scripts/setup-vps1.sh` — complete 6-section script, ~100–140 lines
+
+## Observability Impact
+
+- **New structured logs:** `[setup-vps1] [step N/6] [timestamp] LEVEL: message` — 6 step transitions, each ending with `✓` on success.
+- **Failure visibility:** `set -euo pipefail` causes immediate exit on any command failure; the last emitted log line identifies which step and command failed.
+- **Inspection surface:** `--help` flag prints usage without executing. Running without `--tailscale-key` exits 1 with `ERROR: --tailscale-key is required`.
+- **Summary banner:** Final output prints installed versions (Node.js, pnpm, pm2, Tailscale hostname) for post-run verification.
+- **Redaction:** Tailscale authkey is always printed as `[REDACTED]` — never appears in logs.
