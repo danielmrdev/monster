@@ -51,7 +51,7 @@ This milestone is complete only when all are true:
 - [x] **S01: VPS2 Bootstrap Script** `risk:high` `depends:[]`
   > After this: running `bash scripts/setup-vps2.sh <host> <user> --tailscale-key <key>` on a fresh Ubuntu 24.04 VPS produces a fully functional VPS2 (Tailscale joined, Caddy installed, sites dirs created, sudoers entry added) — verified by a post-run health check embedded in the script.
 
-- [ ] **S02: Admin Infra Health Page** `risk:medium` `depends:[S01]`
+- [x] **S02: Admin Infra Health Page** `risk:medium` `depends:[S01]`
   > After this: the admin panel has an `/infra` page showing VPS2 reachability, Caddy service status, disk and memory usage fetched live via SSH — and a "Test Deploy Connection" button that confirms rsync + Caddy SSH paths work.
 
 - [ ] **S03: VPS1 Setup Script + Deploy Pre-flight** `risk:low` `depends:[S01]`
