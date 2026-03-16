@@ -68,4 +68,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M007: Monster Chat + Research Lab — S01 ✅ Streaming Chat + MCP Tools | S02 ✅ NicheResearcher BullMQ + DataForSEO | S03 ✅ Research Report UI + Domain Suggestions + Create Site CTA
 - [x] M008: Finances + Amazon Revenue — S01 ✅ Amazon CSV Import + Manual Revenue Entry | S02 ✅ P&L Dashboard + Domain Expiry Alerts + CSV Export
 - [ ] M009: UX Polish + Capabilities Upgrade — Generate Site feedback, chat markdown, global chat sidebar, AI SEO generation, prompt editor, Amazon scraper, SEO files, IndexNow ping, legal templates, dashboard enhancements
-- [ ] M010: VPS Hetzner Provisioning — S01 ✅ VPS2 bootstrap script | S02 ✅ Admin /infra health page (InfraService, live VPS2 health cards, test connection button) | S03 next: VPS1 setup script + deploy.sh pre-flight
+- [ ] M010: VPS Hetzner Provisioning — S01 ✅ VPS2 bootstrap script | S02 ✅ Admin /infra health page (InfraService, live VPS2 health cards, test connection button) | S03 ✅ VPS1 setup script + deploy.sh pre-flight — **all slices complete**

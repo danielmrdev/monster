@@ -54,7 +54,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Admin Infra Health Page** `risk:medium` `depends:[S01]`
   > After this: the admin panel has an `/infra` page showing VPS2 reachability, Caddy service status, disk and memory usage fetched live via SSH — and a "Test Deploy Connection" button that confirms rsync + Caddy SSH paths work.
 
-- [ ] **S03: VPS1 Setup Script + Deploy Pre-flight** `risk:low` `depends:[S01]`
+- [x] **S03: VPS1 Setup Script + Deploy Pre-flight** `risk:low` `depends:[S01]`
   > After this: `scripts/setup-vps1.sh` documents and automates VPS1 setup (Node.js/nvm, pnpm, pm2, Tailscale); `deploy.sh` runs an SSH + Caddy pre-flight check before rsync and exits with an actionable error if VPS2 is unreachable or Caddy is not running.
 
 ## Boundary Map
