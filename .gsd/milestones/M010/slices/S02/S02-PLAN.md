@@ -58,7 +58,7 @@
   - Verify: `pnpm build` exits 0; nav item appears in sidebar
   - Done when: route handler exists, nav item wired, build passes
 
-- [ ] **T03: Infra page (server component + TestConnectionButton)** `est:45m`
+- [x] **T03: Infra page (server component + TestConnectionButton)** `est:45m`
   - Why: The visible health dashboard and the interactive test button close the loop on this slice.
   - Files: `apps/admin/src/app/(dashboard)/infra/page.tsx`, `apps/admin/src/app/(dashboard)/infra/TestConnectionButton.tsx`
   - Do: `page.tsx` is an async server component: calls `new InfraService().getVps2Health()`, wraps in try/catch for SSH failure. Renders 4 status cards (SSH reachable, Caddy active, Disk %, Memory) using existing shadcn Card pattern. Shows error banner if `getVps2Health()` throws. Import `TestConnectionButton` as a leaf client component. `TestConnectionButton.tsx`: `'use client'`; `useState` for loading/result; POSTs to `/api/infra/test-connection`; shows spinner during request; renders ✓ green / ✗ red badge with error detail. Match existing dashboard card visual pattern.

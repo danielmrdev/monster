@@ -45,6 +45,13 @@ Create the `/infra` admin page as an async server component that calls `InfraSer
 - `apps/admin/src/app/(dashboard)/dashboard/page.tsx` — Card pattern reference
 - `apps/admin/src/app/api/infra/test-connection/route.ts` — API route to POST to (from T02)
 
+## Observability Impact
+
+- **New UI surface:** `/infra` page displays live VPS2 health (reachability, Caddy status, disk %, memory MB) — first admin panel surface for infrastructure health
+- **Error visibility:** When VPS2 is unreachable or settings are missing, the page renders an error banner with structured detail instead of a 500 — errors are always user-visible, never swallowed
+- **Test connection feedback:** `TestConnectionButton` shows inline ✓/✗ result with error detail from the `/api/infra/test-connection` endpoint — validates the exact SSH config used by deploy services
+- **Server logs:** `[InfraService]` prefixed log lines emitted during page load (from InfraService) trace SSH connection attempts and metric collection
+
 ## Expected Output
 
 - `apps/admin/src/app/(dashboard)/infra/page.tsx` — async server component (~80 lines)
