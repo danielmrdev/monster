@@ -4,175 +4,122 @@ import { createServiceClient } from '@monster/db';
 // ---------------------------------------------------------------------------
 // InfraService
 //
-// SSHes into VPS2 via the local SSH agent (SSH_AUTH_SOCK) and reports
-// infrastructure health: Caddy status, disk usage, memory usage.
-//
-// Both methods read `vps2_host` and `vps2_user` from Supabase settings
-// (D028 pattern) — same values used by CaddyService and RsyncService.
+// SSHes into each active server (from the `servers` table) via the local SSH
+// agent (SSH_AUTH_SOCK) and reports infrastructure health: Caddy status, disk
+// usage, memory usage.
 //
 // Observability:
 //   - [InfraService] prefixed log lines for SSH commands and results
-//   - Never throws — returns structured error objects on SSH failure
-//   - VPS2 host/user are read from Supabase settings, not logged
+//   - getFleetHealth() never throws — returns structured per-server error objects
+//   - testDeployConnection() never throws — returns { ok: false, error } on failure
+//   - Host/user are logged; no secrets are logged
 // ---------------------------------------------------------------------------
 
-export interface Vps2Health {
+export interface ServerHealth {
+  serverId: string;
+  serverName: string;
   reachable: boolean;
   caddyActive: boolean;
   diskUsedPct: number | null;
   memUsedMb: number | null;
   memTotalMb: number | null;
-  fetchedAt: string;
   error?: string;
 }
 
-/**
- * Reads `vps2_host` and `vps2_user` from the Supabase settings table.
- * Returns `{ vps2Host, vps2User }` or throws with a descriptive message.
- */
-async function readVps2Settings(): Promise<{ vps2Host: string; vps2User: string }> {
-  const supabase = createServiceClient();
-
-  const { data: settings, error } = await supabase
-    .from('settings')
-    .select('key, value')
-    .in('key', ['vps2_host', 'vps2_user']);
-
-  if (error) {
-    throw new Error(`[InfraService] Failed to read settings: ${error.message}`);
-  }
-
-  const settingsMap = new Map<string, string>(
-    (settings ?? []).map((s) => [
-      s.key,
-      (s.value as { value?: string })?.value ?? '',
-    ]),
-  );
-
-  const vps2Host = settingsMap.get('vps2_host');
-  const vps2User = settingsMap.get('vps2_user');
-
-  if (!vps2Host || !vps2User) {
-    const missing = [!vps2Host && 'vps2_host', !vps2User && 'vps2_user'].filter(Boolean);
-    throw new Error(`[InfraService] Missing required settings: ${missing.join(', ')}`);
-  }
-
-  return { vps2Host, vps2User };
+export interface FleetHealth {
+  servers: ServerHealth[];
+  fetchedAt: string;
 }
 
 export class InfraService {
   /**
-   * SSHes into VPS2 and collects health metrics:
+   * Queries all active servers from the `servers` table and collects health
+   * metrics from each via SSH:
    *   - Caddy service status (systemctl is-active)
    *   - Disk usage percentage (df)
    *   - Memory used/total in MB (free)
    *
-   * Never throws — returns `{ reachable: false, error }` on any failure.
+   * Never throws — returns empty fleet or per-server error states on failure.
    */
-  async getVps2Health(): Promise<Vps2Health> {
+  async getFleetHealth(): Promise<FleetHealth> {
     const now = new Date().toISOString();
+    const supabase = createServiceClient();
 
-    let vps2Host: string;
-    let vps2User: string;
+    const { data: servers, error } = await supabase
+      .from('servers')
+      .select('*')
+      .eq('status', 'active')
+      .order('created_at', { ascending: true });
 
-    try {
-      ({ vps2Host, vps2User } = await readVps2Settings());
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[InfraService] settings error: ${message}`);
-      return {
-        reachable: false,
-        caddyActive: false,
-        diskUsedPct: null,
-        memUsedMb: null,
-        memTotalMb: null,
-        fetchedAt: now,
-        error: message,
-      };
+    if (error) {
+      console.error(`[InfraService] failed to query servers table: ${error.message}`);
+      return { servers: [], fetchedAt: now };
     }
 
-    const conn = new NodeSSH();
-
-    try {
-      console.log('[InfraService] connecting to VPS2 via SSH agent');
-
-      await conn.connect({
-        host: vps2Host,
-        username: vps2User,
-        agent: process.env.SSH_AUTH_SOCK,
-      });
-
-      console.log('[InfraService] connected — collecting health metrics');
-
-      // ── Caddy status ──────────────────────────────────────────────────
-      const caddyResult = await conn.execCommand('systemctl is-active caddy');
-      const caddyActive = caddyResult.stdout.trim() === 'active';
-      console.log(`[InfraService] caddy: ${caddyResult.stdout.trim()}`);
-
-      // ── Disk usage ────────────────────────────────────────────────────
-      const dfResult = await conn.execCommand("df -h / | tail -1 | awk '{print $5}'");
-      const diskRaw = dfResult.stdout.trim().replace('%', '');
-      const diskUsedPct = diskRaw ? parseInt(diskRaw, 10) : null;
-      console.log(`[InfraService] disk: ${dfResult.stdout.trim()}`);
-
-      // ── Memory usage ──────────────────────────────────────────────────
-      const freeResult = await conn.execCommand("free -m | awk '/^Mem:/{print $3, $2}'");
-      const memParts = freeResult.stdout.trim().split(/\s+/);
-      const memUsedMb = memParts[0] ? parseInt(memParts[0], 10) : null;
-      const memTotalMb = memParts[1] ? parseInt(memParts[1], 10) : null;
-      console.log(`[InfraService] memory: ${freeResult.stdout.trim()}`);
-
-      return {
-        reachable: true,
-        caddyActive,
-        diskUsedPct: Number.isNaN(diskUsedPct) ? null : diskUsedPct,
-        memUsedMb: Number.isNaN(memUsedMb) ? null : memUsedMb,
-        memTotalMb: Number.isNaN(memTotalMb) ? null : memTotalMb,
-        fetchedAt: now,
-      };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[InfraService] SSH error: ${message}`);
-      return {
-        reachable: false,
-        caddyActive: false,
-        diskUsedPct: null,
-        memUsedMb: null,
-        memTotalMb: null,
-        fetchedAt: now,
-        error: message,
-      };
-    } finally {
-      conn.dispose();
+    if (!servers || servers.length === 0) {
+      console.log('[InfraService] fleet health: 0 active servers — returning empty fleet');
+      return { servers: [], fetchedAt: now };
     }
+
+    console.log(`[InfraService] fleet health: checking ${servers.length} server(s)`);
+
+    const results: ServerHealth[] = await Promise.all(
+      servers.map((server) => this.checkServerHealth(server)),
+    );
+
+    return { servers: results, fetchedAt: now };
   }
 
   /**
-   * Minimal SSH round-trip to VPS2 — validates that the exact SSH agent +
-   * host/user config used by CaddyService and RsyncService is working.
+   * Minimal SSH round-trip to validate that the SSH agent + server config is
+   * working. Reads from the `servers` table.
+   *
+   * @param serverId  If provided, tests that specific server. Otherwise, uses
+   *                  the first active server (ordered by created_at).
    *
    * Never throws — returns `{ ok: false, error }` on failure.
    */
-  async testDeployConnection(): Promise<{ ok: boolean; error?: string }> {
-    let vps2Host: string;
-    let vps2User: string;
+  async testDeployConnection(serverId?: string): Promise<{ ok: boolean; error?: string }> {
+    const supabase = createServiceClient();
 
-    try {
-      ({ vps2Host, vps2User } = await readVps2Settings());
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[InfraService] settings error: ${message}`);
+    let serverQuery;
+    if (serverId) {
+      serverQuery = supabase.from('servers').select('*').eq('id', serverId).single();
+    } else {
+      serverQuery = supabase
+        .from('servers')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+    }
+
+    const { data: server, error } = await serverQuery;
+
+    if (error || !server) {
+      const message = error?.message ?? 'No active server found';
+      console.error(`[InfraService] testDeployConnection: failed to resolve server — ${message}`);
+      return { ok: false, error: message };
+    }
+
+    const host = server.tailscale_ip ?? server.public_ip;
+    const user = server.ssh_user;
+
+    if (!host) {
+      const message = `server "${server.name}" has no IP address`;
+      console.error(`[InfraService] testDeployConnection: ${message}`);
       return { ok: false, error: message };
     }
 
     const conn = new NodeSSH();
 
     try {
-      console.log('[InfraService] testing deploy connection to VPS2');
+      console.log(`[InfraService] testing deploy connection to ${user}@${host} for server "${server.name}"`);
 
       await conn.connect({
-        host: vps2Host,
-        username: vps2User,
+        host,
+        username: user,
         agent: process.env.SSH_AUTH_SOCK,
       });
 
@@ -191,6 +138,90 @@ export class InfraService {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[InfraService] deploy connection test failed: ${message}`);
       return { ok: false, error: message };
+    } finally {
+      conn.dispose();
+    }
+  }
+
+  /**
+   * Collects health metrics from a single server via SSH.
+   * Called concurrently by getFleetHealth() for all active servers.
+   */
+  private async checkServerHealth(server: {
+    id: string;
+    name: string;
+    tailscale_ip: string | null;
+    public_ip: string | null;
+    ssh_user: string;
+  }): Promise<ServerHealth> {
+    const host = server.tailscale_ip ?? server.public_ip;
+    const base: ServerHealth = {
+      serverId: server.id,
+      serverName: server.name,
+      reachable: false,
+      caddyActive: false,
+      diskUsedPct: null,
+      memUsedMb: null,
+      memTotalMb: null,
+    };
+
+    if (!host) {
+      return { ...base, error: 'No IP address available' };
+    }
+
+    const conn = new NodeSSH();
+    try {
+      console.log(
+        `[InfraService] connecting to ${server.ssh_user}@${host} for server "${server.name}"`,
+      );
+
+      await conn.connect({
+        host,
+        username: server.ssh_user,
+        agent: process.env.SSH_AUTH_SOCK,
+      });
+
+      console.log(`[InfraService] connected to "${server.name}" — collecting health metrics`);
+
+      // ── Caddy status ──────────────────────────────────────────────────
+      const caddyResult = await conn.execCommand('systemctl is-active caddy');
+      const caddyActive = caddyResult.stdout.trim() === 'active';
+      console.log(`[InfraService] "${server.name}" caddy: ${caddyResult.stdout.trim()}`);
+
+      // ── Disk usage ────────────────────────────────────────────────────
+      const dfResult = await conn.execCommand("df -h / | tail -1 | awk '{print $5}'");
+      const diskRaw = dfResult.stdout.trim().replace('%', '');
+      const diskUsedPctParsed = diskRaw ? parseInt(diskRaw, 10) : null;
+      const diskUsedPct = diskUsedPctParsed !== null && Number.isNaN(diskUsedPctParsed)
+        ? null
+        : diskUsedPctParsed;
+      console.log(`[InfraService] "${server.name}" disk: ${dfResult.stdout.trim()}`);
+
+      // ── Memory usage ──────────────────────────────────────────────────
+      const freeResult = await conn.execCommand("free -m | awk '/^Mem:/{print $3, $2}'");
+      const memParts = freeResult.stdout.trim().split(/\s+/);
+      const memUsedMbParsed = memParts[0] ? parseInt(memParts[0], 10) : null;
+      const memTotalMbParsed = memParts[1] ? parseInt(memParts[1], 10) : null;
+      const memUsedMb = memUsedMbParsed !== null && Number.isNaN(memUsedMbParsed)
+        ? null
+        : memUsedMbParsed;
+      const memTotalMb = memTotalMbParsed !== null && Number.isNaN(memTotalMbParsed)
+        ? null
+        : memTotalMbParsed;
+      console.log(`[InfraService] "${server.name}" memory: ${freeResult.stdout.trim()}`);
+
+      return {
+        ...base,
+        reachable: true,
+        caddyActive,
+        diskUsedPct,
+        memUsedMb,
+        memTotalMb,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[InfraService] SSH error for server "${server.name}": ${message}`);
+      return { ...base, error: message };
     } finally {
       conn.dispose();
     }

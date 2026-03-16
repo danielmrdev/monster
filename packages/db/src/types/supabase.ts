@@ -813,6 +813,51 @@ export type Database = {
         }
         Relationships: []
       }
+      servers: {
+        Row: {
+          id: string
+          name: string
+          provider: string
+          external_id: number | null
+          status: string
+          public_ip: string | null
+          tailscale_ip: string | null
+          datacenter: string | null
+          server_type: string | null
+          ssh_user: string
+          created_at: string
+          last_health_check: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          provider?: string
+          external_id?: number | null
+          status?: string
+          public_ip?: string | null
+          tailscale_ip?: string | null
+          datacenter?: string | null
+          server_type?: string | null
+          ssh_user?: string
+          created_at?: string
+          last_health_check?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          provider?: string
+          external_id?: number | null
+          status?: string
+          public_ip?: string | null
+          tailscale_ip?: string | null
+          datacenter?: string | null
+          server_type?: string | null
+          ssh_user?: string
+          created_at?: string
+          last_health_check?: string | null
+        }
+        Relationships: []
+      }
       site_templates: {
         Row: {
           description: string | null

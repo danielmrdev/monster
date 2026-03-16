@@ -3,6 +3,7 @@ import { Redis } from 'ioredis';
 import { createServiceClient } from '@monster/db';
 import { RsyncService } from '@monster/deployment';
 import { CaddyService } from '@monster/deployment';
+import type { Server } from '@monster/deployment';
 import { CloudflareClient } from '@monster/domains';
 import { SITE_STATUS_FLOW } from '@monster/shared';
 import type { SiteStatus } from '@monster/shared';
@@ -66,37 +67,26 @@ export async function runDeployPhase(
   }
 
   try {
-    // ── Read required settings ──────────────────────────────────────────────
-    const { data: settings, error: settingsErr } = await supabase
-      .from('settings')
-      .select('key, value')
-      .in('key', ['vps2_host', 'vps2_user', 'vps2_sites_root', 'vps2_ip', 'cloudflare_api_token']);
+    // ── Get first active server for deployment ──────────────────────────────
+    const { data: serverRow, error: serverErr } = await supabase
+      .from('servers')
+      .select('*')
+      .eq('status', 'active')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single();
 
-    if (settingsErr) {
-      throw new Error(`[DeployPhase] Failed to read settings: ${settingsErr.message}`);
+    if (serverErr || !serverRow) {
+      throw new Error('[DeployPhase] no active servers found in servers table');
     }
 
-    const settingsMap = new Map<string, string>(
-      (settings ?? []).map((s) => [s.key, s.value as string]),
-    );
-
-    const vps2Host = settingsMap.get('vps2_host');
-    const vps2User = settingsMap.get('vps2_user');
-    const vps2SitesRoot = settingsMap.get('vps2_sites_root');
-    const vps2Ip = settingsMap.get('vps2_ip');
-    const cfApiToken = settingsMap.get('cloudflare_api_token');
-
-    const missing = [
-      !vps2Host && 'vps2_host',
-      !vps2User && 'vps2_user',
-      !vps2SitesRoot && 'vps2_sites_root',
-      !vps2Ip && 'vps2_ip',
-      !cfApiToken && 'cloudflare_api_token',
-    ].filter(Boolean);
-
-    if (missing.length > 0) {
-      throw new Error(`[DeployPhase] Missing required settings: ${missing.join(', ')}`);
+    const server = serverRow as Server;
+    const deployHost = server.tailscale_ip ?? server.public_ip;
+    if (!deployHost) {
+      throw new Error(`[DeployPhase] server "${server.name}" has no IP address`);
     }
+
+    console.log(`[DeployPhase] using server "${server.name}" (${deployHost})`);
 
     // ── Transition: current → deploying ────────────────────────────────────
     const currentStatus = (site.status ?? 'draft') as SiteStatus;
@@ -110,9 +100,9 @@ export async function runDeployPhase(
     console.log(`[DeployPhase] site ${siteId}: ${currentStatus} → deploying`);
 
     // ── Step 1: rsync ───────────────────────────────────────────────────────
-    console.log(`[DeployPhase] rsync: deploying slug "${slug}" to ${vps2Host}`);
+    console.log(`[DeployPhase] rsync: deploying slug "${slug}" to ${deployHost}`);
     const rsync = new RsyncService();
-    await rsync.deploy(slug, vps2Host!, vps2User!, vps2SitesRoot!);
+    await rsync.deploy(slug, server);
     console.log(`[DeployPhase] rsync: done`);
 
     if (bullJobId) {
@@ -125,7 +115,7 @@ export async function runDeployPhase(
     // ── Step 2: Caddy virtualhost ──────────────────────────────────────────
     console.log(`[DeployPhase] caddy: writing virtualhost for ${domain}`);
     const caddy = new CaddyService();
-    await caddy.writeVirtualhost(domain, slug, vps2Host!, vps2User!);
+    await caddy.writeVirtualhost(domain, slug, server);
     console.log(`[DeployPhase] caddy: done`);
 
     if (bullJobId) {
@@ -156,8 +146,8 @@ export async function runDeployPhase(
         { onConflict: 'domain' },
       );
 
-    console.log(`[DeployPhase] cloudflare: ensuring A record ${domain} → ${vps2Ip}`);
-    await cf.ensureARecord(zoneId, vps2Ip!, domain);
+    console.log(`[DeployPhase] cloudflare: ensuring A record ${domain} → ${server.public_ip}`);
+    await cf.ensureARecord(zoneId, server.public_ip!, domain);
     console.log(`[DeployPhase] cloudflare: A record done`);
 
     if (bullJobId) {

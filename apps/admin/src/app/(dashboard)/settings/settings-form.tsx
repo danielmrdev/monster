@@ -135,67 +135,24 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys }: Setting
             <MaskedIndicator last4={maskedDisplay['dataforseo_api_key']} />
             <FieldError messages={errors?.dataforseo_api_key} />
           </div>
-        </CardContent>
-      </Card>
 
-      {/* VPS2 Deployment */}
-      <Card>
-        <CardHeader>
-          <CardTitle>VPS2 Deployment</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            VPS2 must be reachable via Tailscale SSH. Ensure{' '}
-            <span className="font-mono">import sites/*</span> is in VPS2&apos;s global
-            Caddyfile.
-          </p>
-
-          {/* VPS2 Host */}
+          {/* Hetzner API Token */}
           <div className="space-y-1.5">
-            <Label htmlFor="vps2_host">VPS2 Host</Label>
+            <Label htmlFor="hetzner_api_token">Hetzner API Token</Label>
             <Input
-              id="vps2_host"
-              name="vps2_host"
-              type="text"
+              id="hetzner_api_token"
+              name="hetzner_api_token"
+              type="password"
               autoComplete="off"
-              placeholder="e.g. 192.168.x.x or tailscale-hostname"
+              placeholder="Enter new token to update"
               defaultValue=""
-              aria-invalid={!!errors?.vps2_host}
+              aria-invalid={!!errors?.hetzner_api_token}
             />
-            <MaskedIndicator last4={maskedDisplay['vps2_host']} />
-            <FieldError messages={errors?.vps2_host} />
-          </div>
-
-          {/* VPS2 User */}
-          <div className="space-y-1.5">
-            <Label htmlFor="vps2_user">VPS2 User</Label>
-            <Input
-              id="vps2_user"
-              name="vps2_user"
-              type="text"
-              autoComplete="off"
-              placeholder="e.g. daniel"
-              defaultValue=""
-              aria-invalid={!!errors?.vps2_user}
-            />
-            <MaskedIndicator last4={maskedDisplay['vps2_user']} />
-            <FieldError messages={errors?.vps2_user} />
-          </div>
-
-          {/* VPS2 Sites Root */}
-          <div className="space-y-1.5">
-            <Label htmlFor="vps2_sites_root">VPS2 Sites Root</Label>
-            <Input
-              id="vps2_sites_root"
-              name="vps2_sites_root"
-              type="text"
-              autoComplete="off"
-              placeholder="e.g. /var/www/sites"
-              defaultValue=""
-              aria-invalid={!!errors?.vps2_sites_root}
-            />
-            <MaskedIndicator last4={maskedDisplay['vps2_sites_root']} />
-            <FieldError messages={errors?.vps2_sites_root} />
+            <MaskedIndicator last4={maskedDisplay['hetzner_api_token']} />
+            <p className="text-xs text-muted-foreground mt-1">
+              Used to provision new VPS servers via the Hetzner Cloud API.
+            </p>
+            <FieldError messages={errors?.hetzner_api_token} />
           </div>
         </CardContent>
       </Card>
@@ -225,22 +182,6 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys }: Setting
             />
             <MaskedIndicator last4={maskedDisplay['cloudflare_api_token']} />
             <FieldError messages={errors?.cloudflare_api_token} />
-          </div>
-
-          {/* VPS2 Public IP */}
-          <div className="space-y-1.5">
-            <Label htmlFor="vps2_ip">VPS2 Public IP</Label>
-            <Input
-              id="vps2_ip"
-              name="vps2_ip"
-              type="text"
-              autoComplete="off"
-              placeholder="e.g. 1.2.3.4"
-              defaultValue=""
-              aria-invalid={!!errors?.vps2_ip}
-            />
-            <MaskedIndicator last4={maskedDisplay['vps2_ip']} />
-            <FieldError messages={errors?.vps2_ip} />
           </div>
         </CardContent>
       </Card>
