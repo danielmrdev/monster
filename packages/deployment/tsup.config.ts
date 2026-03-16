@@ -5,7 +5,7 @@ export default defineConfig({
   format: ['esm'],
   dts: true,
   target: 'node20',
-  external: ['node-ssh'],
+  external: ['node-ssh', '@monster/db'],
   clean: true,
   sourcemap: false,
 });

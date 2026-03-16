@@ -44,7 +44,7 @@
 
 ## Tasks
 
-- [ ] **T01: InfraService in packages/deployment** `est:45m`
+- [x] **T01: InfraService in packages/deployment** `est:45m`
   - Why: The health data needs a typed service layer that `page.tsx` can call server-side and that the API route can call too.
   - Files: `packages/deployment/src/infra.ts`, `packages/deployment/src/index.ts`
   - Do: Create `InfraService` class. `getVps2Health()`: reads `vps2_host` + `vps2_user` from Supabase settings (createServiceClient pattern); creates NodeSSH connection via SSH agent; runs 3 commands: `systemctl is-active caddy`, `df -h / | tail -1 | awk '{print $5}'`, `free -m | awk '/Mem/{print $3, $2}'`; parses into `Vps2Health = { reachable: boolean, caddyActive: boolean, diskUsedPct: number, memUsedMb: number, memTotalMb: number, error?: string }`. `testDeployConnection()`: similar pattern but just runs `echo ok`; returns `{ ok: boolean, error?: string }`. Export both from `packages/deployment/src/index.ts`. Rebuild package.

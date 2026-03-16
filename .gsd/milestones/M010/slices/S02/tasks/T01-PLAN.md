@@ -44,3 +44,10 @@ Add `InfraService` class to `packages/deployment/src/infra.ts`. Two methods: `ge
 
 - `packages/deployment/src/infra.ts` — InfraService class, ~100 lines
 - `packages/deployment/src/index.ts` — updated with InfraService and Vps2Health exports
+
+## Observability Impact
+
+- **New log lines:** `[InfraService]` prefixed console logs for SSH connection attempts, health metric results (caddy status, disk %, memory), and connection test outcomes.
+- **Inspection:** Callers (API routes) can inspect the returned `Vps2Health` or `{ ok, error? }` objects. Errors are always surfaced in the `error` field — never swallowed.
+- **Failure visibility:** SSH failures, missing settings, and unexpected command output all produce structured error objects with descriptive messages. No method throws — all failures are returned as typed error values.
+- **Redaction:** VPS2 host and user are read from Supabase settings at runtime. Host/user values are not logged (only `[InfraService] connecting to VPS2 via SSH agent`).
