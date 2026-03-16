@@ -19,14 +19,14 @@ import {
 const navItems = [
   { href: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard },
   { href: '/sites',      label: 'Sites',          icon: Globe },
-  { href: '/monster',    label: 'Monster Chat',   icon: MessageSquare },
+  { href: '/templates',  label: 'Templates',      icon: FileText },
   { href: '/research',   label: 'Research Lab',   icon: FlaskConical },
   { href: '/analytics',  label: 'Analytics',      icon: BarChart2 },
   { href: '/finances',   label: 'Finances',       icon: DollarSign },
   { href: '/alerts',     label: 'Alerts',         icon: Bell },
-  { href: '/templates',  label: 'Templates',      icon: FileText },
-  { href: '/settings',   label: 'Settings',       icon: Settings },
+  { href: '/monster',    label: 'Monster Chat',   icon: MessageSquare },
   { href: '/infra',      label: 'Infrastructure', icon: Server },
+  { href: '/settings',   label: 'Settings',       icon: Settings },
 ]
 
 interface NavSidebarProps {
@@ -40,13 +40,20 @@ export function NavSidebar({ chatOpen = false, onChatToggle }: NavSidebarProps) 
   return (
     <aside className="w-[220px] shrink-0 flex flex-col h-full bg-sidebar border-r border-sidebar-border">
       {/* Brand */}
-      <div className="px-5 py-5 flex items-center gap-2.5 border-b border-sidebar-border">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-          <Zap className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
+      <div className="px-5 py-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+            <Zap className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[15px] font-semibold tracking-tight text-foreground leading-tight">
+              BuilderMonster
+            </span>
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              v{process.env.NEXT_PUBLIC_APP_VERSION}
+            </span>
+          </div>
         </div>
-        <span className="text-[15px] font-semibold tracking-tight text-foreground">
-          BuilderMonster
-        </span>
       </div>
 
       {/* Nav */}

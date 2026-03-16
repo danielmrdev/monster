@@ -15,7 +15,7 @@ import { createServiceClient } from '@monster/db';
 // Raw fetch (D065) — no npm client exists for Spaceship API.
 // ---------------------------------------------------------------------------
 
-const SPACESHIP_BASE_URL = 'https://api.spaceship.com/v1';
+const SPACESHIP_BASE_URL = 'https://spaceship.dev/api/v1';
 
 interface SpaceshipCredentials {
   apiKey: string;

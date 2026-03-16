@@ -122,13 +122,13 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys }: Setting
 
           {/* DataForSEO API Key */}
           <div className="space-y-1.5">
-            <Label htmlFor="dataforseo_api_key">DataForSEO API Key</Label>
+            <Label htmlFor="dataforseo_api_key">DataForSEO API Credentials</Label>
             <Input
               id="dataforseo_api_key"
               name="dataforseo_api_key"
               type="password"
               autoComplete="off"
-              placeholder="Enter new key to update"
+              placeholder="email:password (e.g. user@example.com:27e3bcf9...)"
               defaultValue=""
               aria-invalid={!!errors?.dataforseo_api_key}
             />

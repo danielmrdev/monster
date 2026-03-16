@@ -1,5 +1,16 @@
 import type { NextConfig } from 'next'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+
+// Read version from monorepo root package.json (single source of truth)
+const rootPkg = JSON.parse(
+  readFileSync(resolve(__dirname, '../../package.json'), 'utf-8')
+)
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_VERSION: rootPkg.version,
+  },
   serverExternalPackages: [
     '@anthropic-ai/claude-agent-sdk',
     '@monster/deployment',

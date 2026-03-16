@@ -111,6 +111,7 @@ Phase 1 implements ONLY TSA (Amazon Affiliate) sites. Architecture must be exten
 - Generated Astro sites must be fully static (no SSR)
 - Site type is an abstract concept — TSA is the first implementation
 - Target cost per site: ~$4/month (domain + hosting + DataForSEO product refresh)
+- **Version:** Root `package.json` is single source of truth. On milestone completion, run `./scripts/bump-version.sh <patch|minor|major>`. Criteria: `patch` = bug fixes, infra, polish; `minor` = new features/screens/integrations; `major` = breaking changes, rewrites.
 
 ## Decisions Made
 
