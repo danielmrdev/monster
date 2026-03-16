@@ -66,6 +66,12 @@ export interface SiteData {
   site: SiteInfo;
   categories: CategoryData[];
   products: ProductData[];
+  legalTemplates?: {
+    privacy?: string | null;
+    terms?: string | null;
+    cookies?: string | null;
+    contact?: string | null;
+  };
 }
 
 // ── Loader ────────────────────────────────────────────────────────────────

@@ -524,6 +524,34 @@ export class GenerateSiteJob {
             })),
         };
 
+        // ── Fetch legal template assignments ──────────────────────────────
+        let legalTemplates: {
+          privacy?: string | null;
+          terms?: string | null;
+          cookies?: string | null;
+          contact?: string | null;
+        } = {};
+
+        try {
+          const { data: assignments } = await supabase
+            .from('legal_template_assignments' as 'sites') // type cast: table not in generated types yet
+            .select('template_type, legal_templates(content)')
+            .eq('site_id', siteId);
+
+          if (assignments) {
+            for (const a of assignments as Array<{ template_type: string; legal_templates: { content: string } | null }>) {
+              const type = a.template_type as 'privacy' | 'terms' | 'cookies' | 'contact';
+              const content = a.legal_templates?.content ?? null;
+              if (type && content) legalTemplates[type] = content;
+            }
+          }
+        } catch (e) {
+          console.warn('[GenerateSiteJob] legal templates fetch failed (non-fatal):', e);
+        }
+
+        // Add legalTemplates to siteData
+        (siteData as typeof siteData & { legalTemplates: typeof legalTemplates }).legalTemplates = legalTemplates;
+
         // ── 4. Write site.json to apps/generator/src/data/<slug>/ ─────────
         const dataDir = join(GENERATOR_ROOT, 'src', 'data', slug);
         mkdirSync(dataDir, { recursive: true });

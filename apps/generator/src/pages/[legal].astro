@@ -1,10 +1,13 @@
 ---
 /**
- * Legal pages — static boilerplate for the four required legal pages.
+ * Legal pages — driven by assigned templates from the admin panel,
+ * with graceful fallback to built-in Spanish defaults.
  *
- * Current slugs are hardcoded to Spanish (privacidad, aviso-legal, cookies, contacto).
- * TODO (future pass): drive slug names from `site.language` to support multilingual legal pages.
- * When that pass happens, load site data here and derive the slug map from SUPPORTED_LANGUAGES.
+ * Template assignment flow:
+ *   Admin panel → legal_template_assignments DB row → site.json legalTemplates field
+ *   → read here at Astro build time → rendered as legal page content.
+ *
+ * If no template is assigned for a type, the hardcoded default content is used.
  */
 import ClassicLayout from "../layouts/classic/Layout.astro";
 import ModernLayout from "../layouts/modern/Layout.astro";
@@ -16,42 +19,49 @@ export async function getStaticPaths() {
   const slug = import.meta.env.SITE_SLUG ?? process.env.SITE_SLUG ?? "default";
   const data: SiteData = loadSiteData(slug);
 
-  // Legal page definitions — slugs are ES-specific for now.
-  // Defined inside getStaticPaths() so they land in the prerender chunk.
-  // TODO (future pass): drive slug names from `site.language` to support multilingual legal pages.
-  // When that pass happens, derive the slug map from SUPPORTED_LANGUAGES.
-  const LEGAL_PAGES = [
-    {
-      slug: "privacidad",
+  // Default fallback content (Spanish)
+  const DEFAULTS: Record<string, { title: string; content: string }> = {
+    privacidad: {
       title: "Política de Privacidad",
       content: `Esta política de privacidad describe cómo recogemos, utilizamos y protegemos su información personal cuando visita nuestro sitio web. Nos comprometemos a proteger su privacidad y a tratar sus datos personales de acuerdo con el Reglamento General de Protección de Datos (RGPD) y la Ley Orgánica de Protección de Datos y Garantía de los Derechos Digitales (LOPDGDD). No vendemos ni cedemos sus datos a terceros. Los datos que podamos recoger a través de formularios de contacto se utilizarán exclusivamente para responder a su consulta.`,
     },
-    {
-      slug: "aviso-legal",
+    "aviso-legal": {
       title: "Aviso Legal",
       content: `Este sitio web es operado por su titular, cuya información de contacto se facilita en la página de contacto. El acceso y uso de este sitio web implica la aceptación de las condiciones que se detallan en este aviso legal. El titular se reserva el derecho a modificar los contenidos y servicios del sitio sin previo aviso. Este sitio participa en el Programa de Afiliados de Amazon, lo que nos permite obtener comisiones por las compras realizadas a través de los enlaces de afiliado publicados.`,
     },
-    {
-      slug: "cookies",
+    cookies: {
       title: "Política de Cookies",
       content: `Este sitio web utiliza cookies técnicas necesarias para su funcionamiento. Las cookies son pequeños archivos de texto que se almacenan en su dispositivo cuando visita una web. Utilizamos cookies propias de sesión para mejorar su experiencia de navegación. No utilizamos cookies de seguimiento o publicidad de terceros. Puede configurar su navegador para rechazar las cookies, aunque esto puede afectar a la funcionalidad del sitio.`,
     },
-    {
-      slug: "contacto",
+    contacto: {
       title: "Contacto",
       content: `Si tiene alguna pregunta, sugerencia o necesita ponerse en contacto con nosotros, puede hacerlo a través del formulario de contacto o enviando un correo electrónico a la dirección indicada. Nos comprometemos a responder a su consulta en un plazo máximo de 48 horas laborables.`,
     },
-  ] as const;
+  };
 
-  return LEGAL_PAGES.map((page) => ({
-    params: { legal: page.slug },
-    props: {
-      site: data.site,
-      categories: data.categories,
-      pageTitle: page.title,
-      pageContent: page.content,
-    },
-  }));
+  // Slug → template type key mapping
+  const SLUG_TO_TYPE: Record<string, keyof NonNullable<typeof data.legalTemplates>> = {
+    privacidad: "privacy",
+    "aviso-legal": "terms",
+    cookies: "cookies",
+    contacto: "contact",
+  };
+
+  const legalTemplates = data.legalTemplates ?? {};
+
+  return Object.entries(DEFAULTS).map(([slug, fallback]) => {
+    const typeKey = SLUG_TO_TYPE[slug];
+    const templateContent = typeKey ? (legalTemplates[typeKey] ?? null) : null;
+    return {
+      params: { legal: slug },
+      props: {
+        site: data.site,
+        categories: data.categories,
+        pageTitle: fallback.title,
+        pageContent: templateContent ?? fallback.content,
+      },
+    };
+  });
 }
 
 interface Props {

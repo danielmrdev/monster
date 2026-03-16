@@ -74,7 +74,7 @@ This milestone is complete only when all are true:
 - [x] **S05: SEO Files + Search Engine Ping** `risk:low` `depends:[]`
   > After this: Generated site dist contains sitemap.xml, robots.txt, llm.txt; deploying a site sends IndexNow ping to Google and Bing.
 
-- [ ] **S06: Legal Page Templates** `risk:medium` `depends:[]`
+- [x] **S06: Legal Page Templates** `risk:medium` `depends:[]`
   > After this: /templates section in nav with CRUD for legal templates (privacy, terms, cookies, contact); templates assignable per site; assigned templates render in Astro-generated legal pages with graceful fallback to defaults.
 
 - [ ] **S07: Integration + Polish** `risk:low` `depends:[S01,S02,S03,S04,S05,S06]`
