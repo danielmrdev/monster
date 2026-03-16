@@ -67,3 +67,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M006: Product Refresh — S01 ✅ Worker Fix + Refresh Job Scaffold + Cron Scheduler | S02 ✅ Diff Engine + Conditional Rebuild + Alert Creation | S03 ✅ Dashboard Alert Surface + Alert Resolution UI
 - [x] M007: Monster Chat + Research Lab — S01 ✅ Streaming Chat + MCP Tools | S02 ✅ NicheResearcher BullMQ + DataForSEO | S03 ✅ Research Report UI + Domain Suggestions + Create Site CTA
 - [x] M008: Finances + Amazon Revenue — S01 ✅ Amazon CSV Import + Manual Revenue Entry | S02 ✅ P&L Dashboard + Domain Expiry Alerts + CSV Export
+- [ ] M009: UX Polish + Capabilities Upgrade — Generate Site feedback, chat markdown, global chat sidebar, AI SEO generation, prompt editor, Amazon scraper, SEO files, IndexNow ping, legal templates, dashboard enhancements

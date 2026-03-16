@@ -162,6 +162,129 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Supporting slices: M003/S02
 - Validation: M003/S01 — Classic/Modern/Minimal implemented across all page types (homepage, category, product, 4 legal); CSS custom property theming via define:vars (primary, accent, font); astro check exit 0 (10 files, 0 errors); 11-page fixture build verified; affiliate links contain ?tag=; no Amazon CDN URLs in built HTML
 
+### R033 — Generate Site button feedback
+- Class: primary-user-loop
+- Status: active
+- Description: Clicking "Generate Site" immediately shows a loading indicator; the button reflects live job status (pending/running/completed/failed) by polling ai_jobs. User knows the job is running without guessing.
+- Why it matters: Silent form submission makes the operator think the button didn't work and click twice, queuing duplicate jobs.
+- Source: user
+- Primary owning slice: M009/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Uses existing ai_jobs polling pattern (same as DeployStatus component).
+
+### R034 — Auth via claude-agent-sdk only (no API key)
+- Class: constraint
+- Status: active
+- Description: All Claude AI calls use the claude-agent-sdk which authenticates via the system's claude CLI OAuth token (Pro/Max plan). The claude_api_key settings field is removed entirely.
+- Why it matters: Architectural requirement from project inception — D007. Having both auth methods is contradictory and confusing.
+- Source: user
+- Primary owning slice: M009/S01
+- Supporting slices: none
+- Validation: unmapped
+
+### R035 — AI SEO text generation in category/product forms
+- Class: primary-user-loop
+- Status: active
+- Description: A "Generate with AI" button next to each SEO text field in CategoryForm and ProductForm calls an API route that streams AI-generated content with full site/category context. User can regenerate or edit the result.
+- Why it matters: Manual SEO writing at 50+ products/site is not viable. AI assist at the form level completes the content loop.
+- Source: user
+- Primary owning slice: M009/S02
+- Supporting slices: none
+- Validation: unmapped
+
+### R036 — Chat markdown rendering
+- Class: quality-attribute
+- Status: active
+- Description: Chat assistant responses render markdown formatting (bold, headers, lists, code blocks, links) in the chat UI.
+- Why it matters: Claude responses use markdown extensively. Plain text rendering makes structured responses unreadable.
+- Source: user
+- Primary owning slice: M009/S01
+- Supporting slices: none
+- Validation: unmapped
+
+### R037 — Global chat sidebar with page context
+- Class: primary-user-loop
+- Status: active
+- Description: Monster chat is accessible as a collapsible right panel on all dashboard pages. The current page context (route label) is included in every message so the assistant knows where the user is.
+- Why it matters: Navigating to /monster to ask a question breaks the workflow. Context-aware answers from any page are 10x more useful.
+- Source: user
+- Primary owning slice: M009/S03
+- Supporting slices: none
+- Validation: unmapped
+
+### R038 — System prompt editor in Settings
+- Class: admin/support
+- Status: active
+- Description: System prompts for all agents (Monster, NicheResearcher, ContentGenerator) are editable in the Settings page and stored in the agent_prompts DB table. Agents read DB override at job start; fall back to hardcoded default.
+- Why it matters: The operator needs to tune agent behavior (language, tone, rules) without a code deploy.
+- Source: user
+- Primary owning slice: M009/S02
+- Supporting slices: none
+- Validation: unmapped
+
+### R039 — Amazon scraper for product search
+- Class: primary-user-loop
+- Status: active
+- Description: Product search in the admin panel uses an Amazon scraper (Node.js + cheerio, rotating user agents) instead of DataForSEO. DFS is only called for ASIN-level enrichment when adding a selected product.
+- Why it matters: DataForSEO product search costs money per query. Scraper makes product discovery free.
+- Source: user
+- Primary owning slice: M009/S04
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Ported from danielmrdev/tsa-monster AmazonScraperService.php.
+
+### R040 — SEO files per generated site
+- Class: quality-attribute
+- Status: active
+- Description: Every generated site dist contains sitemap.xml (all page URLs), robots.txt (allow all + sitemap reference), and llm.txt (site description for AI agents).
+- Why it matters: Sitemap and robots.txt are baseline SEO requirements. llm.txt is emerging standard for AI agent crawlers.
+- Source: user
+- Primary owning slice: M009/S05
+- Supporting slices: none
+- Validation: unmapped
+
+### R041 — Search engine ping on deploy
+- Class: operability
+- Status: active
+- Description: When a site deploys successfully, the deploy phase pings Google and Bing via IndexNow API to request crawling.
+- Why it matters: Without a ping, search engines may take days to discover new or updated content. Pinging accelerates indexing.
+- Source: user
+- Primary owning slice: M009/S05
+- Supporting slices: none
+- Validation: unmapped
+
+### R042 — Legal page templates (editable, assignable)
+- Class: primary-user-loop
+- Status: active
+- Description: Legal page templates (privacy policy, terms of use, cookies, contact) are stored in DB as markdown, editable in a dedicated /templates section. Multiple templates per type (different languages, sectors). Each site can have one template assigned per type. Rendered in Astro at build time.
+- Why it matters: Legal pages are mandatory for every site. Copy-pasting and editing raw Astro files doesn't scale. Templates with language/sector variants save hours per site.
+- Source: user
+- Primary owning slice: M009/S06
+- Supporting slices: none
+- Validation: unmapped
+
+### R043 — Dashboard: enriched alerts and financial summary
+- Class: failure-visibility
+- Status: active
+- Description: Dashboard shows recent failed jobs (name, site, timestamp, error snippet), open product alerts count with link, top 5 sites by pageviews, and a P&L summary widget (total revenue - total costs this month).
+- Why it matters: The dashboard is the first screen the operator sees. It should surface actionable information immediately, not just KPI counts.
+- Source: user
+- Primary owning slice: M009/S01
+- Supporting slices: none
+- Validation: unmapped
+
+### R044 — Affiliate tag per-site (not global)
+- Class: constraint
+- Status: active
+- Description: Each site has its own affiliate_tag field (already exists on the sites table). There is no global affiliate_tag in Settings. Sites without an affiliate_tag show a warning.
+- Why it matters: Different sites need different affiliate tags for revenue attribution. A global tag would incorrectly attribute all revenue to one tag.
+- Source: user
+- Primary owning slice: M009/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: affiliate_tag already on sites table from M001. Confirm amazon_affiliate_tag is NOT in SETTINGS_KEYS (it currently is — remove it).
+
 ## Deferred
 
 ### R020 — Amazon Associates API auto-sync
@@ -284,10 +407,22 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R030 | constraint | out-of-scope | none | none | n/a |
 | R031 | anti-feature | out-of-scope | none | none | n/a |
 | R032 | anti-feature | out-of-scope | none | none | n/a |
+| R033 | primary-user-loop | active | M009/S01 | none | unmapped |
+| R034 | constraint | active | M009/S01 | none | unmapped |
+| R035 | primary-user-loop | active | M009/S02 | none | unmapped |
+| R036 | quality-attribute | active | M009/S01 | none | unmapped |
+| R037 | primary-user-loop | active | M009/S03 | none | unmapped |
+| R038 | admin/support | active | M009/S02 | none | unmapped |
+| R039 | primary-user-loop | active | M009/S04 | none | unmapped |
+| R040 | quality-attribute | active | M009/S05 | none | unmapped |
+| R041 | operability | active | M009/S05 | none | unmapped |
+| R042 | primary-user-loop | active | M009/S06 | none | unmapped |
+| R043 | failure-visibility | active | M009/S01 | none | unmapped |
+| R044 | constraint | active | M009/S01 | none | unmapped |
 
 ## Coverage Summary
 
-- Active requirements: 15
-- Mapped to milestones: 15
+- Active requirements: 27
+- Mapped to milestones: 27
 - Validated: 4 (R013, R004, R005, R015)
 - Unmapped active requirements: 0
