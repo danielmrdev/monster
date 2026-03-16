@@ -77,7 +77,7 @@ This milestone is complete only when all are true:
 - [x] **S06: Legal Page Templates** `risk:medium` `depends:[]`
   > After this: /templates section in nav with CRUD for legal templates (privacy, terms, cookies, contact); templates assignable per site; assigned templates render in Astro-generated legal pages with graceful fallback to defaults.
 
-- [ ] **S07: Integration + Polish** `risk:low` `depends:[S01,S02,S03,S04,S05,S06]`
+- [x] **S07: Integration + Polish** `risk:low` `depends:[S01,S02,S03,S04,S05,S06]`
   > After this: Full milestone verified end-to-end; build clean; pm2 reload passes; all S01–S06 must-haves re-checked together.
 
 ## Boundary Map
