@@ -12,6 +12,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@monster/agents": "workspace:*",
     "@monster/db": "workspace:*",
+    "@monster/deployment": "workspace:*",
     "@monster/domains": "workspace:*",
     "@monster/shared": "workspace:*",
     "@supabase/ssr": "^0.9.0",

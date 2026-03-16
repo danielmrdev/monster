@@ -43,3 +43,10 @@ Add the `/api/infra/test-connection` POST route handler and a `/infra` nav item 
 - `apps/admin/src/app/api/infra/test-connection/route.ts` (new)
 - `apps/admin/src/components/nav-sidebar.tsx` (modified — `/infra` nav item)
 - `apps/admin/next.config.ts` (possibly modified — serverExternalPackages)
+
+## Observability Impact
+
+- **New signal:** `POST /api/infra/test-connection` returns `{ ok: boolean, error?: string }` — the error field surfaces SSH connection failure details as structured JSON, never swallowed.
+- **Log lines:** `[API /infra/test-connection] unexpected error: ...` logged on unexpected (non-InfraService) failures, complementing `[InfraService]` prefixed logs from the service layer.
+- **Inspection:** `curl -X POST /api/infra/test-connection` from any HTTP client returns the connection test result. NavSidebar `/infra` link provides navigation to the future health page.
+- **Failure visibility:** Unexpected exceptions in the route handler return HTTP 500 with `{ ok: false, error: "..." }` — never a bare crash.

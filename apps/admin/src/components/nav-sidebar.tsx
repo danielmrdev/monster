@@ -11,6 +11,7 @@ import {
   DollarSign,
   Bell,
   Settings,
+  Server,
   Zap,
   FileText,
 } from 'lucide-react'
@@ -25,6 +26,7 @@ const navItems = [
   { href: '/alerts',     label: 'Alerts',         icon: Bell },
   { href: '/templates',  label: 'Templates',      icon: FileText },
   { href: '/settings',   label: 'Settings',       icon: Settings },
+  { href: '/infra',      label: 'Infrastructure', icon: Server },
 ]
 
 interface NavSidebarProps {

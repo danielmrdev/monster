@@ -51,7 +51,7 @@
   - Verify: `pnpm --filter @monster/deployment build` exits 0; `InfraService` exported from index.
   - Done when: package builds, `Vps2Health` type exported, both methods implemented with SSH agent connection
 
-- [ ] **T02: Infra API routes and nav item** `est:30m`
+- [x] **T02: Infra API routes and nav item** `est:30m`
   - Why: Admin panel needs to call InfraService from server-side RSC and from a client button.
   - Files: `apps/admin/src/app/api/infra/test-connection/route.ts`, `apps/admin/src/components/nav-sidebar.tsx`
   - Do: Create `POST /api/infra/test-connection` route: calls `new InfraService().testDeployConnection()`, returns `NextResponse.json({ ok, error? })`. Add `/infra` nav item to `NavSidebar` below Settings or at bottom of nav list (use existing NavItem pattern). Ensure `@monster/deployment` is in `serverExternalPackages` in `next.config.ts` if not already.

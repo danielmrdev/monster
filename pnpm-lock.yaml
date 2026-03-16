@@ -25,6 +25,9 @@ importers:
       '@monster/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@monster/deployment':
+        specifier: workspace:*
+        version: link:../../packages/deployment
       '@monster/domains':
         specifier: workspace:*
         version: link:../../packages/domains
