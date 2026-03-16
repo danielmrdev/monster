@@ -7,6 +7,7 @@ import { CloudflareClient } from '@monster/domains';
 import { SITE_STATUS_FLOW } from '@monster/shared';
 import type { SiteStatus } from '@monster/shared';
 import { createRedisOptions, sslPollerQueue } from '../queue.js';
+import { pingIndexNow } from '../index-now.js';
 
 // ---------------------------------------------------------------------------
 // DeploySitePayload
@@ -169,6 +170,10 @@ export async function runDeployPhase(
     // ── Transition: deploying → dns_pending ──────────────────────────────
     await supabase.from('sites').update({ status: 'dns_pending' }).eq('id', siteId);
     console.log(`[DeployPhase] site ${siteId}: deploying → dns_pending`);
+
+    // ── IndexNow ping ─────────────────────────────────────────────────────
+    // Non-fatal: failure logged as warning, never throws
+    await pingIndexNow(domain);
 
     // ── Update deployments row: succeeded ────────────────────────────────
     const durationMs = Date.now() - deployStart;

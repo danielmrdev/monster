@@ -8,6 +8,7 @@ import { createRedisOptions } from '../queue.js';
 import { Redis } from 'ioredis';
 import { DataForSEOClient } from '../clients/dataforseo.js';
 import type { DataForSEOProduct } from '../clients/dataforseo.js';
+import { writeSeoFiles } from '../seo-files.js';
 import { processImages } from '../pipeline/images.js';
 import { ContentGenerator } from '../content-generator.js';
 import { scorePage } from '@monster/seo-scorer';
@@ -622,7 +623,45 @@ export class GenerateSiteJob {
           }
         }
 
-        // ── 7. Deploy phase ───────────────────────────────────────────────
+        // ── 7.5. SEO files phase ─────────────────────────────────────────
+        // Write sitemap.xml, robots.txt, llm.txt, and IndexNow key file to dist/
+        // Non-fatal: log warning and continue to deploy if writing fails.
+        try {
+          await supabase
+            .from('ai_jobs')
+            .update({ payload: { phase: 'seo_files', done: 0, total: 1 } })
+            .eq('bull_job_id', job.id ?? '');
+
+          // Collect page URLs from the already-built dist HTML files
+          const { glob } = await import('node:fs/promises');
+          const pageUrls: string[] = [];
+          for await (const f of glob('**/*.html', { cwd: distDir })) {
+            const relPath = f.replace(/\\/g, '/');
+            if (relPath === 'index.html') {
+              pageUrls.push('/');
+            } else {
+              // Convert 'categories/air-fryers/index.html' → '/categories/air-fryers/'
+              const url = '/' + relPath.replace(/\/index\.html$/, '/').replace(/index\.html$/, '');
+              pageUrls.push(url);
+            }
+          }
+
+          writeSeoFiles(distDir, {
+            domain: site.domain ?? `${slug}.example.com`,
+            name: site.name as string,
+            niche: (site.niche ?? site.name) as string,
+            language: (site.language ?? 'en') as string,
+          }, pageUrls);
+
+          await supabase
+            .from('ai_jobs')
+            .update({ payload: { phase: 'seo_files', done: 1, total: 1 } })
+            .eq('bull_job_id', job.id ?? '');
+        } catch (seoErr) {
+          console.warn(`[GenerateSiteJob] seo_files: non-fatal error writing SEO files:`, seoErr);
+        }
+
+        // ── 8. Deploy phase ───────────────────────────────────────────────
         // Runs AFTER the Astro build try/finally — cwd is restored to monorepo root.
         // If site.domain is null, runDeployPhase logs a warning and skips gracefully.
         console.log(`[GenerateSiteJob] deploy phase: starting for site ${siteId}`);

@@ -71,7 +71,7 @@ This milestone is complete only when all are true:
 - [x] **S04: Amazon Product Scraper** `risk:medium` `depends:[]`
   > After this: Product search uses Amazon scraper (cheerio + Node fetch); real product results appear in the search UI; DFS ASIN lookup still called when adding a selected product.
 
-- [ ] **S05: SEO Files + Search Engine Ping** `risk:low` `depends:[]`
+- [x] **S05: SEO Files + Search Engine Ping** `risk:low` `depends:[]`
   > After this: Generated site dist contains sitemap.xml, robots.txt, llm.txt; deploying a site sends IndexNow ping to Google and Bing.
 
 - [ ] **S06: Legal Page Templates** `risk:medium` `depends:[]`
