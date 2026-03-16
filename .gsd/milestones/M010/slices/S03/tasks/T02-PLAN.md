@@ -29,6 +29,12 @@ Extend `scripts/deploy.sh` with a VPS2 pre-flight SSH check at the top: before g
 - [ ] On success: proceeds with existing git pull / build / pm2 steps unchanged
 - [ ] `bash -n scripts/deploy.sh` exits 0
 
+## Observability Impact
+
+- **New structured log lines:** `[pre-flight] ✓ VPS2 reachable, Caddy active.` on success; `[pre-flight] ✗ VPS2 health check failed.` on failure; `[pre-flight] ⏭ VPS2 check skipped (...)` when bypassed. Agents grep for `[pre-flight]` prefix to determine deploy readiness.
+- **Failure state:** Non-zero exit (code 1) with actionable error listing `VPS2_HOST`, `VPS2_USER`, and Tailscale as things to check. The error message is self-contained — no need to read source to diagnose.
+- **Inspection:** `SKIP_VPS2_CHECK=1 bash scripts/deploy.sh` to bypass in CI/local. `VPS2_HOST=<ip> bash scripts/deploy.sh` to test against a specific host.
+
 ## Verification
 
 - `bash -n scripts/deploy.sh` exits 0

@@ -21,7 +21,7 @@
   - Verify: `bash -n scripts/setup-vps1.sh` exits 0
   - Done when: script covers all 6 sections, syntax-valid, idempotency checks present
 
-- [ ] **T02: Extend deploy.sh with VPS2 pre-flight check** `est:30m`
+- [x] **T02: Extend deploy.sh with VPS2 pre-flight check** `est:30m`
   - Why: Silent mid-rsync failures are confusing. An upfront check exits fast with a clear error.
   - Files: `scripts/deploy.sh`, `scripts/lib/vps2-check.sh` (use from S01)
   - Do: At the top of `deploy.sh` (before `git pull`), add a pre-flight section. Read `vps2_host` and `vps2_user` from environment or from a local `.vps2.env` file (if present — not committed). Run `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 "$VPS2_USER@$VPS2_HOST" 'systemctl is-active caddy'` and capture exit code. If non-zero, print actionable error: `[pre-flight] ERROR: VPS2 SSH check failed. Verify vps2_host/vps2_user settings and Tailscale connection.` and exit 1. If 0, print `[pre-flight] VPS2 reachable, Caddy active.` and continue. Make VPS2_HOST/VPS2_USER overrideable via env vars so the check can be skipped in CI/local by setting `SKIP_VPS2_CHECK=1`.
