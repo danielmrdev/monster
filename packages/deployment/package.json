@@ -17,6 +17,7 @@
     "dev": "tsup --watch"
   },
   "dependencies": {
+    "@monster/db": "workspace:*",
     "node-ssh": "^13.2.1"
   },
   "devDependencies": {
