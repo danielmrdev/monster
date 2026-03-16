@@ -12,6 +12,7 @@ import {
   Bell,
   Settings,
   Zap,
+  FileText,
 } from 'lucide-react'
 
 const navItems = [
@@ -22,10 +23,16 @@ const navItems = [
   { href: '/analytics',  label: 'Analytics',      icon: BarChart2 },
   { href: '/finances',   label: 'Finances',       icon: DollarSign },
   { href: '/alerts',     label: 'Alerts',         icon: Bell },
+  { href: '/templates',  label: 'Templates',      icon: FileText },
   { href: '/settings',   label: 'Settings',       icon: Settings },
 ]
 
-export function NavSidebar() {
+interface NavSidebarProps {
+  chatOpen?: boolean
+  onChatToggle?: () => void
+}
+
+export function NavSidebar({ chatOpen = false, onChatToggle }: NavSidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -72,6 +79,41 @@ export function NavSidebar() {
           )
         })}
       </nav>
+
+      {/* Chat toggle button */}
+      {onChatToggle && (
+        <div className="px-3 py-3 border-t border-sidebar-border shrink-0">
+          <button
+            onClick={onChatToggle}
+            className={[
+              'flex items-center gap-3 w-full rounded-md px-3 py-2 text-[13px] font-medium transition-colors duration-150',
+              chatOpen
+                ? 'bg-primary/10 text-primary'
+                : 'text-sidebar-foreground hover:bg-white/5 hover:text-foreground',
+            ].join(' ')}
+            aria-label={chatOpen ? 'Close Monster Chat sidebar' : 'Open Monster Chat sidebar'}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={chatOpen ? 2 : 1.75}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={['h-4 w-4 shrink-0', chatOpen ? 'text-primary' : 'text-muted-foreground'].join(' ')}
+            >
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+            </svg>
+            <span>Ask Monster</span>
+            {chatOpen && (
+              <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+            )}
+          </button>
+        </div>
+      )}
     </aside>
   )
 }

@@ -1,10 +1,5 @@
-import { NavSidebar } from '@/components/nav-sidebar'
+import { DashboardShell } from '@/components/dashboard-shell'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex h-screen bg-background">
-      <NavSidebar />
-      <main className="flex-1 overflow-auto p-8">{children}</main>
-    </div>
-  )
+  return <DashboardShell>{children}</DashboardShell>
 }

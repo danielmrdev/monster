@@ -65,7 +65,7 @@ This milestone is complete only when all are true:
 - [x] **S02: AI SEO Generation + Prompt Editor** `risk:medium` `depends:[S01]`
   > After this: "Generate with AI" button in CategoryForm and ProductForm calls a new API route and streams AI-generated SEO text with site/category context; System prompts editable in Settings and stored in DB.
 
-- [ ] **S03: Global Chat Sidebar** `risk:medium` `depends:[S01]`
+- [x] **S03: Global Chat Sidebar** `risk:medium` `depends:[S01]`
   > After this: Chat panel slides in from the right on any dashboard page; toggle button in nav; page context (current route label) sent with every message; /monster page unchanged for conversation history.
 
 - [ ] **S04: Amazon Product Scraper** `risk:medium` `depends:[]`
