@@ -341,7 +341,14 @@ export class GenerateSiteJob {
           .eq('bull_job_id', job.id ?? '');
 
         // ── generate_content phase ────────────────────────────────────────
-        const contentGenerator = new ContentGenerator();
+        // ContentGenerator is instantiated lazily — only when an item without
+        // focus_keyword is found. Re-generating a site where all content already
+        // exists never requires ANTHROPIC_API_KEY.
+        let contentGenerator: ContentGenerator | null = null;
+        const getOrInitGenerator = (): ContentGenerator => {
+          if (!contentGenerator) contentGenerator = new ContentGenerator();
+          return contentGenerator;
+        };
         const language = (site.language ?? 'en') as string;
         const totalContentItems = categories.length + allProducts.length;
         let contentDone = 0;
@@ -359,12 +366,14 @@ export class GenerateSiteJob {
 
         for (const cat of currentCategories ?? []) {
           const keyword = (cat.keywords as string[])?.[0] ?? cat.name;
-          const result = await contentGenerator.generateCategoryContent({
-            name: cat.name,
-            keyword,
-            language,
-            alreadyHasFocusKeyword: cat.focus_keyword !== null,
-          });
+          const result = cat.focus_keyword !== null
+            ? null
+            : await getOrInitGenerator().generateCategoryContent({
+                name: cat.name,
+                keyword,
+                language,
+                alreadyHasFocusKeyword: false,
+              });
           if (result) {
             await supabase
               .from('tsa_categories')
@@ -392,13 +401,15 @@ export class GenerateSiteJob {
         const productMetaDescriptions = new Map<string, string>(); // product id → meta_description
 
         for (const prod of currentProducts ?? []) {
-          const result = await contentGenerator.generateProductContent({
-            asin: prod.asin,
-            title: prod.title ?? prod.asin,
-            price: prod.current_price ?? 0,
-            language,
-            alreadyHasFocusKeyword: prod.focus_keyword !== null,
-          });
+          const result = prod.focus_keyword !== null
+            ? null
+            : await getOrInitGenerator().generateProductContent({
+                asin: prod.asin,
+                title: prod.title ?? prod.asin,
+                price: prod.current_price ?? 0,
+                language,
+                alreadyHasFocusKeyword: false,
+              });
           if (result) {
             await supabase
               .from('tsa_products')

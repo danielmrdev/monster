@@ -64,3 +64,14 @@ Building `domains` and `agents` in parallel fails because agents needs domains' 
 **Discovered:** M011/S02/T03
 
 A task can be marked `[x]` in the slice plan without a corresponding `T0N-SUMMARY.md` and without any file changes. When the final task of a slice runs slice-level verification, always check that prior tasks' expected file state is actually present — don't trust the `[x]` marker alone. If a task is marked done but its files are unchanged, apply the missing work within the current task and note the deviation in the summary.
+
+## KN007 — psql not available; use Node pg client for migrations
+
+**Discovered:** M012/S01/T01
+
+`psql` is not installed in this environment. Apply SQL migrations using Node.js with the `pg` package available at `/home/daniel/monster/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/index.js`. Always use `ssl: { rejectUnauthorized: false }` for Supabase connections and call `client.end()` to prevent the process from hanging. Pattern:
+```js
+const { Client } = require('/home/daniel/monster/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/index.js');
+const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+await client.connect(); /* ... queries ... */ await client.end();
+```
