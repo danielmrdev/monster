@@ -46,3 +46,21 @@ Update all four Astro page files to compare against `tsa/classic`, `tsa/modern`,
 
 - All four page files updated with `tsa/*` slug comparisons
 - CTA and pros/cons mobile classes consistent across templates
+
+## Observability Impact
+
+**What changes are observable at runtime:**
+- Template routing branches now activate correctly when `site.template_slug` is `"tsa/modern"` or `"tsa/minimal"`. Previously, no site using the new DB slugs would render a Modern or Minimal layout — all fell through to Classic silently.
+- CTA button is now full-width (`block w-full`) on Minimal and Classic product pages — visible at 375px viewport as a button that spans the content column.
+- Minimal pros/cons grid stacks to single column on mobile (`grid-cols-1`) and splits at `sm:` breakpoint — previously the two columns were always side-by-side on narrow screens causing overflow.
+
+**How a future agent inspects this task:**
+- `grep -r '"modern"\|"minimal"\|"classic"' apps/generator/src/pages/` → must return 0 results (bare slugs removed)
+- `grep -c "tsa/modern\|tsa/minimal" apps/generator/src/pages/index.astro apps/generator/src/pages/categories/[slug].astro apps/generator/src/pages/products/[slug].astro apps/generator/src/pages/[legal].astro` → 2 per file (8 total)
+- `grep -n "block w-full" apps/generator/src/pages/products/[slug].astro` → 3 hits (one per template CTA)
+- `grep -n "grid-cols-1 sm:grid-cols-2" apps/generator/src/pages/products/[slug].astro` → 3 hits (one per template pros/cons grid)
+
+**Failure state visibility:**
+- If slug comparisons are wrong: all sites render Classic layout regardless of DB value. No build error — purely a silent rendering bug detectable only visually or via template_slug fixture test.
+- If CTA is `inline-block` without `w-full`: button width is content-driven on mobile, causing misaligned or narrow buttons on small screens. Visible in browser at 375px.
+- If pros/cons uses `grid-cols-2` only: two-column layout appears on 375px causing text overflow or horizontal scroll on narrow viewports.

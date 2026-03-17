@@ -40,7 +40,7 @@
   - Verify: `grep "is:inline" apps/generator/src/layouts/classic/Layout.astro apps/generator/src/layouts/modern/Layout.astro apps/generator/src/layouts/minimal/Layout.astro` → 3 hits; `pnpm --filter @monster/generator build` exits 0.
   - Done when: All three layouts have hamburger + inline script; build exits 0.
 
-- [ ] **T02: Update template slug comparisons and verify CTA/pros-cons mobile classes** `est:30m`
+- [x] **T02: Update template slug comparisons and verify CTA/pros-cons mobile classes** `est:30m`
   - Why: S01 migrated DB slugs to `tsa/*` — page files still compare against bare strings. CTA button and pros-cons grid mobile responsiveness must be consistent across all templates.
   - Files: `apps/generator/src/pages/index.astro`, `apps/generator/src/pages/categories/[slug].astro`, `apps/generator/src/pages/products/[slug].astro`, `apps/generator/src/pages/[legal].astro`
   - Do: In all four page files, replace all `site.template_slug === "modern"` with `site.template_slug === "tsa/modern"` and `=== "minimal"` with `=== "tsa/minimal"`. The default/else branch serves `tsa/classic` — no explicit check needed but add a comment. Check each product page template variant for the CTA button: confirm `w-full` class on all three template branches. Check pros/cons grid on Modern and Minimal product page variants — if they don't have `grid-cols-1 sm:grid-cols-2`, add it. Run `pnpm --filter @monster/generator build`.

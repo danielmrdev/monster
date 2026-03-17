@@ -33,7 +33,7 @@ const CURRENCY = site.currency;
 const metaDescription = category.meta_description ?? undefined;
 ---
 
-{site.template_slug === "modern" ? (
+{site.template_slug === "tsa/modern" ? (
   <ModernLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
     <h1 class="text-3xl font-bold text-gray-900 mb-4">{category.name}</h1>
     <p class="text-gray-600 mb-10 max-w-3xl">{category.seo_text}</p>
@@ -59,7 +59,7 @@ const metaDescription = category.meta_description ?? undefined;
       <p class="text-gray-500 mt-8">No hay productos en esta categoría aún.</p>
     )}
   </ModernLayout>
-) : site.template_slug === "minimal" ? (
+) : site.template_slug === "tsa/minimal" ? (
   <MinimalLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
     <h1 class="text-2xl font-bold text-gray-900 mb-2">{category.name}</h1>
     <p class="text-sm text-gray-500 border-b border-gray-100 pb-6 mb-8">{category.seo_text}</p>
@@ -89,7 +89,7 @@ const metaDescription = category.meta_description ?? undefined;
     )}
   </MinimalLayout>
 ) : (
-  /* Default: Classic */
+  /* Default: tsa/classic is the default */
   <ClassicLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
     <h1 class="text-2xl font-bold text-gray-800 mb-3">{category.name}</h1>
     <p class="text-gray-600 mb-8 max-w-2xl">{category.seo_text}</p>
