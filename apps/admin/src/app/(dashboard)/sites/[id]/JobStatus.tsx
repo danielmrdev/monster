@@ -17,6 +17,15 @@ const BADGE: Record<JobStatus, { label: string; className: string }> = {
   failed:    { label: 'Failed',    className: 'bg-red-100 text-red-800'      },
 };
 
+const PHASE_LABEL: Record<string, string> = {
+  fetch_products:   'Fetching products',
+  process_images:   'Processing images',
+  generate_content: 'Generating content',
+  astro_build:      'Building site',
+  seo_files:        'Writing SEO files',
+  deploy:           'Deploying',
+};
+
 function fmt(ts: string | null | undefined): string {
   if (!ts) return '—';
   return new Date(ts).toLocaleString();
@@ -41,7 +50,6 @@ export default function JobStatus({ siteId }: Props) {
     const status = job?.status as JobStatus | undefined;
     if (!status || status === 'completed' || status === 'failed') return;
 
-    // Poll every 5 seconds while pending or running
     const id = setInterval(poll, 5000);
     return () => clearInterval(id);
   }, [job?.status, poll]);
@@ -55,24 +63,50 @@ export default function JobStatus({ siteId }: Props) {
   const status = job.status as JobStatus;
   const badge = BADGE[status] ?? { label: status, className: 'bg-muted/50 text-foreground/80' };
 
+  // Extract phase/progress from payload
+  const payload = job.payload as { phase?: string; done?: number; total?: number } | null;
+  const phase = payload?.phase;
+  const done = payload?.done;
+  const total = payload?.total;
+  const hasProgress = typeof done === 'number' && typeof total === 'number' && total > 0;
+  const pct = hasProgress ? Math.round((done! / total!) * 100) : null;
+
   return (
-    <div className="mt-3 rounded-md border border-border bg-muted/30 px-4 py-3 text-sm space-y-1">
+    <div className="mt-3 rounded-md border border-border bg-muted/30 px-4 py-3 text-sm space-y-2">
       <div className="flex items-center gap-2">
         <span className="font-medium text-foreground/80">Last job:</span>
-        <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}
-        >
+        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}>
           {badge.label}
         </span>
       </div>
-      <div className="text-muted-foreground">
+
+      {status === 'running' && phase && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{PHASE_LABEL[phase] ?? phase}</span>
+            {hasProgress && <span>{done}/{total} ({pct}%)</span>}
+          </div>
+          {hasProgress && (
+            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="text-muted-foreground text-xs">
         <span className="font-medium">Started:</span> {fmt(job.started_at)}
       </div>
-      <div className="text-muted-foreground">
-        <span className="font-medium">Completed:</span> {fmt(job.completed_at)}
-      </div>
+      {job.completed_at && (
+        <div className="text-muted-foreground text-xs">
+          <span className="font-medium">Completed:</span> {fmt(job.completed_at)}
+        </div>
+      )}
       {status === 'failed' && job.error && (
-        <div className="text-red-600 text-xs font-mono break-all">{job.error}</div>
+        <div className="text-red-600 text-xs font-mono break-all mt-1">{job.error}</div>
       )}
     </div>
   );

@@ -74,9 +74,21 @@ export default function DeployStatus({ siteId }: Props) {
       </div>
       {/* Phase progress — visible while job is running, surfaces rsync/caddy/cloudflare steps */}
       {status === 'running' && phase && (
-        <div className="text-blue-700 text-xs font-medium">
-          Phase: {phase}
-          {done !== undefined && total !== undefined ? ` (${done}/${total})` : ''}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-medium text-blue-700">{phase}</span>
+            {done !== undefined && total !== undefined && total > 0 && (
+              <span>{done}/{total} ({Math.round((done / total) * 100)}%)</span>
+            )}
+          </div>
+          {done !== undefined && total !== undefined && total > 0 && (
+            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${Math.round((done / total) * 100)}%` }}
+              />
+            </div>
+          )}
         </div>
       )}
       <div className="text-muted-foreground">
