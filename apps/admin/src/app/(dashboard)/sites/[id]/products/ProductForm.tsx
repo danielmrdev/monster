@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, useTransition } from 'react'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -69,6 +69,13 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
     defaultValues?.category_ids ?? []
   )
 
+  // Refs for AI content textareas — populated by generate handler
+  const detailDescRef = useRef<HTMLTextAreaElement>(null)
+  const prosRef = useRef<HTMLTextAreaElement>(null)
+  const consRef = useRef<HTMLTextAreaElement>(null)
+  const userOpRef = useRef<HTMLTextAreaElement>(null)
+  const metaDescRef = useRef<HTMLTextAreaElement>(null)
+
   // Pre-populate image preview for edit mode
   const [imagePreview, setImagePreview] = useState<string | null>(
     defaultValues?.source_image_url ?? null
@@ -130,13 +137,22 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
         const res = await fetch(`/api/sites/${siteId}/generate-seo-text`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ field: 'product_description', contextId: productId }),
+          body: JSON.stringify({ field: 'product_all_content', contextId: productId }),
         })
 
         if (!res.ok || !res.body) {
           const text = await res.text().catch(() => `HTTP ${res.status}`)
           setGenerateError(text)
           return
+        }
+
+        // Map field names to their textarea refs
+        const fieldRefs: Record<string, React.RefObject<HTMLTextAreaElement | null>> = {
+          detailed_description: detailDescRef,
+          pros: prosRef,
+          cons: consRef,
+          user_opinions_summary: userOpRef,
+          meta_description: metaDescRef,
         }
 
         const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
@@ -152,7 +168,12 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
             if (!line.startsWith('data: ')) continue
             try {
               const event = JSON.parse(line.slice(6))
-              if (event.type === 'error') {
+              if (event.type === 'field' && typeof event.name === 'string' && typeof event.text === 'string') {
+                const ref = fieldRefs[event.name]
+                if (ref?.current) {
+                  ref.current.value = event.text
+                }
+              } else if (event.type === 'error') {
                 setGenerateError(event.error ?? 'Generation failed')
               }
             } catch { /* ignore parse errors */ }
@@ -367,6 +388,7 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
           <div className="space-y-1.5">
             <Label htmlFor="detailed_description">Detailed Description</Label>
             <Textarea
+              ref={detailDescRef}
               id="detailed_description"
               name="detailed_description"
               rows={6}
@@ -381,6 +403,7 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
           <div className="space-y-1.5">
             <Label htmlFor="pros">Pros</Label>
             <Textarea
+              ref={prosRef}
               id="pros"
               name="pros"
               rows={4}
@@ -395,6 +418,7 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
           <div className="space-y-1.5">
             <Label htmlFor="cons">Cons</Label>
             <Textarea
+              ref={consRef}
               id="cons"
               name="cons"
               rows={4}
@@ -409,6 +433,7 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
           <div className="space-y-1.5">
             <Label htmlFor="user_opinions_summary">User Opinions Summary</Label>
             <Textarea
+              ref={userOpRef}
               id="user_opinions_summary"
               name="user_opinions_summary"
               rows={3}
@@ -423,6 +448,7 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
           <div className="space-y-1.5">
             <Label htmlFor="meta_description">Meta Description</Label>
             <Textarea
+              ref={metaDescRef}
               id="meta_description"
               name="meta_description"
               rows={2}

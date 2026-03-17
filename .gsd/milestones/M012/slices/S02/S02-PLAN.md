@@ -56,7 +56,7 @@
   - Verify: Open product edit page in browser or confirm HTML structure: five `<textarea>` elements with the correct `name` attributes are present.
   - Done when: All five textareas render with correct `name` attrs and `defaultValue` wired from props.
 
-- [ ] **T03: Wire "Generate with AI" to populate all five content textareas** `est:40m`
+- [x] **T03: Wire "Generate with AI" to populate all five content textareas** `est:40m`
   - Why: "Generate with AI" currently streams into a now-removed preview. Must stream into the five editable textareas using React refs.
   - Files: `apps/admin/src/app/(dashboard)/sites/[id]/products/ProductForm.tsx`, `apps/admin/src/app/api/sites/[id]/generate-seo-text/route.ts`
   - Do: Add refs for all five textareas. Update the generate handler to send `field: 'product_description'` for description, then separate calls or a multi-field approach for pros/cons/user-opinions/meta. Simplest: one button "Generate All" fires one API call per field sequentially or add a `product_all_content` field case to the route that returns a structured JSON blob (pros, cons, description, user_opinions, meta) in one Claude call. Update the route to handle the new field cases: for `product_pros`/`product_cons`/`product_user_opinions`/`product_meta_description`, write appropriate prompts that use language/niche/title context. Stream text into the corresponding textarea ref value.

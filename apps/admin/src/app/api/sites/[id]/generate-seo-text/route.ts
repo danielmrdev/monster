@@ -6,12 +6,18 @@ import { createServiceClient } from '@/lib/supabase/service';
  * POST /api/sites/[id]/generate-seo-text
  *
  * Streams AI-generated SEO text for a category or product.
- * SSE format: `data: {"type":"text","text":"..."}` and `data: {"type":"done"}`.
+ *
+ * For category_seo_text / product_description:
+ *   SSE format: `data: {"type":"text","text":"..."}` then `data: {"type":"done"}`.
+ *
+ * For product_all_content:
+ *   SSE format: `data: {"type":"field","name":"<field>","text":"..."}` per field,
+ *   then `data: {"type":"done"}`. Populates all five content textareas in one call.
  *
  * Uses ClaudeSDKClient (claude-agent-sdk) — same auth as Monster Chat (no API key needed).
  *
  * Body:
- *   field: 'category_seo_text' | 'product_description'
+ *   field: 'category_seo_text' | 'product_description' | 'product_all_content'
  *   contextId: string  (category_id or product_id)
  */
 export async function POST(
@@ -40,8 +46,8 @@ export async function POST(
     });
   }
 
-  if (field !== 'category_seo_text' && field !== 'product_description') {
-    return new Response(JSON.stringify({ error: 'field must be category_seo_text or product_description' }), {
+  if (field !== 'category_seo_text' && field !== 'product_description' && field !== 'product_all_content') {
+    return new Response(JSON.stringify({ error: 'field must be category_seo_text, product_description, or product_all_content' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -87,8 +93,8 @@ export async function POST(
         : '';
 
     prompt = `Write a ~400-word SEO-optimised text for the product category "${cat.name}" on an Amazon affiliate site about "${site.niche}". ${keywordHint} The text should be engaging, informative, and help users understand what to look for when buying. Write in ${site.language}. Output only the SEO text — no headings, no markdown, just flowing paragraphs.`;
-  } else {
-    // product_description
+  } else if (field === 'product_description') {
+    // product_description (legacy single-field)
     const { data: product, error: prodErr } = await supabase
       .from('tsa_products')
       .select('title, current_price, focus_keyword')
@@ -107,10 +113,41 @@ export async function POST(
     const kwHint = product.focus_keyword ? ` Target keyword: "${product.focus_keyword}".` : '';
 
     prompt = `Write a 150-250 word SEO-optimised product description for "${product.title}"${priceHint} on an Amazon affiliate site about "${site.niche}".${kwHint} Highlight key benefits and help the buyer understand why this product is a good choice. Write in ${site.language}. Output only the description — no headings, no markdown.`;
+  } else {
+    // product_all_content — generate all five content fields in one call
+    const { data: product, error: prodErr } = await supabase
+      .from('tsa_products')
+      .select('title, current_price, focus_keyword')
+      .eq('id', contextId)
+      .eq('site_id', siteId)
+      .single();
+
+    if (prodErr || !product) {
+      return new Response(JSON.stringify({ error: 'Product not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const priceHint = product.current_price ? ` priced at €${product.current_price}` : '';
+    const kwHint = product.focus_keyword ? ` Main keyword: "${product.focus_keyword}".` : '';
+
+    prompt = `You are an SEO copywriter for an Amazon affiliate site about "${site.niche}". Generate content for the product "${product.title}"${priceHint}.${kwHint} Language: ${site.language}.
+
+Return ONLY a JSON object with exactly these five keys (no markdown, no code fences, raw JSON only):
+{
+  "detailed_description": "300-400 word SEO-optimised description with keyword usage. Flowing paragraphs, no headings.",
+  "pros": "4-6 pros, one per line, no bullet characters",
+  "cons": "2-4 cons, one per line, no bullet characters",
+  "user_opinions_summary": "2-3 sentence summary of what typical buyers appreciate and criticise about this type of product",
+  "meta_description": "150-160 character meta description for search engine snippets"
+}`;
   }
 
   // A unique conversation ID for this one-shot generation (not persisted)
   const ephemeralConvId = `seo-gen-${Date.now()}`;
+
+  console.log(`[generate-seo-text] siteId=${siteId} contextId=${contextId} field=${field}`);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -129,15 +166,56 @@ export async function POST(
       try {
         const client = new ClaudeSDKClient();
 
-        for await (const event of client.streamQuery(prompt, {
-          conversationId: ephemeralConvId,
-          agentSessionId: null,
-        })) {
-          send(event);
-          if (event.type === 'done' || event.type === 'error') return;
-        }
+        if (field === 'product_all_content') {
+          // Collect all text chunks, then parse JSON and emit per-field events
+          let fullText = '';
+          for await (const event of client.streamQuery(prompt, {
+            conversationId: ephemeralConvId,
+            agentSessionId: null,
+          })) {
+            if (event.type === 'text') {
+              fullText += event.text;
+            } else if (event.type === 'error') {
+              send(event);
+              return;
+            }
+            // ignore 'done' — we parse after
+          }
 
-        send({ type: 'done' });
+          // Strip markdown code fences if Claude wrapped the JSON
+          const jsonText = fullText
+            .replace(/^```(?:json)?\s*/i, '')
+            .replace(/\s*```\s*$/, '')
+            .trim();
+
+          let parsed: Record<string, string>;
+          try {
+            parsed = JSON.parse(jsonText);
+          } catch {
+            console.error(`[generate-seo-text] JSON parse failed siteId=${siteId}:`, jsonText.slice(0, 200));
+            send({ type: 'error', error: 'AI returned invalid JSON — please retry' });
+            return;
+          }
+
+          const fieldNames = ['detailed_description', 'pros', 'cons', 'user_opinions_summary', 'meta_description'] as const;
+          for (const name of fieldNames) {
+            if (typeof parsed[name] === 'string') {
+              send({ type: 'field', name, text: parsed[name] });
+            }
+          }
+          send({ type: 'done' });
+        } else {
+          // category_seo_text / product_description — stream text chunks directly
+          for await (const event of client.streamQuery(prompt, {
+            conversationId: ephemeralConvId,
+            agentSessionId: null,
+          })) {
+            send(event);
+            if (event.type === 'done' || event.type === 'error') return;
+          }
+
+          send({ type: 'done' });
+        }
       } catch (e) {
         const error = e instanceof Error ? e.message : String(e);
         console.error(`[generate-seo-text] siteId=${siteId} contextId=${contextId}:`, error);
