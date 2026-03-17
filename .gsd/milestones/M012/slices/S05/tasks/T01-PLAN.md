@@ -34,6 +34,23 @@ Add `marked` to the generator, implement `interpolateLegal()` helper, and update
 - `grep "set:html" apps/generator/src/pages/[legal].astro` → ≥3 hits  
 - `pnpm --filter @monster/generator build` exits 0
 
+## Observability Impact
+
+### Signals Changed by This Task
+- `pnpm --filter @monster/generator build` — previously may have succeeded with plain-text renders; after this task, a failing `marked()` call (e.g., async API misuse) will produce a build error visible in stdout.
+- TypeScript check (`pnpm --filter @monster/generator check`) — adding `contact_email?: string` to `SiteInfo` makes the field visible/typed; if omitted, `legal.ts` will produce a TS2339 error pinpointing the gap.
+
+### How a Future Agent Inspects This Task
+- `grep "set:html" apps/generator/src/pages/[legal].astro` — confirms pipeline is wired (expect ≥3 hits)
+- `grep "interpolateLegal" apps/generator/src/lib/legal.ts` — confirms helper exported
+- `cat apps/generator/package.json | grep marked` — confirms dependency present
+- Built `dist/default/privacidad/index.html` — if it exists, grep for `<h2>` to verify markdown-to-HTML conversion
+
+### Failure State Visibility
+- If `marked()` returns a Promise (v5+ async API) instead of a string, Astro's `set:html` will render `[object Promise]` — immediately visible in the page source
+- If `SiteInfo.contact_email` is missing, TypeScript surfaces TS2339 during `check` step; build will fail with a clear type error
+- Unsubstituted placeholders (`{{site.name}}` in final HTML) indicate `interpolateLegal()` key mismatch — greppable in built output
+
 ## Inputs
 
 - `apps/generator/src/lib/data.ts` — SiteInfo type (check contact_email, affiliate_tag fields)

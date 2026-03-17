@@ -23,6 +23,8 @@ export interface SiteInfo {
   focus_keyword: string | null;
   /** Site UUID — used by the analytics tracker as the `site_id` POST field. */
   id: string;
+  /** Contact email address — shown on legal pages. Optional; defaults to empty string. */
+  contact_email?: string;
   /** Supabase project URL — baked into the tracker at Astro build time. */
   supabase_url: string;
   /** Supabase anon key — INSERT-only RLS, safe to expose in static HTML. */

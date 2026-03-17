@@ -18,10 +18,12 @@
 - `pnpm --filter @monster/generator build` exits 0
 - Grep: `grep "set:html" apps/generator/src/pages/[legal].astro` returns a hit
 - `grep "interpolateLegal" apps/generator/src/lib/legal.ts` returns a hit
+- Failure path: `grep -r '{{site\.' apps/generator/dist` returns no hits (confirms all placeholders substituted at build time)
+- Failure path: `grep "<h2\|<ul\|<p>" apps/generator/dist/default/privacidad/index.html` returns hits (confirms HTML rendering, not plain text)
 
 ## Tasks
 
-- [ ] **T01: Write `interpolateLegal()`, install `marked`, update `[legal].astro`** `est:45m`
+- [x] **T01: Write `interpolateLegal()`, install `marked`, update `[legal].astro`** `est:45m`
   - Why: The generator currently renders legal content as plain text — D130 specifies markdown-to-HTML conversion at build time.
   - Files: `apps/generator/src/lib/legal.ts` (new), `apps/generator/src/pages/[legal].astro`, `apps/generator/package.json`
   - Do: Run `pnpm --filter @monster/generator add marked`. Create `apps/generator/src/lib/legal.ts`: export `interpolateLegal(content: string, site: SiteInfo): string` that calls `String.prototype.replaceAll` for each placeholder: `{{site.name}}` → `site.name`, `{{site.domain}}` → `site.domain`, `{{site.contact_email}}` → `site.contact_email ?? ''`, `{{site.affiliate_tag}}` → `site.affiliate_tag`, `{{current_year}}` → `new Date().getFullYear().toString()`. In `[legal].astro`: import `{ marked }` from `'marked'` and `{ interpolateLegal }` from `'../lib/legal'`. Replace the three `<p class="...">{ pageContent }</p>` render lines (one per template) with `<div set:html={marked(interpolateLegal(pageContent, site))} class="prose prose-sm max-w-none" />`. Run `pnpm --filter @monster/generator check` and `build` — fix any type errors.
@@ -41,6 +43,28 @@
   - Do: Add `isPreview: boolean` state. Add a "Preview" / "Edit" toggle `<Button>` near the content textarea. When `isPreview=true`: dynamically import `marked` (`await import('marked')`) on first toggle, render the substituted markdown as HTML in a `<div dangerouslySetInnerHTML={{ __html: ... }} className="prose prose-sm max-w-none border rounded p-4" />` — use a minimal `{ site: { name: 'Your Site Name', domain: 'yoursite.com', contact_email: 'contact@yoursite.com', affiliate_tag: 'yourtag-21' } }` mock for placeholder substitution in preview. Add a collapsible/always-visible hint panel below the textarea listing all 5 placeholders with descriptions: `{{site.name}}`, `{{site.domain}}`, `{{site.contact_email}}`, `{{site.affiliate_tag}}`, `{{current_year}}`.
   - Verify: `grep "isPreview\|Preview\|dangerouslySetInnerHTML" apps/admin/src/app/(dashboard)/templates/TemplateForm.tsx` returns hits; `pnpm --filter @monster/admin build` exits 0.
   - Done when: TemplateForm renders toggle and hint panel; build exits 0.
+
+## Observability / Diagnostics
+
+### Runtime Signals
+- **Markdown rendering failure:** If `marked()` throws or returns empty string, the legal page will render an empty `<div>` — visible as a blank content area in the browser. Check the Astro build log for unhandled promise rejections from the `[legal].astro` prerender phase.
+- **Placeholder substitution:** Log output from `pnpm --filter @monster/generator build` will show any TypeScript errors if `SiteInfo` is missing required fields. Remaining unsubstituted placeholders (literal `{{site.name}}` in rendered HTML) signal a mismatch between `interpolateLegal()` keys and the `SiteInfo` shape.
+- **DB seed verification:** `psql $SUPABASE_DB_URL -c "SELECT type, language, LEFT(content, 60) FROM legal_templates ORDER BY type, language"` inspects seed content without dumping full rows.
+
+### Inspection Surfaces
+- `grep "set:html" apps/generator/src/pages/[legal].astro` — confirms markdown pipeline is wired
+- `grep "interpolateLegal" apps/generator/src/lib/legal.ts` — confirms helper is exported
+- `pnpm --filter @monster/generator build` exit code 0 — end-to-end build validation
+- Built `dist/<slug>/privacidad/index.html` — grep for `<h2>` or `<ul>` confirms HTML rendering (not plain text)
+
+### Failure Visibility
+- Build errors from `marked` type incompatibility (async vs sync API) surface immediately in `pnpm check` output
+- Missing `contact_email` on `SiteInfo` will produce a TypeScript error pointing to `legal.ts`
+- Template Preview (T03) renders with a mock site object — if placeholder keys mismatch, rendered HTML will still show `{{...}}` literals, making the gap obvious in the UI
+
+### Redaction Constraints
+- No secrets in legal template content — placeholders are safe to log and inspect
+- `supabase_anon_key` is in `SiteInfo` but must not appear in legal template content or seed SQL
 
 ## Files Likely Touched
 

@@ -75,3 +75,21 @@ const { Client } = require('/home/daniel/monster/node_modules/.pnpm/pg@8.20.0/no
 const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
 await client.connect(); /* ... queries ... */ await client.end();
 ```
+
+## KN008 — Generator build requires SITE_SLUG env var; bare `pnpm build` fails with ENOENT
+
+**Discovered:** M012/S05/T01
+
+`pnpm --filter @monster/generator build` without `SITE_SLUG` set defaults to `"default"` slug and fails with `ENOENT: no such file or directory, open '.../src/data/default/site.json'`. The fixture data lives at `src/data/fixture/`. Always build with:
+
+```bash
+SITE_SLUG=fixture pnpm --filter @monster/generator build
+```
+
+This was a pre-existing failure (present in main before S05 changes). The build script in `package.json` has no default guard — the `SITE_SLUG=fixture` prefix is mandatory for local fixture validation.
+
+## KN009 — `marked` v17 returns a string synchronously from `marked()`; no await needed
+
+**Discovered:** M012/S05/T01
+
+`marked` v17 (installed: `^17.0.4`) returns a string synchronously when called as `marked(content)`. The v5+ async API concern in the task plan notes is a red herring for this version — `marked(str)` is synchronous. Astro's `set:html` directive accepts a plain string, so `set:html={marked(interpolateLegal(pageContent, site))}` works without `await`. If the API is later changed to async, `set:html` will render `[object Promise]` — immediately visible in page source.
