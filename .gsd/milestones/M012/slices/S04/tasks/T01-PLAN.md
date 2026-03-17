@@ -31,11 +31,22 @@ Restructure the Settings page using shadcn Tabs. Move all existing content into 
 - [ ] Deployment tab contains VPS2 inputs
 - [ ] `pnpm --filter @monster/admin build` exits 0
 
-## Verification
+## Observability Impact
 
-- `grep -c "TabsTrigger" apps/admin/src/app/(dashboard)/settings/settings-form.tsx` → 3
-- `grep "DEFAULT_PROMPTS" apps/admin/src/app/(dashboard)/settings/constants.ts` → hit
-- `pnpm --filter @monster/admin build` exits 0
+**What signals change:**
+- Settings page now emits `[settings] agentPrompts loaded: <N> overrides` (N=0 on fresh system)
+- Tab render is purely client-side; no new server logs from the tab structure itself
+- `DEFAULT_PROMPTS` constants are defined in `constants.ts` — inspectable statically; no runtime logging needed
+
+**How a future agent inspects this task:**
+- `grep DEFAULT_PROMPTS apps/admin/src/app/(dashboard)/settings/constants.ts` → shows defined prompts
+- `grep -c TabsTrigger apps/admin/src/app/(dashboard)/settings/settings-form.tsx` → expect 3
+- Browser: open Settings, check three tabs exist, "AI Prompts" textareas are non-empty without DB rows
+
+**Failure state visible as:**
+- Empty textareas on "AI Prompts" tab = `defaultPrompts` prop not wired or `DEFAULT_PROMPTS` missing
+- Missing tab structure = shadcn `tabs` component not installed; check `ls apps/admin/src/components/ui/tabs.tsx`
+- Build error `Module not found: @/components/ui/tabs` = component needs install: `pnpm dlx shadcn@latest add tabs`
 
 ## Inputs
 

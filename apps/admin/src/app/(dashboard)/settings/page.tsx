@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
-import { SETTINGS_KEYS } from './constants'
+import { SETTINGS_KEYS, DEFAULT_PROMPTS } from './constants'
 import { SettingsForm } from './settings-form'
 import { AGENT_KEYS } from '@monster/agents'
 
@@ -39,6 +39,8 @@ export default async function SettingsPage() {
     agentPrompts[row.agent_key] = row.content
   }
 
+  console.log(`[settings] agentPrompts loaded: ${Object.keys(agentPrompts).length} overrides`)
+
   const agentKeys = [
     { key: AGENT_KEYS.CONTENT_GENERATOR, label: 'Content Generator', hint: 'Used for generating category SEO texts, product descriptions, pros/cons, and meta descriptions.' },
     { key: AGENT_KEYS.NICHE_RESEARCHER, label: 'Niche Researcher', hint: 'Used for the autonomous niche research agent in the Research Lab.' },
@@ -54,7 +56,7 @@ export default async function SettingsPage() {
           displayed in full.
         </p>
       </div>
-      <SettingsForm maskedDisplay={maskedDisplay} agentPrompts={agentPrompts} agentKeys={agentKeys} />
+      <SettingsForm maskedDisplay={maskedDisplay} agentPrompts={agentPrompts} agentKeys={agentKeys} defaultPrompts={DEFAULT_PROMPTS} />
     </div>
   )
 }
