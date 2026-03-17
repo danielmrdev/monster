@@ -61,6 +61,8 @@ export default async function EditSitePage({ params }: PageProps) {
     affiliate_tag: site.affiliate_tag,
     template_slug: site.template_slug,
     customization: (site.customization as SiteCustomization | null),
+    focus_keyword: site.focus_keyword,
+    homepage_seo_text: site.homepage_seo_text,
   }
 
   return (

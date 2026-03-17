@@ -36,7 +36,23 @@ Add a "Homepage SEO" card to the site edit form with `focus_keyword` (already ex
 - `grep "homepage_seo_text" apps/admin/src/app/api/sites/[id]/generate-seo-text/route.ts` returns a hit
 - `pnpm --filter @monster/admin build` exits 0
 
-## Inputs
+## Observability Impact
+
+**New signals added:**
+- `[generate-seo-text] siteId=X contextId=X field=homepage_seo_text` — server console log appears on every AI generation request for the homepage field.
+- SSE stream emits `{"type":"error","error":"<message>"}` on failure; the form renders it as a red paragraph below the textarea (client-side, not a server action error).
+- If `updateSite` fails (Supabase error), the error is thrown as a 500 — visible in server logs. No silent swallowing.
+
+**Failure state visibility:**
+- Generation failure: red text under the textarea with the error message.
+- Save failure: form-level red banner (`errors._form[0]`).
+- TypeScript mismatch: `pnpm --filter @monster/admin typecheck` or `build` — the `UpdateSiteErrors` type must include `focus_keyword` and `homepage_seo_text`; build fails otherwise.
+
+**Inspect saved value:**
+```sql
+SELECT focus_keyword, homepage_seo_text FROM sites WHERE id='<siteId>';
+```
+
 
 - `apps/admin/src/app/(dashboard)/sites/[id]/edit/edit-form.tsx` — current form (read first)
 - `apps/admin/src/app/(dashboard)/sites/[id]/edit/page.tsx` — site data fetching

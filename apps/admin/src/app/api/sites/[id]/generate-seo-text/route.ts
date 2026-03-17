@@ -46,8 +46,8 @@ export async function POST(
     });
   }
 
-  if (field !== 'category_seo_text' && field !== 'product_description' && field !== 'product_all_content') {
-    return new Response(JSON.stringify({ error: 'field must be category_seo_text, product_description, or product_all_content' }), {
+  if (field !== 'category_seo_text' && field !== 'product_description' && field !== 'product_all_content' && field !== 'homepage_seo_text') {
+    return new Response(JSON.stringify({ error: 'field must be category_seo_text, product_description, product_all_content, or homepage_seo_text' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -58,7 +58,7 @@ export async function POST(
   // Fetch site for language + niche context
   const { data: site, error: siteErr } = await supabase
     .from('sites')
-    .select('id, name, niche, language')
+    .select('id, name, niche, language, focus_keyword')
     .eq('id', siteId)
     .single();
 
@@ -71,7 +71,10 @@ export async function POST(
 
   let prompt: string;
 
-  if (field === 'category_seo_text') {
+  if (field === 'homepage_seo_text') {
+    const focusKw = site.focus_keyword ? ` Focus keyword: "${site.focus_keyword}".` : '';
+    prompt = `Write a ~400-word SEO-optimised homepage text for an Amazon affiliate site named "${site.name}" about "${site.niche}".${focusKw} Write in ${site.language}. Output only flowing paragraphs, no headings.`;
+  } else if (field === 'category_seo_text') {
     const { data: cat, error: catErr } = await supabase
       .from('tsa_categories')
       .select('name, focus_keyword, keywords')

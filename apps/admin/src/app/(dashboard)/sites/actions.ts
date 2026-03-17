@@ -111,8 +111,13 @@ export async function createSite(
   redirect('/sites')
 }
 
-export type UpdateSiteErrors = CreateSiteErrors
-export type UpdateSiteState = CreateSiteState
+export type UpdateSiteErrors = CreateSiteErrors & {
+  focus_keyword?: string[]
+  homepage_seo_text?: string[]
+}
+export type UpdateSiteState = {
+  errors?: UpdateSiteErrors
+} | null
 
 export async function updateSite(
   id: string,
@@ -137,6 +142,9 @@ export async function updateSite(
     logoUrl: (formData.get('logoUrl') as string) || undefined,
     faviconUrl: (formData.get('faviconUrl') as string) || undefined,
   }
+
+  const focusKeyword = (formData.get('focus_keyword') as string) || null
+  const homepageSeoText = (formData.get('homepage_seo_text') as string) || null
 
   const siteResult = CreateSiteSchema.safeParse(rawSite)
   const customizationResult = SiteCustomizationSchema.safeParse(rawCustomization)
@@ -176,6 +184,8 @@ export async function updateSite(
       affiliate_tag: affiliate_tag || null,
       template_slug: template_slug,
       customization: Object.keys(customizationJson).length > 0 ? customizationJson : null,
+      focus_keyword: focusKeyword,
+      homepage_seo_text: homepageSeoText,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)

@@ -36,7 +36,7 @@
   - Verify: Grep for `name="meta_description"` in CategoryForm.tsx; `updateCategory` sets `description` from `formData.get('meta_description')`.
   - Done when: TypeScript build exits 0; `description` column updated correctly on save.
 
-- [ ] **T02: Add Homepage SEO card to site edit page** `est:40m`
+- [x] **T02: Add Homepage SEO card to site edit page** `est:40m`
   - Why: `homepage_seo_text` column (added in S01) has no admin UI surface.
   - Files: `apps/admin/src/app/(dashboard)/sites/[id]/edit/edit-form.tsx`, `apps/admin/src/app/(dashboard)/sites/[id]/actions.ts` (or `sites/actions.ts`), `apps/admin/src/app/api/sites/[id]/generate-seo-text/route.ts`
   - Do: In `edit-form.tsx`, add a "Homepage SEO" `<Card>` with: existing `focus_keyword` input (may already exist — check first), new `<Textarea name="homepage_seo_text" rows={6}>` for homepage SEO body text, a "Generate with AI" button that fires the generate-seo-text route with `field: 'homepage_seo_text'` and `contextId: siteId`. Stream response into the textarea. In `updateSite` action, read `homepage_seo_text` from FormData and include it in the Supabase update. In route: add `homepage_seo_text` case — fetch site (name, niche, language, focus_keyword) and generate a ~400-word homepage SEO text in the site's language. Pass `homepage_seo_text` defaultValue from the site row in the page server component.

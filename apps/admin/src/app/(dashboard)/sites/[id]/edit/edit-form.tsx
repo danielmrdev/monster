@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useRef, useState } from 'react'
 import Link from 'next/link'
 import { updateSite, type UpdateSiteState } from '../../actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -85,6 +85,8 @@ interface EditFormProps {
     affiliate_tag: string | null
     template_slug: string | null
     customization: SiteCustomization | null
+    focus_keyword: string | null
+    homepage_seo_text: string | null
   }
 }
 
@@ -97,6 +99,61 @@ export function EditForm({ site }: EditFormProps) {
 
   const errors = state?.errors
   const c = site.customization
+
+  // Homepage SEO — AI generation state
+  const homepageSeoTextRef = useRef<HTMLTextAreaElement>(null)
+  const [isGeneratingHomepageSeo, setIsGeneratingHomepageSeo] = useState(false)
+  const [homepageSeoError, setHomepageSeoError] = useState<string | null>(null)
+  const [homepageSeoText, setHomepageSeoText] = useState(site.homepage_seo_text ?? '')
+
+  async function handleGenerateHomepageSeo() {
+    setIsGeneratingHomepageSeo(true)
+    setHomepageSeoError(null)
+    setHomepageSeoText('')
+
+    try {
+      const res = await fetch(`/api/sites/${site.id}/generate-seo-text`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field: 'homepage_seo_text', contextId: site.id }),
+      })
+
+      if (!res.ok || !res.body) {
+        const errJson = await res.json().catch(() => ({ error: 'Unknown error' }))
+        setHomepageSeoError(errJson.error ?? 'Generation failed')
+        return
+      }
+
+      const reader = res.body.getReader()
+      const dec = new TextDecoder()
+      let buf = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buf += dec.decode(value, { stream: true })
+        const lines = buf.split('\n')
+        buf = lines.pop() ?? ''
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const ev = JSON.parse(line.slice(6))
+            if (ev.type === 'text') {
+              setHomepageSeoText((prev) => prev + ev.text)
+            } else if (ev.type === 'error') {
+              setHomepageSeoError(ev.error ?? 'Generation failed')
+            }
+          } catch {
+            // ignore malformed SSE lines
+          }
+        }
+      }
+    } catch (e) {
+      setHomepageSeoError(e instanceof Error ? e.message : 'Generation failed')
+    } finally {
+      setIsGeneratingHomepageSeo(false)
+    }
+  }
 
   return (
     <form action={formAction} className="space-y-6">
@@ -330,6 +387,57 @@ export function EditForm({ site }: EditFormProps) {
               />
               <FieldError messages={errors?.faviconUrl} />
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Homepage SEO */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Homepage SEO</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Focus Keyword */}
+          <div className="space-y-1.5">
+            <Label htmlFor="focus_keyword">Focus Keyword</Label>
+            <Input
+              id="focus_keyword"
+              name="focus_keyword"
+              defaultValue={site.focus_keyword ?? ''}
+              placeholder="e.g. camping gear for families"
+              aria-invalid={!!errors?.focus_keyword}
+            />
+            <FieldError messages={errors?.focus_keyword} />
+          </div>
+
+          {/* Homepage SEO Text */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="homepage_seo_text">Homepage SEO Text</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isGeneratingHomepageSeo}
+                onClick={handleGenerateHomepageSeo}
+              >
+                {isGeneratingHomepageSeo ? 'Generating…' : '✦ Generate with AI'}
+              </Button>
+            </div>
+            <Textarea
+              ref={homepageSeoTextRef}
+              id="homepage_seo_text"
+              name="homepage_seo_text"
+              value={homepageSeoText}
+              onChange={(e) => setHomepageSeoText(e.target.value)}
+              placeholder="~400-word SEO text for your homepage. Click 'Generate with AI' to create one automatically."
+              rows={10}
+              aria-invalid={!!errors?.homepage_seo_text}
+            />
+            {homepageSeoError && (
+              <p className="text-xs text-destructive mt-1">{homepageSeoError}</p>
+            )}
+            <FieldError messages={errors?.homepage_seo_text} />
           </div>
         </CardContent>
       </Card>
