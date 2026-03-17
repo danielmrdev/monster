@@ -72,8 +72,8 @@ export function LegalTemplateAssignment({
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Assign templates to legal pages. Select "Default" to use the built-in content.
-          Changes take effect on the next site generation.
+          Assign templates to legal pages. Without a template assigned, the page will have no
+          content. Changes take effect on the next site generation.
         </p>
 
         {LEGAL_TYPES.map(({ key, label }) => {
@@ -89,7 +89,7 @@ export function LegalTemplateAssignment({
                 onChange={(e) => handleChange(key, e.target.value)}
                 className="flex h-9 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <option value="">Default (built-in)</option>
+                <option value="">— No template assigned —</option>
                 {options.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.title} [{t.language}]

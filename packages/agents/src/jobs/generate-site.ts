@@ -10,7 +10,7 @@ import { DataForSEOClient } from '../clients/dataforseo.js';
 import type { DataForSEOProduct } from '../clients/dataforseo.js';
 import { writeSeoFiles } from '../seo-files.js';
 import { processImages } from '../pipeline/images.js';
-import { ContentGenerator } from '../content-generator.js';
+
 import { scorePage } from '@monster/seo-scorer';
 import type { PageType } from '@monster/seo-scorer';
 import { runDeployPhase } from './deploy-site.js';
@@ -340,98 +340,6 @@ export class GenerateSiteJob {
           .update({ payload: { phase: 'process_images', done: allProducts.length, total: allProducts.length } })
           .eq('bull_job_id', job.id ?? '');
 
-        // ── generate_content phase ────────────────────────────────────────
-        // ContentGenerator is instantiated lazily — only when an item without
-        // focus_keyword is found. Re-generating a site where all content already
-        // exists never requires ANTHROPIC_API_KEY.
-        let contentGenerator: ContentGenerator | null = null;
-        const getOrInitGenerator = (): ContentGenerator => {
-          if (!contentGenerator) contentGenerator = new ContentGenerator();
-          return contentGenerator;
-        };
-        const language = (site.language ?? 'en') as string;
-        const totalContentItems = categories.length + allProducts.length;
-        let contentDone = 0;
-
-        await supabase
-          .from('ai_jobs')
-          .update({ payload: { phase: 'generate_content', done: 0, total: totalContentItems } })
-          .eq('bull_job_id', job.id ?? '');
-
-        // Re-fetch categories to get current focus_keyword for idempotency check
-        const { data: currentCategories } = await supabase
-          .from('tsa_categories')
-          .select('id, name, slug, keywords, focus_keyword')
-          .eq('site_id', siteId);
-
-        for (const cat of currentCategories ?? []) {
-          const keyword = (cat.keywords as string[])?.[0] ?? cat.name;
-          const result = cat.focus_keyword !== null
-            ? null
-            : await getOrInitGenerator().generateCategoryContent({
-                name: cat.name,
-                keyword,
-                language,
-                alreadyHasFocusKeyword: false,
-              });
-          if (result) {
-            await supabase
-              .from('tsa_categories')
-              .update({
-                focus_keyword: result.focus_keyword,
-                seo_text: result.seo_text,
-                description: result.meta_description,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', cat.id);
-          }
-          contentDone++;
-          await supabase
-            .from('ai_jobs')
-            .update({ payload: { phase: 'generate_content', done: contentDone, total: totalContentItems } })
-            .eq('bull_job_id', job.id ?? '');
-        }
-
-        // Re-fetch products to get current focus_keyword for idempotency check
-        const { data: currentProducts } = await supabase
-          .from('tsa_products')
-          .select('id, asin, title, current_price, focus_keyword')
-          .eq('site_id', siteId);
-
-        const productMetaDescriptions = new Map<string, string>(); // product id → meta_description
-
-        for (const prod of currentProducts ?? []) {
-          const result = prod.focus_keyword !== null
-            ? null
-            : await getOrInitGenerator().generateProductContent({
-                asin: prod.asin,
-                title: prod.title ?? prod.asin,
-                price: prod.current_price ?? 0,
-                language,
-                alreadyHasFocusKeyword: false,
-              });
-          if (result) {
-            await supabase
-              .from('tsa_products')
-              .update({
-                focus_keyword: result.focus_keyword,
-                detailed_description: result.detailed_description,
-                pros_cons: { pros: result.pros, cons: result.cons },
-                user_opinions_summary: result.user_opinions_summary,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', prod.id);
-            productMetaDescriptions.set(prod.id, result.meta_description);
-          }
-          contentDone++;
-          await supabase
-            .from('ai_jobs')
-            .update({ payload: { phase: 'generate_content', done: contentDone, total: totalContentItems } })
-            .eq('bull_job_id', job.id ?? '');
-        }
-
-        console.log(`[GenerateSiteJob] generate_content: ${contentDone}/${totalContentItems} items generated`);
-
         // ── 6. Assemble SiteData from DB (post-upsert) ────────────────────
         // Fetch fresh rows so we use what's actually in Supabase
         const { data: dbCategories, error: catFetchErr } = await supabase
@@ -531,11 +439,13 @@ export class GenerateSiteJob {
               category_slug: productCategorySlug.get(p.id) ?? '',
               focus_keyword: p.focus_keyword ?? null,
               user_opinions_summary: p.user_opinions_summary ?? null,
-              meta_description: productMetaDescriptions.get(p.id) ?? null,
+              meta_description: p.meta_description ?? null,
             })),
         };
 
         // ── Fetch legal template assignments ──────────────────────────────
+        // legal_template_assignments is not yet in generated Supabase types,
+        // so we query via two typed-as-unknown raw fetches to avoid unsafe casts.
         let legalTemplates: {
           privacy?: string | null;
           terms?: string | null;
@@ -544,15 +454,38 @@ export class GenerateSiteJob {
         } = {};
 
         try {
-          const { data: assignments } = await supabase
-            .from('legal_template_assignments' as 'sites') // type cast: table not in generated types yet
-            .select('template_type, legal_templates(content)')
+          const { data: assignments, error: assignErr } = await (supabase as unknown as {
+            from: (table: string) => {
+              select: (cols: string) => {
+                eq: (col: string, val: string) => Promise<{ data: Array<{ template_type: string; template_id: string }> | null; error: unknown }>;
+              };
+            };
+          }).from('legal_template_assignments')
+            .select('template_type, template_id')
             .eq('site_id', siteId);
 
-          if (assignments) {
-            for (const a of assignments as Array<{ template_type: string; legal_templates: { content: string } | null }>) {
+          if (assignErr) throw assignErr;
+
+          if (assignments && assignments.length > 0) {
+            const templateIds = assignments.map((a) => a.template_id);
+
+            const { data: templates, error: tplErr } = await (supabase as unknown as {
+              from: (table: string) => {
+                select: (cols: string) => {
+                  in: (col: string, vals: string[]) => Promise<{ data: Array<{ id: string; content: string }> | null; error: unknown }>;
+                };
+              };
+            }).from('legal_templates')
+              .select('id, content')
+              .in('id', templateIds);
+
+            if (tplErr) throw tplErr;
+
+            const templateMap = new Map((templates ?? []).map((t) => [t.id, t.content]));
+
+            for (const a of assignments) {
               const type = a.template_type as 'privacy' | 'terms' | 'cookies' | 'contact';
-              const content = a.legal_templates?.content ?? null;
+              const content = templateMap.get(a.template_id) ?? null;
               if (type && content) legalTemplates[type] = content;
             }
           }

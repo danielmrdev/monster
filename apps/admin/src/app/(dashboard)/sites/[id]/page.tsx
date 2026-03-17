@@ -264,6 +264,8 @@ export default async function SiteDetailPage({ params }: PageProps) {
           created_at: site.created_at,
           updated_at: site.updated_at,
           customization: site.customization,
+          focus_keyword: site.focus_keyword,
+          homepage_seo_text: site.homepage_seo_text,
         }}
         categoriesSlot={<CategoriesSection siteId={id} categories={categories} />}
         productsSlot={<ProductsSection siteId={id} initialProducts={products} initialTotal={productsTotal} />}

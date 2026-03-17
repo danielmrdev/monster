@@ -77,6 +77,8 @@ interface TabsProps {
     created_at: string | null
     updated_at: string | null
     customization: unknown
+    focus_keyword: string | null
+    homepage_seo_text: string | null
   }
   // Content
   categoriesSlot: React.ReactNode
@@ -229,6 +231,21 @@ export function SiteDetailTabs({
 
       {/* ── SEO & Alerts ────────────────────────────────────────────────────── */}
       <TabsContent value="seo" className="space-y-6">
+        <Card title="Homepage SEO">
+          <dl className="space-y-4">
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground">Focus Keyword</dt>
+              <dd className="mt-1 text-sm text-foreground">{site.focus_keyword ?? '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground">SEO Text</dt>
+              <dd className="mt-2 text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                {site.homepage_seo_text ?? '—'}
+              </dd>
+            </div>
+          </dl>
+        </Card>
+
         <Card title="Product Alerts">
           {alerts.length === 0 ? (
             <p className="text-sm text-muted-foreground">No open alerts.</p>
