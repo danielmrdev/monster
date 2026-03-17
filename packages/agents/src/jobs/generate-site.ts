@@ -93,7 +93,13 @@ export class GenerateSiteJob {
           ? site.domain.replace(/\./g, '-')
           : site.id;
 
-        console.log(`[GenerateSiteJob] Site: "${site.name}", slug: "${slug}"`);
+        // Remember the status before we transition — determines whether to auto-deploy at the end.
+        // Sites coming from 'live' (automated refresh) get a full generate + deploy cycle.
+        // Sites coming from 'draft'/'error' (first deploy, manual) stop at 'generated'.
+        const previousStatus = (site.status ?? 'draft') as string;
+        const autoDeployAfterGenerate = previousStatus === 'live' || previousStatus === 'paused';
+
+        console.log(`[GenerateSiteJob] Site: "${site.name}", slug: "${slug}", previousStatus: "${previousStatus}", autoDeployAfterGenerate: ${autoDeployAfterGenerate}`);
 
         // ── 2. Insert or update ai_jobs row to 'running' ─────────────────
         const { data: existingJob } = await supabase
@@ -127,6 +133,13 @@ export class GenerateSiteJob {
             // Non-fatal — continue build; status tracking degrades but build should succeed
           }
         }
+
+        // ── Transition site: draft/error → generating ─────────────────────
+        await supabase
+          .from('sites')
+          .update({ status: 'generating', updated_at: new Date().toISOString() })
+          .eq('id', siteId);
+        console.log(`[GenerateSiteJob] site ${siteId}: → generating`);
 
         // ── 3. fetch_products phase ───────────────────────────────────────
         const niche = (site.niche ?? site.name) as string;
@@ -633,13 +646,23 @@ export class GenerateSiteJob {
           console.warn(`[GenerateSiteJob] seo_files: non-fatal error writing SEO files:`, seoErr);
         }
 
-        // ── 8. Deploy phase ───────────────────────────────────────────────
-        // Runs AFTER the Astro build try/finally — cwd is restored to monorepo root.
-        // If site.domain is null, runDeployPhase logs a warning and skips gracefully.
-        console.log(`[GenerateSiteJob] deploy phase: starting for site ${siteId}`);
-        await runDeployPhase(siteId, site, job.id, supabase);
+        // ── 8. Transition site status + optional auto-deploy ─────────────
+        if (autoDeployAfterGenerate) {
+          // Automated refresh path (live → generating → deploy → live)
+          // runDeployPhase handles the generating → deploying → live transitions internally.
+          console.log(`[GenerateSiteJob] auto-deploy: site was "${previousStatus}", running deploy phase`);
+          await runDeployPhase(siteId, site, job.id, supabase);
+        } else {
+          // First-deploy path (draft/error → generating → generated)
+          // User triggers deploy manually from the admin panel.
+          await supabase
+            .from('sites')
+            .update({ status: 'generated', updated_at: new Date().toISOString() })
+            .eq('id', siteId);
+          console.log(`[GenerateSiteJob] site ${siteId}: → generated (awaiting manual deploy)`);
+        }
 
-        // ── 8. Mark ai_jobs 'completed' ───────────────────────────────────
+        // ── 9. Mark ai_jobs 'completed' ───────────────────────────────────
         await supabase
           .from('ai_jobs')
           .update({

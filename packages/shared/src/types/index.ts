@@ -6,6 +6,7 @@ export * from './research-report.js';
 export type SiteStatus =
   | 'draft'
   | 'generating'
+  | 'generated'
   | 'deploying'
   | 'dns_pending'
   | 'ssl_pending'

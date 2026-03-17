@@ -32,7 +32,8 @@ export const SUPPORTED_LANGUAGES = [
 
 export const SITE_STATUS_FLOW: Record<SiteStatus, SiteStatus[]> = {
   draft:       ['generating'],
-  generating:  ['deploying', 'error'],
+  generating:  ['generated', 'deploying', 'error'],
+  generated:   ['deploying'],
   deploying:   ['dns_pending', 'error'],
   dns_pending: ['ssl_pending', 'error'],
   ssl_pending: ['live', 'error'],
