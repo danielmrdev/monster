@@ -30,7 +30,7 @@
   - Verify: `pnpm --filter @monster/generator build` exits 0; `grep "set:html" apps/generator/src/pages/[legal].astro` returns 3+ hits.
   - Done when: Generator build exits 0; `[legal].astro` uses `set:html` for all three template variants.
 
-- [ ] **T02: Write the 8 legal template seed migration** `est:30m`
+- [x] **T02: Write the 8 legal template seed migration** `est:30m`
   - Why: The `legal_templates` table is empty — no seed rows exist yet. The admin panel's "assign template" flow has no templates to assign.
   - Files: `packages/db/supabase/migrations/20260317000004_legal_templates_seed.sql`
   - Do: Write a migration that inserts 8 rows into `legal_templates`: `privacy/es`, `privacy/en`, `terms/es`, `terms/en`, `cookies/es`, `cookies/en`, `contact/es`, `contact/en`. Each row must include: `title` (e.g. "Política de Privacidad"), `type` (e.g. `privacy`), `language` (`es`/`en`), `content` (markdown text ~200 words per template with at least `{{site.name}}`, `{{site.domain}}`, `{{site.contact_email}}` placeholders). Use `ON CONFLICT DO NOTHING` so the migration is idempotent. Apply via the project's pg-based migration pattern (KN001/KN002).

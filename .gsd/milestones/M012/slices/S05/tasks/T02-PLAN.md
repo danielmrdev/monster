@@ -40,3 +40,28 @@ Write and apply a migration that seeds 8 `legal_templates` rows (4 types × ES +
 
 - `packages/db/supabase/migrations/20260317000004_legal_templates_seed.sql`
 - 8 seeded rows in Supabase `legal_templates` table
+
+## Observability Impact
+
+**What signals change after this task:**
+- `legal_templates` table gains 8 rows — any query against it (REST API, admin panel, generator) will return content instead of empty results.
+- `interpolateLegal()` in the generator now has real data to substitute; fixture builds will produce properly-titled legal pages.
+
+**How to inspect this task later:**
+```bash
+# Count rows — should return 8
+curl -s "https://<project>.supabase.co/rest/v1/legal_templates?select=count" \
+  -H "apikey: <service_role>" -H "Prefer: count=exact" -I | grep content-range
+
+# Check placeholder presence in all rows
+curl -s "https://<project>.supabase.co/rest/v1/legal_templates?select=type,language,content" \
+  -H "apikey: <service_role>" | python3 -c "import sys,json; rows=json.load(sys.stdin); [print(r['type'],r['language'],'{{site.name}}' in r['content']) for r in rows]"
+
+# Verify idempotency — dry run should show "Remote database is up to date"
+cd packages/db && npx supabase db push --db-url $SUPABASE_DB_URL --dry-run
+```
+
+**Failure state visibility:**
+- If seed wasn't applied: REST call returns `[]` on `legal_templates`. Generator `[legal].astro` renders empty content areas (blank `<div>` for each legal page type).
+- If placeholders are missing from a row: `interpolateLegal()` leaves those blocks as-is — literal `{{site.name}}` appears in rendered HTML, detectable via `grep '{{site\.' dist/*/privacidad/index.html`.
+- If `ON CONFLICT (id) DO NOTHING` triggers (re-run): row count stays at 8, no error — idempotent behaviour confirmed.

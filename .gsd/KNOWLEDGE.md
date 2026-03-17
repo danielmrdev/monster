@@ -93,3 +93,47 @@ This was a pre-existing failure (present in main before S05 changes). The build 
 **Discovered:** M012/S05/T01
 
 `marked` v17 (installed: `^17.0.4`) returns a string synchronously when called as `marked(content)`. The v5+ async API concern in the task plan notes is a red herring for this version — `marked(str)` is synchronous. Astro's `set:html` directive accepts a plain string, so `set:html={marked(interpolateLegal(pageContent, site))}` works without `await`. If the API is later changed to async, `set:html` will render `[object Promise]` — immediately visible in page source.
+
+## KN010 — `psql` not installed in dev environment; use `npx supabase db push` to apply migrations
+
+**Discovered:** M012/S05/T02
+
+`psql` is not available in the development environment (`command not found`). The canonical way to apply migrations is:
+
+```bash
+cd packages/db
+npx supabase db push --db-url $SUPABASE_DB_URL
+```
+
+To inspect the DB without psql, use the Supabase REST API with the service role key:
+
+```bash
+curl -s "https://<project>.supabase.co/rest/v1/<table>?select=<cols>" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+```
+
+To check migration status: `npx supabase migration list --db-url $SUPABASE_DB_URL`
+To dry-run: `npx supabase db push --db-url $SUPABASE_DB_URL --dry-run`
+
+## KN011 — Idempotent seed migrations: use fixed UUIDs when table lacks unique constraint on (type, language)
+
+**Discovered:** M012/S05/T02
+
+The `legal_templates` table has no unique constraint on `(type, language)` — only a primary key. `ON CONFLICT DO NOTHING` requires a conflict target (column or constraint name). Solution: use fixed, deterministic UUIDs as primary keys (e.g. `11111111-0000-0000-0000-00000000000X`) so `ON CONFLICT (id) DO NOTHING` works reliably.
+
+This pattern is preferable to adding a UNIQUE constraint in the seed migration (which would be a schema change, not a data change) or using `ON CONFLICT ON CONSTRAINT` (which requires knowing the constraint name).
+
+## KN012 — `supabase migration repair --status applied` needed when a migration was partially applied outside the tracking table
+
+**Discovered:** M012/S05/T02
+
+When a migration's SQL was partially executed manually (e.g. `ADD COLUMN IF NOT EXISTS` succeeded but a subsequent `ADD CONSTRAINT` failed because the constraint already exists), the Supabase migration tracker may not have the row in its history table. `db push` will try to re-apply the whole file and fail on the constraint.
+
+Fix: mark as applied in the tracker, then push:
+
+```bash
+cd packages/db
+npx supabase migration repair --db-url $SUPABASE_DB_URL --status applied <timestamp>
+npx supabase db push --db-url $SUPABASE_DB_URL
+```
