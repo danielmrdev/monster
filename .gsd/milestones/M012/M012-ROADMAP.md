@@ -63,7 +63,7 @@ This milestone is complete only when all are true:
 - [x] **S02: ProductForm Content Fields** `risk:medium` `depends:[S01]`
   > After this: Product edit page has editable description, pros (textarea), cons (textarea), user opinions, meta_description fields; Generate with AI populates them; all fields save and load correctly.
 
-- [ ] **S03: CategoryForm Meta + Homepage SEO** `risk:low` `depends:[S01]`
+- [x] **S03: CategoryForm Meta + Homepage SEO** `risk:low` `depends:[S01]`
   > After this: Category edit form has meta_description field; site edit page has a Homepage SEO section with focus_keyword and homepage_seo_text with Generate with AI.
 
 - [ ] **S04: Settings Tabs + Visible Prompts** `risk:low` `depends:[]`
