@@ -72,15 +72,43 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
             </div>
           )}
 
-          {/* API Keys */}
+          {/* Anthropic */}
           <Card>
             <CardHeader>
-              <CardTitle>API Keys</CardTitle>
+              <CardTitle>Anthropic</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Spaceship API Key */}
+              <p className="text-xs text-muted-foreground">
+                Used for direct Claude API calls (ContentGenerator batch jobs). Monster Chat and NicheResearcher use the system claude CLI token — this key is only needed for BullMQ content generation jobs.
+              </p>
               <div className="space-y-1.5">
-                <Label htmlFor="spaceship_api_key">Spaceship API Key</Label>
+                <Label htmlFor="anthropic_api_key">Anthropic API Key</Label>
+                <Input
+                  id="anthropic_api_key"
+                  name="anthropic_api_key"
+                  type="password"
+                  autoComplete="off"
+                  placeholder="sk-ant-…"
+                  defaultValue=""
+                  aria-invalid={!!errors?.anthropic_api_key}
+                />
+                <MaskedIndicator last4={maskedDisplay['anthropic_api_key']} />
+                <FieldError messages={errors?.anthropic_api_key} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Spaceship */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Spaceship</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Domain registration and DNS management. Required for domain availability checks and registration from the site detail page.
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="spaceship_api_key">API Key</Label>
                 <Input
                   id="spaceship_api_key"
                   name="spaceship_api_key"
@@ -93,10 +121,8 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                 <MaskedIndicator last4={maskedDisplay['spaceship_api_key']} />
                 <FieldError messages={errors?.spaceship_api_key} />
               </div>
-
-              {/* Spaceship API Secret */}
               <div className="space-y-1.5">
-                <Label htmlFor="spaceship_api_secret">Spaceship API Secret</Label>
+                <Label htmlFor="spaceship_api_secret">API Secret</Label>
                 <Input
                   id="spaceship_api_secret"
                   name="spaceship_api_secret"
@@ -109,45 +135,61 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                 <MaskedIndicator last4={maskedDisplay['spaceship_api_secret']} />
                 <FieldError messages={errors?.spaceship_api_secret} />
               </div>
-
-              {/* Spaceship Contact ID */}
               <div className="space-y-1.5">
-                <Label htmlFor="spaceship_contact_id">Spaceship Contact ID</Label>
+                <Label htmlFor="spaceship_contact_id">Contact ID</Label>
                 <Input
                   id="spaceship_contact_id"
                   name="spaceship_contact_id"
                   type="text"
                   autoComplete="off"
-                  placeholder="Enter new contact ID to update"
+                  placeholder="27–32 character alphanumeric ID"
                   defaultValue=""
                   aria-invalid={!!errors?.spaceship_contact_id}
                 />
                 <MaskedIndicator last4={maskedDisplay['spaceship_contact_id']} />
-                <p className="text-xs text-muted-foreground mt-1">
-                  27-32 character alphanumeric ID. Find it in Spaceship account → Contacts.
-                </p>
+                <p className="text-xs text-muted-foreground">Find it in Spaceship account → Contacts.</p>
                 <FieldError messages={errors?.spaceship_contact_id} />
               </div>
+            </CardContent>
+          </Card>
 
-              {/* DataForSEO API Key */}
+          {/* DataForSEO */}
+          <Card>
+            <CardHeader>
+              <CardTitle>DataForSEO</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Keyword research, SERP analysis, and Amazon product data. Used by NicheResearcher and the product refresh pipeline.
+              </p>
               <div className="space-y-1.5">
-                <Label htmlFor="dataforseo_api_key">DataForSEO API Credentials</Label>
+                <Label htmlFor="dataforseo_api_key">API Credentials</Label>
                 <Input
                   id="dataforseo_api_key"
                   name="dataforseo_api_key"
                   type="password"
                   autoComplete="off"
-                  placeholder="email:password (e.g. user@example.com:27e3bcf9...)"
+                  placeholder="email:password (e.g. user@example.com:27e3bcf9…)"
                   defaultValue=""
                   aria-invalid={!!errors?.dataforseo_api_key}
                 />
                 <MaskedIndicator last4={maskedDisplay['dataforseo_api_key']} />
                 <FieldError messages={errors?.dataforseo_api_key} />
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Hetzner API Token */}
+          {/* Hetzner */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Hetzner</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Cloud server provisioning. Used by the Infrastructure page to provision new VPS servers via the Hetzner Cloud API.
+              </p>
               <div className="space-y-1.5">
-                <Label htmlFor="hetzner_api_token">Hetzner API Token</Label>
+                <Label htmlFor="hetzner_api_token">API Token</Label>
                 <Input
                   id="hetzner_api_token"
                   name="hetzner_api_token"
@@ -158,9 +200,6 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                   aria-invalid={!!errors?.hetzner_api_token}
                 />
                 <MaskedIndicator last4={maskedDisplay['hetzner_api_token']} />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Used to provision new VPS servers via the Hetzner Cloud API.
-                </p>
                 <FieldError messages={errors?.hetzner_api_token} />
               </div>
             </CardContent>
@@ -176,10 +215,8 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                 Used to create Cloudflare zones and A records automatically during deployment.
                 Requires a Cloudflare API token with Zone:Edit permissions.
               </p>
-
-              {/* Cloudflare API Token */}
               <div className="space-y-1.5">
-                <Label htmlFor="cloudflare_api_token">Cloudflare API Token</Label>
+                <Label htmlFor="cloudflare_api_token">API Token</Label>
                 <Input
                   id="cloudflare_api_token"
                   name="cloudflare_api_token"

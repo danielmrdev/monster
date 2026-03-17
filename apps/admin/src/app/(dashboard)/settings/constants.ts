@@ -1,4 +1,5 @@
 export const SETTINGS_KEYS = [
+  'anthropic_api_key',
   'spaceship_api_key',
   'spaceship_api_secret',
   'spaceship_contact_id',

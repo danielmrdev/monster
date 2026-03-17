@@ -7,6 +7,7 @@ import { SETTINGS_KEYS } from './constants'
 import { AGENT_KEYS } from '@monster/agents'
 
 const SaveSettingsSchema = z.object({
+  anthropic_api_key: z.string().optional(),
   spaceship_api_key: z.string().optional(),
   spaceship_api_secret: z.string().optional(),
   spaceship_contact_id: z.string().optional(),
@@ -16,6 +17,7 @@ const SaveSettingsSchema = z.object({
 })
 
 export type SaveSettingsErrors = {
+  anthropic_api_key?: string[]
   spaceship_api_key?: string[]
   spaceship_api_secret?: string[]
   spaceship_contact_id?: string[]
