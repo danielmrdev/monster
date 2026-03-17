@@ -21,7 +21,12 @@ Add a `meta_description` textarea to CategoryForm that saves to `tsa_categories.
 5. In edit `page.tsx`: add `description` to the Supabase select, pass as `meta_description: row.description` in defaultValues.
 6. In `actions.ts` `updateCategory`: read `formData.get('meta_description')` and save to `tsa_categories.description` column.
 
-## Must-Haves
+## Observability Impact
+
+- **What changes:** `updateCategory` now reads `formData.get('meta_description')` and writes it to `tsa_categories.description`. Previously, the `description` FormData field wrote to that column; after this task, `meta_description` takes precedence.
+- **Inspect this task's effect:** `SELECT id, description FROM tsa_categories WHERE id='<catId>'` — should reflect what was typed in the Meta Description textarea.
+- **TypeScript type surface:** `CategoryFormProps.defaultValues.meta_description` is the new typed property. Mismatches caught by `pnpm --filter @monster/admin typecheck`.
+- **Failure visibility:** If `updateCategory` returns `errors._form`, the form banner shows the raw Supabase error. If the wrong column name is used, Supabase returns a PostgREST 400 with `"column ... does not exist"` — visible in server console and the `_form` error banner.
 
 - [ ] `CategoryForm` renders `<Textarea name="meta_description">` 
 - [ ] `defaultValues.meta_description` populated from `description` column in edit page

@@ -8,6 +8,7 @@ export type CategoryFormState = {
     name?: string[]
     slug?: string[]
     description?: string[]
+    meta_description?: string[]
     seo_text?: string[]
     focus_keyword?: string[]
     keywords?: string[]
@@ -80,6 +81,7 @@ export async function updateCategory(
   const slugRaw = (formData.get('slug') as string | null)?.trim() ?? ''
   const slug = slugRaw || slugify(name)
   const description = (formData.get('description') as string | null)?.trim() || null
+  const meta_description = (formData.get('meta_description') as string | null)?.trim() || null
   const seo_text = (formData.get('seo_text') as string | null)?.trim() || null
   const focus_keyword = (formData.get('focus_keyword') as string | null)?.trim() || null
   const keywordsRaw = (formData.get('keywords') as string | null)?.trim() || ''
@@ -95,7 +97,15 @@ export async function updateCategory(
   const supabase = createServiceClient()
   const { error } = await supabase
     .from('tsa_categories')
-    .update({ name, slug, description, seo_text, focus_keyword, keywords })
+    .update({
+      name,
+      slug,
+      // meta_description (D057) maps to the `description` column; prefer it over the legacy description field
+      description: meta_description ?? description,
+      seo_text,
+      focus_keyword,
+      keywords,
+    })
     .eq('id', categoryId)
     .eq('site_id', siteId)
 

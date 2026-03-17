@@ -46,6 +46,7 @@ export default async function EditCategoryPage({ params }: PageProps) {
             name: cat.name,
             slug: cat.slug,
             description: cat.description ?? undefined,
+            meta_description: cat.description ?? null,
             seo_text: cat.seo_text ?? undefined,
             focus_keyword: cat.focus_keyword ?? undefined,
             keywords: cat.keywords,

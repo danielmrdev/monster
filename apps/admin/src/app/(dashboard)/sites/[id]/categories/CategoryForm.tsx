@@ -31,6 +31,7 @@ interface CategoryFormProps {
     name?: string
     slug?: string
     description?: string
+    meta_description?: string | null
     seo_text?: string
     focus_keyword?: string
     keywords?: string[] | null
@@ -169,6 +170,20 @@ export function CategoryForm({ siteId, categoryId, action, defaultValues, mode }
           placeholder="best air fryers"
         />
         <p className="text-xs text-muted-foreground">Main SEO keyword for this category page.</p>
+      </div>
+
+      {/* Meta Description */}
+      <div className="space-y-1.5">
+        <Label htmlFor="meta_description">Meta Description</Label>
+        <Textarea
+          id="meta_description"
+          name="meta_description"
+          defaultValue={defaultValues?.meta_description ?? ''}
+          placeholder="150–160 characters for search engine snippets"
+          rows={2}
+        />
+        <FieldError messages={errors?.meta_description} />
+        <p className="text-xs text-muted-foreground">Appears in search engine result pages (SERPs). Aim for 150–160 characters.</p>
       </div>
 
       {/* Keywords */}
