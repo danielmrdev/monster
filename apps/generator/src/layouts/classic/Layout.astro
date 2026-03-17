@@ -26,11 +26,24 @@ const LEGAL_LINKS = [
   <!-- Classic: top nav bar with site name + category links -->
   <header class="border-b border-gray-200 bg-white shadow-sm">
     <div class="mx-auto max-w-6xl px-4">
-      <nav class="flex h-14 items-center gap-6">
-        <a href="/" class="text-lg font-bold" style="color: var(--color-primary)">
+      <nav class="flex h-14 items-center justify-between gap-6">
+        <a href="/" class="text-lg font-bold shrink-0" style="color: var(--color-primary)">
           {site.name}
         </a>
-        <div class="flex gap-4">
+        <!-- Hamburger button: visible on mobile (< md), hidden on md+ -->
+        <button
+          id="nav-toggle-classic"
+          class="md:hidden flex flex-col justify-center gap-1.5 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+          aria-label="Toggle navigation"
+          aria-expanded="false"
+          aria-controls="mobile-menu-classic-dropdown"
+        >
+          <span class="block w-5 h-0.5 bg-current"></span>
+          <span class="block w-5 h-0.5 bg-current"></span>
+          <span class="block w-5 h-0.5 bg-current"></span>
+        </button>
+        <!-- Category links: hidden on mobile, flex row on md+ -->
+        <div id="mobile-menu-classic" class="hidden md:flex gap-4">
           {categories.map((cat) => (
             <a
               href={`/categories/${cat.slug}/`}
@@ -41,6 +54,19 @@ const LEGAL_LINKS = [
           ))}
         </div>
       </nav>
+    </div>
+    <!-- Mobile dropdown menu: full-width stacked links, toggled by hamburger -->
+    <div id="mobile-menu-classic-dropdown" class="hidden border-t border-gray-100 bg-white">
+      <div class="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-3">
+        {categories.map((cat) => (
+          <a
+            href={`/categories/${cat.slug}/`}
+            class="text-sm text-gray-600 hover:text-gray-900 transition-colors py-1"
+          >
+            {cat.name}
+          </a>
+        ))}
+      </div>
     </div>
   </header>
 
@@ -66,4 +92,19 @@ const LEGAL_LINKS = [
       <p class="text-xs text-gray-400 mt-4">© {new Date().getFullYear()} {site.name}</p>
     </div>
   </footer>
+
+  <!-- Hamburger toggle: no JS bundle, no dependencies (D163) -->
+  <script is:inline>
+    (function () {
+      var btn = document.getElementById('nav-toggle-classic');
+      var menu = document.getElementById('mobile-menu-classic-dropdown');
+      if (btn && menu) {
+        btn.addEventListener('click', function () {
+          var isOpen = !menu.classList.contains('hidden');
+          menu.classList.toggle('hidden');
+          btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+        });
+      }
+    })();
+  </script>
 </BaseLayout>

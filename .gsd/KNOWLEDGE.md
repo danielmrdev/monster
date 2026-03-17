@@ -137,3 +137,29 @@ cd packages/db
 npx supabase migration repair --db-url $SUPABASE_DB_URL --status applied <timestamp>
 npx supabase db push --db-url $SUPABASE_DB_URL
 ```
+
+## KN013 — Astro hamburger nav: use sibling dropdown div, not toggle on flex child
+
+**Discovered:** M012/S06/T01
+
+When adding a collapsible mobile menu to an Astro layout with a `flex` nav row, **do not** wrap the desktop category links in the same element you intend to toggle. The desktop links are a flex child inside a `flex h-14 items-center justify-between` row — toggling `hidden` on them works, but you need a **separate sibling `<div>`** for the mobile dropdown that sits below the `<nav>` row (outside the max-width container's nav element). This avoids a layout conflict where toggling `hidden` on the flex child also hides it on desktop if the `md:flex` class wins or loses order in Tailwind's cascade.
+
+Pattern used:
+```html
+<!-- Inside <nav> row: desktop links -->
+<div id="mobile-menu-{layout}" class="hidden md:flex gap-4">...</div>
+<!-- Sibling below the nav row: mobile dropdown -->
+<div id="mobile-menu-{layout}-dropdown" class="hidden border-t ...">...</div>
+```
+
+The `<script is:inline>` toggles only the `-dropdown` div; the desktop `hidden md:flex` div is always-present and never JS-toggled.
+
+## KN014 — Generator build requires SITE_SLUG env var; `default` slug has no data
+
+**Discovered:** M012/S06/T01
+
+`apps/generator/astro.config.ts` defaults `SITE_SLUG` to `"default"`, but there is no `apps/generator/src/data/default/site.json`. Running `pnpm --filter @monster/generator build` without `SITE_SLUG` always fails with `ENOENT: .../data/default/site.json`. Use `SITE_SLUG=fixture` to build against the fixture data for template verification:
+
+```bash
+SITE_SLUG=fixture pnpm --filter @monster/generator build
+```

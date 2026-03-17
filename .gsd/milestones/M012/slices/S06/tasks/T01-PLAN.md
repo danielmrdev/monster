@@ -27,6 +27,17 @@ Add a hamburger button + collapsible mobile menu to all three Astro layout files
 - [ ] `<script is:inline>` toggle present in each layout
 - [ ] `pnpm --filter @monster/generator build` exits 0
 
+## Observability Impact
+
+- **New DOM elements:** Each layout gains `#nav-toggle-{classic|modern|minimal}` button and `#mobile-menu-{classic|modern|minimal}` div — inspectable via browser DevTools or `querySelector`.
+- **Inline script signal:** `<script is:inline>` block adds a click listener; errors surface in the browser console at runtime (e.g., if the element IDs don't match).
+- **Verification surfaces:**
+  - `grep -l "is:inline" apps/generator/src/layouts/*/Layout.astro` → should return 3 file paths
+  - `grep "md:hidden" apps/generator/src/layouts/*/Layout.astro` → 3 hits (one hamburger button per template)
+  - `grep "mobile-menu" apps/generator/src/layouts/*/Layout.astro` → 6 hits (ID + querySelector reference per template)
+- **Failure state:** If a layout has the button but no inline script, the hamburger renders but click does nothing — detectable via missing `is:inline` grep hit for that file. If `hidden md:flex` classes are wrong, desktop nav collapses — detectable visually at ≥768px or via Tailwind class audit.
+- **No secrets or PII involved.**
+
 ## Verification
 
 - `grep -l "is:inline" apps/generator/src/layouts/classic/Layout.astro apps/generator/src/layouts/modern/Layout.astro apps/generator/src/layouts/minimal/Layout.astro` → 3 files
