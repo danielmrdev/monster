@@ -69,7 +69,7 @@ This milestone is complete only when all are true:
 - [x] **S04: Settings Tabs + Visible Prompts** `risk:low` `depends:[]`
   > After this: Settings has three tabs (API Keys, AI Prompts, Deployment); AI Prompts tab shows the active hardcoded default for each agent and allows override.
 
-- [ ] **S05: Legal Templates Seed + Markdown Pipeline** `risk:low` `depends:[S01]`
+- [x] **S05: Legal Templates Seed + Markdown Pipeline** `risk:low` `depends:[S01]`
   > After this: 8 legal template rows in DB (4 types × ES+EN) with placeholders; editor has Preview toggle and placeholder hint panel; generated legal pages render as HTML with substituted values.
 
 - [ ] **S06: Templates Mobile-First** `risk:medium` `depends:[S01]`
