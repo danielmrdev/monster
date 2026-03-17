@@ -37,7 +37,7 @@
   - Verify: `psql $SUPABASE_DB_URL -c "SELECT type, language FROM legal_templates"` returns 8 rows.
   - Done when: 8 rows confirmed in DB.
 
-- [ ] **T03: Add Preview toggle and placeholder hint panel to TemplateForm** `est:30m`
+- [x] **T03: Add Preview toggle and placeholder hint panel to TemplateForm** `est:30m`
   - Why: D130 specifies the template editor hints markdown support; the admin user needs to see the rendered output and know which placeholders are available.
   - Files: `apps/admin/src/app/(dashboard)/templates/TemplateForm.tsx`
   - Do: Add `isPreview: boolean` state. Add a "Preview" / "Edit" toggle `<Button>` near the content textarea. When `isPreview=true`: dynamically import `marked` (`await import('marked')`) on first toggle, render the substituted markdown as HTML in a `<div dangerouslySetInnerHTML={{ __html: ... }} className="prose prose-sm max-w-none border rounded p-4" />` — use a minimal `{ site: { name: 'Your Site Name', domain: 'yoursite.com', contact_email: 'contact@yoursite.com', affiliate_tag: 'yourtag-21' } }` mock for placeholder substitution in preview. Add a collapsible/always-visible hint panel below the textarea listing all 5 placeholders with descriptions: `{{site.name}}`, `{{site.domain}}`, `{{site.contact_email}}`, `{{site.affiliate_tag}}`, `{{current_year}}`.

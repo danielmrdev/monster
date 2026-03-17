@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import Link from 'next/link'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,14 @@ const LEGAL_TYPES = [
   { value: 'terms', label: 'Terms of Use' },
   { value: 'cookies', label: 'Cookie Policy' },
   { value: 'contact', label: 'Contact Page' },
+]
+
+const PLACEHOLDERS = [
+  { variable: '{{site.name}}', description: 'The site name (e.g. "Gear Reviews")' },
+  { variable: '{{site.domain}}', description: 'The site domain (e.g. "gearreviews.com")' },
+  { variable: '{{site.contact_email}}', description: 'Contact email address (optional field)' },
+  { variable: '{{site.affiliate_tag}}', description: 'Amazon affiliate tracking tag' },
+  { variable: '{{current_year}}', description: 'Current year at build time (e.g. "2026")' },
 ]
 
 interface DefaultValues {
@@ -36,6 +44,22 @@ function FieldError({ messages }: { messages?: string[] }) {
 export function TemplateForm({ action, defaultValues, mode }: TemplateFormProps) {
   const [state, formAction, isPending] = useActionState<TemplateFormState, FormData>(action, null)
   const errors = state?.errors
+
+  const [content, setContent] = useState(defaultValues?.content ?? '')
+  const [isPreview, setIsPreview] = useState(false)
+  const [markedFn, setMarkedFn] = useState<((src: string) => string) | null>(null)
+
+  async function handlePreviewToggle() {
+    if (!isPreview) {
+      if (!markedFn) {
+        const { marked: markedLib } = await import('marked')
+        setMarkedFn(() => (src: string) => markedLib(src) as string)
+      }
+      setIsPreview(true)
+    } else {
+      setIsPreview(false)
+    }
+  }
 
   return (
     <form action={formAction} className="space-y-5">
@@ -92,18 +116,59 @@ export function TemplateForm({ action, defaultValues, mode }: TemplateFormProps)
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="content">Content (markdown) <span className="text-destructive">*</span></Label>
-        <Textarea
-          id="content"
-          name="content"
-          defaultValue={defaultValues?.content ?? ''}
-          placeholder="Write the legal page content here. You can use markdown formatting."
-          rows={16}
-          required
-          aria-invalid={!!errors?.content}
-        />
+        <div className="flex items-center justify-between">
+          <Label htmlFor="content">Content (markdown) <span className="text-destructive">*</span></Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handlePreviewToggle}
+            className="h-7 px-3 text-xs"
+          >
+            {isPreview ? 'Edit' : 'Preview'}
+          </Button>
+        </div>
+
+        {isPreview ? (
+          <div
+            dangerouslySetInnerHTML={{ __html: markedFn ? markedFn(content) : '' }}
+            className="prose prose-sm max-w-none border rounded-lg p-4 min-h-[200px] bg-background text-foreground"
+          />
+        ) : (
+          <Textarea
+            id="content"
+            name="content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Write the legal page content here. You can use markdown formatting."
+            rows={16}
+            required
+            aria-invalid={!!errors?.content}
+          />
+        )}
+
+        {/* Hidden input to preserve content value when in preview mode */}
+        {isPreview && (
+          <input type="hidden" name="content" value={content} />
+        )}
+
         <p className="text-xs text-muted-foreground">Markdown is supported. This content replaces the default legal page text for sites assigned this template.</p>
         <FieldError messages={errors?.content} />
+      </div>
+
+      {/* Placeholder hint panel — always visible */}
+      <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 space-y-2">
+        <p className="text-xs font-semibold text-foreground">Available placeholders</p>
+        <ul className="space-y-1">
+          {PLACEHOLDERS.map(({ variable, description }) => (
+            <li key={variable} className="flex items-baseline gap-2 text-xs">
+              <code className="font-mono text-[11px] bg-background border border-border rounded px-1.5 py-0.5 text-foreground shrink-0">
+                {variable}
+              </code>
+              <span className="text-muted-foreground">{description}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="flex items-center gap-3">
