@@ -9,6 +9,11 @@ export type ProductFormState = {
     title?: string[]
     slug?: string[]
     category_ids?: string[]
+    detailed_description?: string[]
+    pros?: string[]
+    cons?: string[]
+    user_opinions_summary?: string[]
+    meta_description?: string[]
     _form?: string[]
   }
   success?: boolean

@@ -49,7 +49,7 @@
   - Verify: Create/edit a product via form, check DB: `detailed_description` and `pros_cons` are non-null.
   - Done when: `updateProduct` includes all five fields in its Supabase update call; build exits 0.
 
-- [ ] **T02: Render five editable content textareas in ProductForm** `est:30m`
+- [x] **T02: Render five editable content textareas in ProductForm** `est:30m`
   - Why: The form currently shows a read-only AI Description Preview. Must become five editable fields.
   - Files: `apps/admin/src/app/(dashboard)/sites/[id]/products/ProductForm.tsx`
   - Do: Remove the existing `generatedDescription` state + read-only preview textarea. Add five `<Textarea>` fields: `detailed_description` (name, ~6 rows), `pros` (name, ~4 rows, placeholder "One pro per line"), `cons` (name, ~4 rows, placeholder "One con per line"), `user_opinions_summary` (name, ~3 rows), `meta_description` (name, ~2 rows, placeholder "150-160 characters"). Set `defaultValue` from `defaultValues` props. All five fields share the same section label "AI Content".

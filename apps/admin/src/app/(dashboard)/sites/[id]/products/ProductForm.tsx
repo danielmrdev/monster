@@ -1,12 +1,13 @@
 'use client'
 
-import { useActionState, useEffect, useState, useTransition, useRef } from 'react'
+import { useActionState, useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import type { ProductFormState } from './actions'
 
 function FieldError({ messages }: { messages?: string[] }) {
@@ -61,8 +62,6 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
   const [lookupPending, startLookup] = useTransition()
   const [isGenerating, startGenerate] = useTransition()
   const [generateError, setGenerateError] = useState<string | null>(null)
-  const [generatedDescription, setGeneratedDescription] = useState<string>('')
-  const descPreviewRef = useRef<HTMLTextAreaElement>(null)
 
   const [asinData, setAsinData] = useState<AsinData | null>(null)
   const [lookupError, setLookupError] = useState<string | null>(null)
@@ -126,7 +125,6 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
   function generateDescription() {
     if (!productId) return
     setGenerateError(null)
-    setGeneratedDescription('')
     startGenerate(async () => {
       try {
         const res = await fetch(`/api/sites/${siteId}/generate-seo-text`, {
@@ -154,9 +152,7 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
             if (!line.startsWith('data: ')) continue
             try {
               const event = JSON.parse(line.slice(6))
-              if (event.type === 'text' && event.text) {
-                setGeneratedDescription((prev) => prev + event.text)
-              } else if (event.type === 'error') {
+              if (event.type === 'error') {
                 setGenerateError(event.error ?? 'Generation failed')
               }
             } catch { /* ignore parse errors */ }
@@ -333,11 +329,11 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
         />
       </div>
 
-      {/* AI description preview — edit mode only */}
+      {/* AI Content — edit mode only */}
       {mode === 'edit' && productId && (
-        <div className="space-y-1.5">
+        <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
           <div className="flex items-center justify-between">
-            <Label>AI Description Preview</Label>
+            <h3 className="text-sm font-semibold text-foreground">AI Content</h3>
             <button
               type="button"
               onClick={generateDescription}
@@ -362,18 +358,80 @@ export function ProductForm({ siteId, productId, categories, action, defaultValu
               )}
             </button>
           </div>
-          <textarea
-            ref={descPreviewRef}
-            readOnly
-            value={generatedDescription}
-            placeholder="Click 'Generate with AI' to preview the AI-generated description for this product. Run 'Generate Site' to apply it."
-            rows={5}
-            className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus-visible:outline-none"
-          />
+
           {generateError && (
             <p className="text-xs text-destructive">{generateError}</p>
           )}
-          <p className="text-xs text-muted-foreground">Preview only — run "Generate Site" to apply AI content to all products.</p>
+
+          {/* Detailed Description */}
+          <div className="space-y-1.5">
+            <Label htmlFor="detailed_description">Detailed Description</Label>
+            <Textarea
+              id="detailed_description"
+              name="detailed_description"
+              rows={6}
+              defaultValue={defaultValues?.detailed_description ?? ''}
+              placeholder="Full product description with SEO-rich content…"
+              aria-invalid={!!errors?.detailed_description}
+            />
+            <FieldError messages={errors?.detailed_description} />
+          </div>
+
+          {/* Pros */}
+          <div className="space-y-1.5">
+            <Label htmlFor="pros">Pros</Label>
+            <Textarea
+              id="pros"
+              name="pros"
+              rows={4}
+              defaultValue={defaultValues?.pros ?? ''}
+              placeholder="One pro per line"
+              aria-invalid={!!errors?.pros}
+            />
+            <FieldError messages={errors?.pros} />
+          </div>
+
+          {/* Cons */}
+          <div className="space-y-1.5">
+            <Label htmlFor="cons">Cons</Label>
+            <Textarea
+              id="cons"
+              name="cons"
+              rows={4}
+              defaultValue={defaultValues?.cons ?? ''}
+              placeholder="One con per line"
+              aria-invalid={!!errors?.cons}
+            />
+            <FieldError messages={errors?.cons} />
+          </div>
+
+          {/* User Opinions Summary */}
+          <div className="space-y-1.5">
+            <Label htmlFor="user_opinions_summary">User Opinions Summary</Label>
+            <Textarea
+              id="user_opinions_summary"
+              name="user_opinions_summary"
+              rows={3}
+              defaultValue={defaultValues?.user_opinions_summary ?? ''}
+              placeholder="Synthesized summary of what users say about this product…"
+              aria-invalid={!!errors?.user_opinions_summary}
+            />
+            <FieldError messages={errors?.user_opinions_summary} />
+          </div>
+
+          {/* Meta Description */}
+          <div className="space-y-1.5">
+            <Label htmlFor="meta_description">Meta Description</Label>
+            <Textarea
+              id="meta_description"
+              name="meta_description"
+              rows={2}
+              defaultValue={defaultValues?.meta_description ?? ''}
+              placeholder="150–160 characters for search engine snippets"
+              aria-invalid={!!errors?.meta_description}
+            />
+            <FieldError messages={errors?.meta_description} />
+          </div>
         </div>
       )}
 

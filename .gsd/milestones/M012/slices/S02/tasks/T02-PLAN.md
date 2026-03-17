@@ -40,3 +40,22 @@ Replace the existing read-only "AI Description Preview" with five properly label
 ## Expected Output
 
 - `apps/admin/src/app/(dashboard)/sites/[id]/products/ProductForm.tsx` — updated with five editable textareas, no read-only preview
+
+## Observability Impact
+
+**Signals introduced by this task:**
+- Five `<Textarea>` elements with `name` attributes (`detailed_description`, `pros`, `cons`, `user_opinions_summary`, `meta_description`) become visible in the form DOM; inspect via browser DevTools → Elements.
+- `FieldError` components conditionally render per-field validation messages under each textarea when `errors.<fieldName>` is populated by the server action — visible in the form UI without needing DevTools.
+- `errors._form` banner unchanged — Supabase save failures still surface there.
+- `ProductFormState.errors` type now explicitly includes all five content field keys; TypeScript build (`npx tsc --noEmit` in `apps/admin`) catches any future field name drift.
+
+**How a future agent inspects this task:**
+- Visual: navigate to `/sites/<id>/products/<prodId>/edit` and confirm five labeled textareas appear below basic fields inside the "AI Content" panel.
+- DOM: `document.querySelectorAll('textarea[name]')` in browser console should list `detailed_description`, `pros`, `cons`, `user_opinions_summary`, `meta_description` (plus any others).
+- Read-only preview: confirm the old `<textarea readOnly>` is absent — searching for `readOnly` in the rendered HTML should return nothing in the product form area.
+- TypeScript: `npx tsc --noEmit` in `apps/admin` exits 0.
+
+**Failure visibility:**
+- If `defaultValues` are not passed by the edit page, textareas render empty even when DB has data — check `edit/page.tsx` deserialization (T01 concern).
+- If `ProductFormState.errors` type is missing a field key, TypeScript build fails with TS2339 "Property does not exist" error pointing to the `errors?.fieldName` reference.
+- If `Textarea` import is missing, Next.js build fails with "Cannot find module" error at build time.
