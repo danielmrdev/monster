@@ -93,3 +93,4 @@ tmp/
 # ── GSD baseline (auto-generated) ──
 .gsd/forensics/
 .gsd/parallel/
+memory/
