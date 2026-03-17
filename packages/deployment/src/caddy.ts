@@ -33,7 +33,7 @@ export class CaddyService {
       throw new Error(`[CaddyService] server "${server.name}" has no IP address`);
     }
 
-    const caddyfileContent = `${domain} {
+    const caddyfileContent = `http://${domain} {
   root * /var/www/sites/${slug}/dist
   file_server
   encode zstd gzip
