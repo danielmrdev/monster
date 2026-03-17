@@ -5,6 +5,7 @@ import { enqueueSiteGeneration } from './actions';
 
 interface GenerateSiteButtonProps {
   siteId: string;
+  onEnqueued?: () => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface GenerateSiteButtonProps {
  * existing JobStatus polling component (already on the page) will
  * pick up the newly created job and show live status.
  */
-export function GenerateSiteButton({ siteId }: GenerateSiteButtonProps) {
+export function GenerateSiteButton({ siteId, onEnqueued }: GenerateSiteButtonProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -25,6 +26,8 @@ export function GenerateSiteButton({ siteId }: GenerateSiteButtonProps) {
       const result = await enqueueSiteGeneration(siteId);
       if (result.error) {
         setError(result.error);
+      } else {
+        onEnqueued?.();
       }
     });
   }

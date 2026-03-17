@@ -8,6 +8,7 @@ type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 interface Props {
   siteId: string;
+  pollTrigger?: number;
 }
 
 const BADGE: Record<JobStatus, { label: string; className: string }> = {
@@ -31,7 +32,7 @@ function fmt(ts: string | null | undefined): string {
   return new Date(ts).toLocaleString();
 }
 
-export default function JobStatus({ siteId }: Props) {
+export default function JobStatus({ siteId, pollTrigger }: Props) {
   const [job, setJob] = useState<JobRow>(null);
   const [, startTransition] = useTransition();
 
@@ -42,9 +43,10 @@ export default function JobStatus({ siteId }: Props) {
     });
   }, [siteId]);
 
+  // Poll on mount and whenever pollTrigger changes (button clicked)
   useEffect(() => {
     poll();
-  }, [poll]);
+  }, [poll, pollTrigger]);
 
   useEffect(() => {
     const status = job?.status as JobStatus | undefined;
