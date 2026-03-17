@@ -36,16 +36,28 @@ export function ProductSearch({ siteId, categories }: Props) {
 
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResultItem[] | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [addError, setAddError] = useState<string | null>(null)
   const [addSuccess, setAddSuccess] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set())
 
-  const [searching, startSearch] = useTransition()
+  const [searching, setSearching] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [adding, startAdd] = useTransition()
 
   // ── Search ──────────────────────────────────────────────────────────────
+
+  async function fetchPage(q: string, page: number): Promise<{ results: SearchResultItem[]; hasMore: boolean } | null> {
+    const res = await fetch(
+      `/api/sites/${siteId}/product-search?q=${encodeURIComponent(q)}&page=${page}`
+    )
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error ?? 'Search failed')
+    return { results: data.results ?? [], hasMore: data.hasMore ?? false }
+  }
 
   function handleSearch(e?: React.FormEvent) {
     e?.preventDefault()
@@ -54,26 +66,42 @@ export function ProductSearch({ siteId, categories }: Props) {
 
     setQuery(q)
     setResults(null)
+    setCurrentPage(1)
+    setHasMore(false)
     setSearchError(null)
     setSelected(new Set())
     setAddSuccess(null)
     setAddError(null)
+    setSearching(true)
 
-    startSearch(async () => {
-      try {
-        const res = await fetch(
-          `/api/sites/${siteId}/product-search?q=${encodeURIComponent(q)}`
-        )
-        const data = await res.json()
-        if (!res.ok) {
-          setSearchError(data.error ?? 'Search failed')
-          return
-        }
-        setResults(data.results ?? [])
-      } catch (err) {
+    fetchPage(q, 1)
+      .then((data) => {
+        if (!data) return
+        setResults(data.results)
+        setHasMore(data.hasMore)
+        setCurrentPage(1)
+      })
+      .catch((err) => {
         setSearchError(err instanceof Error ? err.message : 'Unknown error')
-      }
-    })
+      })
+      .finally(() => setSearching(false))
+  }
+
+  function handleLoadMore() {
+    const nextPage = currentPage + 1
+    setLoadingMore(true)
+
+    fetchPage(query, nextPage)
+      .then((data) => {
+        if (!data) return
+        setResults((prev) => [...(prev ?? []), ...data.results])
+        setHasMore(data.hasMore)
+        setCurrentPage(nextPage)
+      })
+      .catch((err) => {
+        setSearchError(err instanceof Error ? err.message : 'Unknown error')
+      })
+      .finally(() => setLoadingMore(false))
   }
 
   // ── Selection ───────────────────────────────────────────────────────────
@@ -200,7 +228,7 @@ export function ProductSearch({ siteId, categories }: Props) {
             />
           ))}
           <p className="text-xs text-center text-muted-foreground pt-1">
-            Querying DataForSEO… this may take 10–30 seconds
+            Searching Amazon… this may take 10–30 seconds
           </p>
         </div>
       )}
@@ -375,6 +403,27 @@ export function ProductSearch({ siteId, categories }: Props) {
                   )
                 })}
               </div>
+
+              {/* Load more */}
+              {hasMore && (
+                <div className="pt-2 flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? (
+                      <span className="flex items-center gap-2">
+                        <Spinner size="sm" /> Loading more…
+                      </span>
+                    ) : (
+                      `Load more (page ${currentPage + 1})`
+                    )}
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </>

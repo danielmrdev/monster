@@ -23,13 +23,14 @@ export interface SearchResultItem {
 /**
  * GET /api/sites/[id]/product-search?q=<keyword>
  *
- * Searches Amazon via DataForSEO Merchant API for the keyword.
+ * Searches Amazon via AmazonScraper for the keyword.
  * Returns up to 30 results with an `alreadyAdded` flag for ASINs
  * already in tsa_products for this site.
  */
 export async function GET(request: NextRequest, { params }: Params) {
   const { id: siteId } = await params
   const q = request.nextUrl.searchParams.get('q')?.trim()
+  const page = Math.max(1, parseInt(request.nextUrl.searchParams.get('page') ?? '1', 10))
 
   if (!q) {
     return NextResponse.json({ error: 'q query param required' }, { status: 400 })
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
   try {
     const scraper = new AmazonScraper()
-    const scraped: ScrapedProduct[] = await scraper.search(q, market)
+    const scraped: ScrapedProduct[] = await scraper.search(q, market, page)
 
     // Fetch existing ASINs for this site to flag already-added ones
     const { data: existing } = await supabase
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       alreadyAdded: existingAsins.has(p.asin),
     }))
 
-    return NextResponse.json({ results, market })
+    return NextResponse.json({ results, market, page, hasMore: scraped.length >= 20 })
   } catch (err) {
     if (err instanceof AmazonBlockedError) {
       return NextResponse.json({ error: err.message }, { status: 503 })
