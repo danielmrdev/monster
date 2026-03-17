@@ -209,7 +209,7 @@ export class DataForSEOClient {
    * @param market  - AMAZON_MARKETS slug (e.g. "ES", "US")
    * @returns Array of mapped DataForSEOProduct. Throws if zero usable results.
    */
-  async searchProducts(keyword: string, market: string): Promise<DataForSEOProduct[]> {
+  async searchProducts(keyword: string, market: string, depth = 30): Promise<DataForSEOProduct[]> {
     const config = MARKET_CONFIG[market];
     if (!config) {
       throw new Error(
@@ -226,7 +226,7 @@ export class DataForSEOClient {
         location_code: config.location_code,
         language_code: config.language_code,
         se_domain: config.se_domain,
-        depth: 30,
+        depth,
       },
     ];
 

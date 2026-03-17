@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { AmazonScraper, AmazonBlockedError } from '@monster/agents'
-import type { ScrapedProduct } from '@monster/agents'
+import { DataForSEOClient } from '@monster/agents'
+
+// DataForSEO Merchant API uses async task flow (task_post → poll → task_get).
+// Allow up to 60s for the polling to complete.
+export const maxDuration = 60
 
 interface Params {
   params: Promise<{ id: string }>
@@ -23,14 +26,15 @@ export interface SearchResultItem {
 /**
  * GET /api/sites/[id]/product-search?q=<keyword>
  *
- * Searches Amazon via AmazonScraper for the keyword.
- * Returns up to 30 results with an `alreadyAdded` flag for ASINs
+ * Searches Amazon via DataForSEO Merchant API (depth=100).
+ * Returns up to 100 organic results with an `alreadyAdded` flag for ASINs
  * already in tsa_products for this site.
+ *
+ * Uses async task flow (task_post → poll → task_get/advanced) — expect 15-30s.
  */
 export async function GET(request: NextRequest, { params }: Params) {
   const { id: siteId } = await params
   const q = request.nextUrl.searchParams.get('q')?.trim()
-  const page = Math.max(1, parseInt(request.nextUrl.searchParams.get('page') ?? '1', 10))
 
   if (!q) {
     return NextResponse.json({ error: 'q query param required' }, { status: 400 })
@@ -50,8 +54,8 @@ export async function GET(request: NextRequest, { params }: Params) {
   const market = site.market ?? 'ES'
 
   try {
-    const scraper = new AmazonScraper()
-    const scraped: ScrapedProduct[] = await scraper.search(q, market, page)
+    const client = new DataForSEOClient()
+    const products = await client.searchProducts(q, market, 100)
 
     // Fetch existing ASINs for this site to flag already-added ones
     const { data: existing } = await supabase
@@ -61,7 +65,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     const existingAsins = new Set((existing ?? []).map((r) => r.asin))
 
-    const results: SearchResultItem[] = scraped.map((p) => ({
+    const results: SearchResultItem[] = products.map((p) => ({
       asin: p.asin,
       title: p.title,
       imageUrl: p.imageUrl,
@@ -69,15 +73,13 @@ export async function GET(request: NextRequest, { params }: Params) {
       rating: p.rating ?? 0,
       reviewCount: p.reviewCount ?? 0,
       isPrime: p.isPrime,
-      isBestSeller: false,
+      isBestSeller: p.isBestSeller,
       alreadyAdded: existingAsins.has(p.asin),
     }))
 
-    return NextResponse.json({ results, market, page, hasMore: scraped.length >= 20 })
+    console.log(`[product-search] siteId=${siteId} q="${q}" market=${market} results=${results.length}`)
+    return NextResponse.json({ results, market })
   } catch (err) {
-    if (err instanceof AmazonBlockedError) {
-      return NextResponse.json({ error: err.message }, { status: 503 })
-    }
     const message = err instanceof Error ? err.message : String(err)
     console.error(`[product-search] siteId=${siteId} q="${q}" error=${message}`)
     return NextResponse.json({ error: message }, { status: 500 })
