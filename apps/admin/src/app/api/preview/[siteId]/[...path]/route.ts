@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 
 // Generator root is two levels up from admin: monorepo/apps/generator
 const GENERATOR_ROOT = join(process.cwd(), '..', 'generator');
@@ -98,16 +98,16 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   // pathSegments: e.g. [] → index.html, ['_astro','main.css'] → _astro/main.css
   let relativePath = pathSegments.join('/');
 
-  // Try exact path first, then with /index.html appended for directory-style routes
+  // Try exact path first (files only), then with /index.html appended for directory-style routes
   const candidates = [
     join(distDir, relativePath),
     join(distDir, relativePath, 'index.html'),
     join(distDir, 'index.html'), // fallback root
-  ].filter(Boolean);
+  ];
 
   let resolvedPath: string | null = null;
   for (const candidate of candidates) {
-    if (existsSync(candidate)) {
+    if (existsSync(candidate) && statSync(candidate).isFile()) {
       resolvedPath = candidate;
       break;
     }
