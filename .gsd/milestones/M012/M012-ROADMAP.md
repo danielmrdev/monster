@@ -60,7 +60,7 @@ This milestone is complete only when all are true:
 - [x] **S01: DB Migrations** `risk:low` `depends:[]`
   > After this: `homepage_seo_text` column exists in `sites`; `meta_description` column exists in `tsa_products`; `tsa/classic`, `tsa/modern`, `tsa/minimal` slugs in `site_templates`; existing sites updated.
 
-- [ ] **S02: ProductForm Content Fields** `risk:medium` `depends:[S01]`
+- [x] **S02: ProductForm Content Fields** `risk:medium` `depends:[S01]`
   > After this: Product edit page has editable description, pros (textarea), cons (textarea), user opinions, meta_description fields; Generate with AI populates them; all fields save and load correctly.
 
 - [ ] **S03: CategoryForm Meta + Homepage SEO** `risk:low` `depends:[S01]`
