@@ -50,10 +50,9 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
 
   return (
     <Tabs defaultValue="api-keys" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="api-keys">API Keys</TabsTrigger>
         <TabsTrigger value="ai-prompts">AI Prompts</TabsTrigger>
-        <TabsTrigger value="deployment">Deployment</TabsTrigger>
       </TabsList>
 
       {/* ── Tab: API Keys ─────────────────────────────────────────────────── */}
@@ -257,68 +256,6 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
         </form>
       </TabsContent>
 
-      {/* ── Tab: Deployment ───────────────────────────────────────────────── */}
-      <TabsContent value="deployment">
-        <Card>
-          <CardHeader>
-            <CardTitle>VPS2 — Sites Server</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Configuration for the public VPS that serves generated sites via Caddy.
-              VPS1 (admin) deploys to VPS2 via rsync over Tailscale SSH.
-            </p>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="vps2_host">VPS2 Host</Label>
-              <Input
-                id="vps2_host"
-                name="vps2_host"
-                type="text"
-                autoComplete="off"
-                placeholder="e.g. 100.x.x.x or sites.example.com"
-                defaultValue={maskedDisplay['vps2_host'] ? '••••••' + maskedDisplay['vps2_host'] : ''}
-              />
-              <p className="text-xs text-muted-foreground">
-                Tailscale IP or hostname of the sites VPS. Used as rsync target.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="vps2_user">VPS2 SSH User</Label>
-              <Input
-                id="vps2_user"
-                name="vps2_user"
-                type="text"
-                autoComplete="off"
-                placeholder="e.g. root"
-                defaultValue={maskedDisplay['vps2_user'] ? '••••••' + maskedDisplay['vps2_user'] : ''}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="vps2_sites_root">Sites Root Path</Label>
-              <Input
-                id="vps2_sites_root"
-                name="vps2_sites_root"
-                type="text"
-                autoComplete="off"
-                placeholder="e.g. /var/www/sites"
-                defaultValue={maskedDisplay['vps2_sites_root'] ? '••••••' + maskedDisplay['vps2_sites_root'] : ''}
-              />
-              <p className="text-xs text-muted-foreground">
-                Absolute path on VPS2 where site directories are created (one per domain).
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex items-center gap-3 pt-4">
-          <p className="text-xs text-muted-foreground">
-            Deployment settings will be wired to the save action in a future task.
-          </p>
-        </div>
-      </TabsContent>
     </Tabs>
   )
 }
