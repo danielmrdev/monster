@@ -28,6 +28,22 @@ Extend the `ProductFormProps.defaultValues` interface, the edit page that passes
 - [ ] `updateProduct` saves all five fields (including `pros_cons` as serialized JSONB object)
 - [ ] TypeScript build exits 0
 
+## Observability Impact
+
+**Signals that change after this task:**
+- `updateProduct` server action now persists five additional fields to `tsa_products`; any Supabase error on those columns surfaces in `errors._form` (visible in the form error banner).
+- TypeScript build (`pnpm --filter @monster/admin typecheck`) validates the interface contract between `ProductFormProps.defaultValues`, `edit/page.tsx` defaultValues assembly, and the `updateProduct` FormData reads — a mismatch exits non-zero.
+
+**How a future agent inspects this task:**
+- `grep -n "detailed_description" apps/admin/src/app/(dashboard)/sites/[id]/products/actions.ts` confirms the field is in the update call.
+- `grep -n "pros_cons" apps/admin/src/app/(dashboard)/sites/[id]/products/[prodId]/edit/page.tsx` confirms deserialization is present.
+- DB: `SELECT id, detailed_description, pros_cons FROM tsa_products LIMIT 5;` shows whether data is being saved.
+
+**Failure state visibility:**
+- If `pros_cons` is not correctly serialized, the DB column will contain `null` or `{}` even after a save — detectable via direct DB query.
+- If the TS interface is wrong, `typecheck` will fail with an explicit property error message.
+- If the Supabase column names differ from code, `typecheck` will flag the `.update({...})` call at the type level (Supabase typed client).
+
 ## Verification
 
 - `pnpm --filter @monster/admin typecheck` exits 0

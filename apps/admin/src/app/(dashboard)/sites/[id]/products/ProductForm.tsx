@@ -46,6 +46,11 @@ interface ProductFormProps {
     source_image_url?: string | null
     focus_keyword?: string | null
     category_ids?: string[]
+    detailed_description?: string | null
+    pros?: string | null
+    cons?: string | null
+    user_opinions_summary?: string | null
+    meta_description?: string | null
   }
   mode: 'create' | 'edit'
 }

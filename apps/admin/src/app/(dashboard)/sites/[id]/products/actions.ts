@@ -110,11 +110,36 @@ export async function updateProduct(
   const focus_keyword = (formData.get('focus_keyword') as string | null)?.trim() || null
   const category_ids = formData.getAll('category_ids') as string[]
 
+  // Content fields
+  const detailed_description = (formData.get('detailed_description') as string | null)?.trim() || null
+  const user_opinions_summary = (formData.get('user_opinions_summary') as string | null)?.trim() || null
+  const meta_description = (formData.get('meta_description') as string | null)?.trim() || null
+
+  // Serialize pros/cons: split by newline, filter empty lines → JSONB {pros: string[], cons: string[]}
+  const prosRaw = (formData.get('pros') as string | null) ?? ''
+  const consRaw = (formData.get('cons') as string | null) ?? ''
+  const prosArr = prosRaw.split('\n').map((l) => l.trim()).filter(Boolean)
+  const consArr = consRaw.split('\n').map((l) => l.trim()).filter(Boolean)
+  const pros_cons = { pros: prosArr, cons: consArr }
+
   const supabase = createServiceClient()
 
   const { error } = await supabase
     .from('tsa_products')
-    .update({ title, slug, current_price, rating, review_count, is_prime, source_image_url, focus_keyword })
+    .update({
+      title,
+      slug,
+      current_price,
+      rating,
+      review_count,
+      is_prime,
+      source_image_url,
+      focus_keyword,
+      detailed_description,
+      pros_cons,
+      user_opinions_summary,
+      meta_description,
+    })
     .eq('id', productId)
     .eq('site_id', siteId)
 

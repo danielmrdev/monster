@@ -14,7 +14,7 @@ export default async function EditProductPage({ params }: PageProps) {
 
   const [siteResult, productResult, categoriesResult, linkResult] = await Promise.all([
     supabase.from('sites').select('id, name').eq('id', siteId).single(),
-    supabase.from('tsa_products').select('*').eq('id', prodId).eq('site_id', siteId).single(),
+    supabase.from('tsa_products').select('*, detailed_description, pros_cons, user_opinions_summary, meta_description').eq('id', prodId).eq('site_id', siteId).single(),
     supabase
       .from('tsa_categories')
       .select('id, name, slug')
@@ -31,6 +31,11 @@ export default async function EditProductPage({ params }: PageProps) {
   const site = siteResult.data
   const product = productResult.data
   const categoryIds = (linkResult.data ?? []).map((r) => r.category_id)
+
+  // Deserialize pros_cons JSONB → newline-joined strings for textarea defaultValues
+  const prosCons = product.pros_cons as { pros?: string[]; cons?: string[] } | null
+  const prosText = (prosCons?.pros ?? []).join('\n')
+  const consText = (prosCons?.cons ?? []).join('\n')
 
   const action = updateProduct.bind(null, siteId, prodId)
 
@@ -65,6 +70,11 @@ export default async function EditProductPage({ params }: PageProps) {
             source_image_url: product.source_image_url,
             focus_keyword: product.focus_keyword,
             category_ids: categoryIds,
+            detailed_description: product.detailed_description,
+            pros: prosText,
+            cons: consText,
+            user_opinions_summary: product.user_opinions_summary,
+            meta_description: product.meta_description,
           }}
         />
       </div>
