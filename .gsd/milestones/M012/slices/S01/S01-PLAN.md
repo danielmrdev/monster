@@ -37,7 +37,7 @@
   - Verify: `psql $SUPABASE_DB_URL -c "\d sites" | grep homepage_seo_text` returns a row; `psql $SUPABASE_DB_URL -c "\d tsa_products" | grep meta_description` returns a row; `psql $SUPABASE_DB_URL -c "SELECT slug FROM site_templates WHERE slug LIKE 'tsa/%'"` returns 3 rows.
   - Done when: All three SELECT checks pass without error.
 
-- [ ] **T02: Update Supabase TypeScript types and rebuild @monster/db** `est:20m`
+- [x] **T02: Update Supabase TypeScript types and rebuild @monster/db** `est:20m`
   - Why: Downstream packages (admin, agents) resolve types from `packages/db/dist/index.d.ts`. Without a rebuild the new columns are invisible to TypeScript (D098 pattern).
   - Files: `packages/db/src/types/supabase.ts`, `packages/db/dist/`
   - Do: Attempt `supabase gen types typescript --project-id <id> > packages/db/src/types/supabase.ts`. If CLI sync fails (D112 pattern), manually add the new columns to `supabase.ts`: add `homepage_seo_text: string | null` to the `sites` Row/Insert/Update interfaces, add `meta_description: string | null` to the `tsa_products` Row/Insert/Update interfaces. Then run `pnpm --filter @monster/db build`.

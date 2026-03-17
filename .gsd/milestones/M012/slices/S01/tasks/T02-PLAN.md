@@ -41,3 +41,10 @@ Update `packages/db/src/types/supabase.ts` to include the two new columns (`home
 
 - `packages/db/src/types/supabase.ts` — updated with two new column types
 - `packages/db/dist/` — rebuilt, contains updated type declarations
+
+## Observability Impact
+
+- **Signal:** `grep -c "homepage_seo_text\|meta_description" packages/db/dist/index.d.ts` — returns ≥2 when types are correctly synced; returns 0 if build was skipped or types weren't updated.
+- **Inspection:** `cat packages/db/dist/index.d.ts | grep -A2 "homepage_seo_text\|meta_description"` shows the exact field declarations in the compiled output.
+- **Failure state:** If `pnpm --filter @monster/db build` fails with TypeScript errors, the dist/ folder may be stale or missing — downstream consumers (admin, agents) will silently use old types. Run `grep -r "homepage_seo_text" packages/db/src packages/db/dist` to compare source vs compiled state.
+- **Downstream check:** After rebuild, `grep -r "homepage_seo_text" apps/admin/` will reveal whether the admin app has already been updated to use the new field, or if T03+ tasks still need to wire it up.

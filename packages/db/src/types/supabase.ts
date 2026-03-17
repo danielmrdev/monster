@@ -904,6 +904,7 @@ export type Database = {
           customization: Json | null
           domain: string | null
           focus_keyword: string | null
+          homepage_seo_text: string | null
           id: string
           language: string | null
           last_refreshed_at: string | null
@@ -926,6 +927,7 @@ export type Database = {
           customization?: Json | null
           domain?: string | null
           focus_keyword?: string | null
+          homepage_seo_text?: string | null
           id?: string
           language?: string | null
           last_refreshed_at?: string | null
@@ -948,6 +950,7 @@ export type Database = {
           customization?: Json | null
           domain?: string | null
           focus_keyword?: string | null
+          homepage_seo_text?: string | null
           id?: string
           language?: string | null
           last_refreshed_at?: string | null
@@ -1041,6 +1044,7 @@ export type Database = {
           images: string[] | null
           is_prime: boolean
           last_checked_at: string | null
+          meta_description: string | null
           original_price: number | null
           price_history: Json | null
           pros_cons: Json | null
@@ -1065,6 +1069,7 @@ export type Database = {
           images?: string[] | null
           is_prime?: boolean
           last_checked_at?: string | null
+          meta_description?: string | null
           original_price?: number | null
           price_history?: Json | null
           pros_cons?: Json | null
@@ -1089,6 +1094,7 @@ export type Database = {
           images?: string[] | null
           is_prime?: boolean
           last_checked_at?: string | null
+          meta_description?: string | null
           original_price?: number | null
           price_history?: Json | null
           pros_cons?: Json | null
