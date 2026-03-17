@@ -6,11 +6,8 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRedisOptions } from '../queue.js';
 import { Redis } from 'ioredis';
-import { DataForSEOClient } from '../clients/dataforseo.js';
-import type { DataForSEOProduct } from '../clients/dataforseo.js';
 import { writeSeoFiles } from '../seo-files.js';
 import { processImages } from '../pipeline/images.js';
-
 import { scorePage } from '@monster/seo-scorer';
 import type { PageType } from '@monster/seo-scorer';
 import { runDeployPhase } from './deploy-site.js';
@@ -141,204 +138,89 @@ export class GenerateSiteJob {
           .eq('id', siteId);
         console.log(`[GenerateSiteJob] site ${siteId}: → generating`);
 
-        // ── 3. fetch_products phase ───────────────────────────────────────
-        const niche = (site.niche ?? site.name) as string;
-        const market = (site.market ?? 'ES') as string;
-
+        // ── 3. Read categories + products from DB ─────────────────────────
+        // Products are managed via the admin panel (added/refreshed separately).
+        // Generate only reads what's already in DB — no DataForSEO calls here.
         await supabase
           .from('ai_jobs')
-          .update({ payload: { phase: 'fetch_products', done: 0, total: 2 } })
+          .update({ payload: { phase: 'process_images', done: 0, total: 0 } })
           .eq('bull_job_id', job.id ?? '');
 
-        console.log(`[GenerateSiteJob] fetch_products: niche="${niche}", market="${market}"`);
+        const { data: dbCategoriesRaw, error: catReadErr } = await supabase
+          .from('tsa_categories')
+          .select('*')
+          .eq('site_id', siteId);
 
-        const client = new DataForSEOClient();
-
-        // Primary keyword fetch — required, throws on failure
-        const keyword1 = niche;
-        const products1 = await client.searchProducts(keyword1, market);
-        console.log(`[GenerateSiteJob] fetch_products: fetched ${products1.length} products for "${keyword1}"`);
-
-        // Secondary keyword fetch — non-fatal; job continues with one category if it fails
-        const keyword2 = `accesorios ${niche}`;
-        let products2: DataForSEOProduct[] = [];
-        try {
-          products2 = await client.searchProducts(keyword2, market);
-          console.log(`[GenerateSiteJob] fetch_products: fetched ${products2.length} products for "${keyword2}"`);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.log(`[GenerateSiteJob] fetch_products: secondary keyword failed (non-fatal) — ${msg}`);
+        if (catReadErr || !dbCategoriesRaw) {
+          throw new Error(`Failed to fetch categories for site ${siteId}: ${catReadErr?.message ?? 'null'}`);
         }
 
-        await supabase
-          .from('ai_jobs')
-          .update({ payload: { phase: 'fetch_products', done: 2, total: 2 } })
-          .eq('bull_job_id', job.id ?? '');
+        const { data: dbProductsRaw, error: prodReadErr } = await supabase
+          .from('tsa_products')
+          .select('*')
+          .eq('site_id', siteId);
 
-        // De-dupe across both lists by ASIN
-        const seenAsins = new Set<string>();
-        const cat1Products: DataForSEOProduct[] = [];
-        for (const p of products1) {
-          if (!seenAsins.has(p.asin)) {
-            seenAsins.add(p.asin);
-            cat1Products.push(p);
-          }
-        }
-        const cat2Products: DataForSEOProduct[] = [];
-        for (const p of products2) {
-          if (!seenAsins.has(p.asin)) {
-            seenAsins.add(p.asin);
-            cat2Products.push(p);
-          }
+        if (prodReadErr || !dbProductsRaw) {
+          throw new Error(`Failed to fetch products for site ${siteId}: ${prodReadErr?.message ?? 'null'}`);
         }
 
-        // Top 15 per category
-        const cat1 = cat1Products.slice(0, 15);
-        const cat2 = cat2Products.slice(0, 15);
-        const allProducts = [...cat1, ...cat2];
+        console.log(`[GenerateSiteJob] read from DB: ${dbCategoriesRaw.length} categories, ${dbProductsRaw.length} products`);
 
-        console.log(`[GenerateSiteJob] fetch_products: ${cat1.length} cat1 products, ${cat2.length} cat2 products`);
-
-        // ── 4. Upsert categories + products to Supabase ───────────────────
-        const categories: Array<{ id: string; name: string; slug: string; keyword: string; products: DataForSEOProduct[] }> = [];
-
-        const catDefs = [
-          { keyword: keyword1, products: cat1 },
-          ...(cat2.length > 0 ? [{ keyword: keyword2, products: cat2 }] : []),
-        ];
-
-        for (const catDef of catDefs) {
-          const catName = catDef.keyword;
-          const catSlug = slugify(catName);
-
-          const { data: catRow, error: catErr } = await supabase
-            .from('tsa_categories')
-            .upsert(
-              {
-                site_id: siteId,
-                name: catName,
-                slug: catSlug,
-                seo_text: '',
-                keywords: [catDef.keyword],
-                category_image: null,
-              },
-              { onConflict: 'site_id,slug', ignoreDuplicates: false }
-            )
-            .select('id')
-            .single();
-
-          if (catErr || !catRow) {
-            throw new Error(`Failed to upsert category "${catName}": ${catErr?.message ?? 'null row'}`);
-          }
-
-          categories.push({
-            id: catRow.id,
-            name: catName,
-            slug: catSlug,
-            keyword: catDef.keyword,
-            products: catDef.products,
-          });
-        }
-
-        // Upsert products — images: [] initially; imageUrl stored in local map only
-        const productIdMap = new Map<string, string>(); // asin → db product id
-
-        for (const p of allProducts) {
-          const { data: prodRow, error: prodErr } = await supabase
-            .from('tsa_products')
-            .upsert(
-              {
-                site_id: siteId,
-                asin: p.asin,
-                title: p.title,
-                slug: slugify(p.title || p.asin),
-                current_price: p.price ?? 0,
-                images: [] as string[],
-                rating: p.rating,
-                review_count: p.reviewCount,
-                is_prime: p.isPrime,
-                availability: 'available',
-                source_image_url: p.imageUrl ?? null,
-                last_checked_at: new Date().toISOString(),
-              },
-              { onConflict: 'site_id,asin', ignoreDuplicates: false }
-            )
-            .select('id')
-            .single();
-
-          if (prodErr || !prodRow) {
-            console.log(`[GenerateSiteJob] product upsert warning for ASIN ${p.asin}: ${prodErr?.message ?? 'null row'}`);
-            continue;
-          }
-
-          productIdMap.set(p.asin, prodRow.id);
-        }
-
-        // Upsert category_products join rows
-        for (const cat of categories) {
-          for (let i = 0; i < cat.products.length; i++) {
-            const p = cat.products[i];
-            const productId = productIdMap.get(p.asin);
-            if (!productId) continue;
-
-            const { error: joinErr } = await supabase
-              .from('category_products')
-              .upsert(
-                { category_id: cat.id, product_id: productId, position: i },
-                { onConflict: 'category_id,product_id', ignoreDuplicates: true }
-              );
-
-            if (joinErr) {
-              console.log(`[GenerateSiteJob] category_products upsert warning: ${joinErr.message}`);
-            }
-          }
-        }
-
-        // ── 5. process_images phase ───────────────────────────────────────
+        // ── 4. process_images phase ───────────────────────────────────────
         const publicDir = join(GENERATOR_ROOT, '.generated-sites', slug, 'public');
         mkdirSync(publicDir, { recursive: true });
 
+        const allProductsForImages = dbProductsRaw.map((p) => ({
+          asin: p.asin,
+          imageUrl: p.source_image_url ?? null,
+        }));
+
         await supabase
           .from('ai_jobs')
-          .update({ payload: { phase: 'process_images', done: 0, total: allProducts.length } })
+          .update({ payload: { phase: 'process_images', done: 0, total: allProductsForImages.length } })
           .eq('bull_job_id', job.id ?? '');
 
-        console.log(`[GenerateSiteJob] process_images: processing ${allProducts.length} product images`);
+        console.log(`[GenerateSiteJob] process_images: processing ${allProductsForImages.length} product images`);
 
-        const imageMap = await processImages(allProducts, publicDir);
+        const imageMap = await processImages(allProductsForImages, publicDir);
 
-        // Update tsa_products with local WebP paths
+        // Update tsa_products with local WebP paths (idempotent — skipped if already exists)
         for (const [asin, localPaths] of imageMap.entries()) {
           if (localPaths.length === 0) continue;
-
           const { error: imgErr } = await supabase
             .from('tsa_products')
             .update({ images: localPaths })
             .eq('site_id', siteId)
             .eq('asin', asin);
-
           if (imgErr) {
             console.log(`[GenerateSiteJob] process_images: image update warning for ASIN ${asin}: ${imgErr.message}`);
           }
         }
 
         // Set category_image on each category (first product's first image)
-        for (const cat of categories) {
+        const { data: catProductLinks } = await supabase
+          .from('category_products')
+          .select('category_id, product_id, position')
+          .in('category_id', dbCategoriesRaw.map((c) => c.id))
+          .order('position');
+
+        for (const cat of dbCategoriesRaw) {
+          if (cat.category_image) continue; // already set — skip
+          const links = (catProductLinks ?? []).filter((cp) => cp.category_id === cat.id);
           let categoryImage: string | null = null;
-          for (const p of cat.products) {
-            const paths = imageMap.get(p.asin);
+          for (const link of links) {
+            const prod = dbProductsRaw.find((p) => p.id === link.product_id);
+            const paths = prod ? imageMap.get(prod.asin) : undefined;
             if (paths && paths.length > 0) {
               categoryImage = paths[0];
               break;
             }
           }
-
           if (categoryImage) {
             const { error: catImgErr } = await supabase
               .from('tsa_categories')
               .update({ category_image: categoryImage })
               .eq('id', cat.id);
-
             if (catImgErr) {
               console.log(`[GenerateSiteJob] process_images: category_image update warning for "${cat.name}": ${catImgErr.message}`);
             }
@@ -346,15 +228,15 @@ export class GenerateSiteJob {
         }
 
         const imagesDownloaded = [...imageMap.values()].filter((p) => p.length > 0).length;
-        console.log(`[GenerateSiteJob] process_images: ${imagesDownloaded}/${allProducts.length} images downloaded`);
+        console.log(`[GenerateSiteJob] process_images: ${imagesDownloaded}/${allProductsForImages.length} images downloaded`);
 
         await supabase
           .from('ai_jobs')
-          .update({ payload: { phase: 'process_images', done: allProducts.length, total: allProducts.length } })
+          .update({ payload: { phase: 'process_images', done: allProductsForImages.length, total: allProductsForImages.length } })
           .eq('bull_job_id', job.id ?? '');
 
-        // ── 6. Assemble SiteData from DB (post-upsert) ────────────────────
-        // Fetch fresh rows so we use what's actually in Supabase
+        // ── 5. Assemble SiteData from DB ──────────────────────────────────
+        // Re-fetch to get updated image paths
         const { data: dbCategories, error: catFetchErr } = await supabase
           .from('tsa_categories')
           .select('*')
@@ -373,6 +255,7 @@ export class GenerateSiteJob {
           throw new Error(`Failed to fetch products for site ${siteId}: ${prodFetchErr?.message ?? 'null'}`);
         }
 
+        // ── 6. Assemble SiteData from DB ─────────────────────────────────
         // Build a map of category_id → first product ASIN for category_slug assignment
         const { data: catProducts } = await supabase
           .from('category_products')
