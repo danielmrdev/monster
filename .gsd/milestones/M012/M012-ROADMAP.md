@@ -57,7 +57,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: DB Migrations** `risk:low` `depends:[]`
+- [x] **S01: DB Migrations** `risk:low` `depends:[]`
   > After this: `homepage_seo_text` column exists in `sites`; `meta_description` column exists in `tsa_products`; `tsa/classic`, `tsa/modern`, `tsa/minimal` slugs in `site_templates`; existing sites updated.
 
 - [ ] **S02: ProductForm Content Fields** `risk:medium` `depends:[S01]`
