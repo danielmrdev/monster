@@ -66,7 +66,7 @@ This milestone is complete only when all are true:
 - [x] **S03: CategoryForm Meta + Homepage SEO** `risk:low` `depends:[S01]`
   > After this: Category edit form has meta_description field; site edit page has a Homepage SEO section with focus_keyword and homepage_seo_text with Generate with AI.
 
-- [ ] **S04: Settings Tabs + Visible Prompts** `risk:low` `depends:[]`
+- [x] **S04: Settings Tabs + Visible Prompts** `risk:low` `depends:[]`
   > After this: Settings has three tabs (API Keys, AI Prompts, Deployment); AI Prompts tab shows the active hardcoded default for each agent and allows override.
 
 - [ ] **S05: Legal Templates Seed + Markdown Pipeline** `risk:low` `depends:[S01]`
