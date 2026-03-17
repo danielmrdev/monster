@@ -1,6 +1,12 @@
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { DeleteProductButton } from './products/DeleteProductButton'
+import { Input } from '@/components/ui/input'
+
+const PAGE_SIZE = 25
 
 interface Product {
   id: string
@@ -14,9 +20,18 @@ interface Product {
   images: string[] | null
 }
 
+interface ApiResponse {
+  products: Product[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
 interface Props {
   siteId: string
-  products: Product[]
+  initialProducts: Product[]
+  initialTotal: number
 }
 
 function StarRating({ rating }: { rating: number }) {
@@ -30,16 +45,61 @@ function StarRating({ rating }: { rating: number }) {
   )
 }
 
-export function ProductsSection({ siteId, products }: Props) {
+export function ProductsSection({ siteId, initialProducts, initialTotal }: Props) {
+  const [products, setProducts] = useState<Product[]>(initialProducts)
+  const [total, setTotal] = useState(initialTotal)
+  const [totalPages, setTotalPages] = useState(Math.ceil(initialTotal / PAGE_SIZE))
+  const [page, setPage] = useState(1)
+  const [query, setQuery] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const queryRef = useRef(query)
+  queryRef.current = query
+
+  const fetchProducts = useCallback(async (q: string, p: number) => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) })
+      if (q) params.set('q', q)
+      const res = await fetch(`/api/sites/${siteId}/products?${params}`)
+      if (!res.ok) return
+      const data: ApiResponse = await res.json()
+      setProducts(data.products)
+      setTotal(data.total)
+      setTotalPages(data.totalPages)
+      setPage(data.page)
+    } finally {
+      setLoading(false)
+    }
+  }, [siteId])
+
+  // Debounce search
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      fetchProducts(query, 1)
+    }, 300)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [query, fetchProducts])
+
+  function handlePageChange(newPage: number) {
+    fetchProducts(queryRef.current, newPage)
+  }
+
+  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
+  const to = Math.min(page * PAGE_SIZE, total)
+
   return (
     <div id="products" className="rounded-xl border border-border bg-card px-6 py-5">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Products
-          {products.length > 0 && (
-            <span className="ml-2 font-normal normal-case text-foreground/60">
-              {products.length}
-            </span>
+          {total > 0 && (
+            <span className="ml-2 font-normal normal-case text-foreground/60">{total}</span>
           )}
         </h2>
         <Link
@@ -50,7 +110,21 @@ export function ProductsSection({ siteId, products }: Props) {
         </Link>
       </div>
 
-      {products.length === 0 ? (
+      {/* Search */}
+      {(total > 0 || query) && (
+        <div className="mb-4">
+          <Input
+            type="search"
+            placeholder="Search by title or ASIN…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+      )}
+
+      {/* Empty states */}
+      {!loading && products.length === 0 && !query && (
         <p className="text-sm text-muted-foreground">
           No products yet.{' '}
           <Link
@@ -61,8 +135,17 @@ export function ProductsSection({ siteId, products }: Props) {
           </Link>{' '}
           by pasting an ASIN.
         </p>
-      ) : (
-        <div className="divide-y divide-border -mx-6">
+      )}
+
+      {!loading && products.length === 0 && query && (
+        <p className="text-sm text-muted-foreground">
+          No products match <span className="text-foreground font-medium">"{query}"</span>.
+        </p>
+      )}
+
+      {/* Product list */}
+      {products.length > 0 && (
+        <div className={`divide-y divide-border -mx-6 transition-opacity duration-150 ${loading ? 'opacity-50' : 'opacity-100'}`}>
           {products.map((product) => {
             const imageUrl =
               product.source_image_url ??
@@ -137,6 +220,34 @@ export function ProductsSection({ siteId, products }: Props) {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+          <span className="text-xs text-muted-foreground">
+            {from}–{to} of {total}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page <= 1 || loading}
+              className="inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              ← Prev
+            </button>
+            <span className="px-2 text-xs text-muted-foreground">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page >= totalPages || loading}
+              className="inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       )}
     </div>

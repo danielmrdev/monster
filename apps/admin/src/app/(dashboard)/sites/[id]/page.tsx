@@ -62,16 +62,19 @@ export default async function SiteDetailPage({ params }: PageProps) {
       supabase
         .from('tsa_products')
         .select(
-          'id, asin, title, current_price, rating, review_count, is_prime, source_image_url, images'
+          'id, asin, title, current_price, rating, review_count, is_prime, source_image_url, images',
+          { count: 'exact' }
         )
         .eq('site_id', id)
-        .order('created_at', { ascending: false }),
+        .order('created_at', { ascending: false })
+        .range(0, 24),
     ])
 
   if (siteAlertsResult.error) throw siteAlertsResult.error
 
   const categories = categoriesResult.data ?? []
   const products = productsResult.data ?? []
+  const productsTotal = productsResult.count ?? 0
 
   const statusBadge = (status: string | null) => {
     const s = status ?? 'draft'
@@ -263,7 +266,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
           customization: site.customization,
         }}
         categoriesSlot={<CategoriesSection siteId={id} categories={categories} />}
-        productsSlot={<ProductsSection siteId={id} products={products} />}
+        productsSlot={<ProductsSection siteId={id} initialProducts={products} initialTotal={productsTotal} />}
         generationSlot={<JobStatus siteId={site.id} />}
         deploySlot={deploySlot}
         domainSlot={<DomainManagement siteId={site.id} existingDomain={site.domain} />}
