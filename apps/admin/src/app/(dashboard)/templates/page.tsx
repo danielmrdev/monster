@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/service'
-import { deleteTemplate } from './actions'
-import { Button } from '@/components/ui/button'
+import { DeleteTemplateButton } from './DeleteTemplateButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,20 +88,7 @@ export default async function TemplatesPage() {
                         >
                           Edit
                         </Link>
-                        <form action={async () => {
-                          'use server'
-                          await deleteTemplate(t.id)
-                        }}>
-                          <button
-                            type="submit"
-                            className="text-xs text-destructive/70 hover:text-destructive transition-colors"
-                            onClick={(e) => {
-                              if (!confirm(`Delete "${t.title}"?`)) e.preventDefault()
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </form>
+                        <DeleteTemplateButton id={t.id} title={t.title} />
                       </div>
                     </div>
                   ))
