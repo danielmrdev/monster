@@ -72,7 +72,7 @@ This milestone is complete only when all are true:
 - [x] **S05: Legal Templates Seed + Markdown Pipeline** `risk:low` `depends:[S01]`
   > After this: 8 legal template rows in DB (4 types × ES+EN) with placeholders; editor has Preview toggle and placeholder hint panel; generated legal pages render as HTML with substituted values.
 
-- [ ] **S06: Templates Mobile-First** `risk:medium` `depends:[S01]`
+- [x] **S06: Templates Mobile-First** `risk:medium` `depends:[S01]`
   > After this: All three Astro templates have working hamburger nav at 375px; product page CTAs are full-width on mobile; pros/cons stack vertically on mobile; no horizontal overflow on any page type.
 
 ## Boundary Map
