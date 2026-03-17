@@ -109,13 +109,18 @@ async function handler(job: import('bullmq').Job<ProductRefreshPayload>): Promis
   // ── Step 1: Fetch site record ──────────────────────────────────────────
   const { data: site, error: siteError } = await supabase
     .from('sites')
-    .select('id, niche, market, language, refresh_interval_hours, status')
+    .select('id, niche, market, language, refresh_interval_hours, status, is_active')
     .eq('id', siteId)
     .single();
 
   if (siteError || !site) {
     // Non-fatal — site may have been deleted between scheduler registration and job execution
     console.log(`[ProductRefreshJob] site ${siteId} not found — skipping (may have been deleted)`);
+    return;
+  }
+
+  if (site.is_active === false) {
+    console.log(`[ProductRefreshJob] site ${siteId} is_active=false — skipping automated refresh`);
     return;
   }
 

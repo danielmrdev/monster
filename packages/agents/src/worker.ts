@@ -32,7 +32,8 @@ const supabase = createServiceClient();
 const { data: liveSites, error: liveSitesError } = await supabase
   .from('sites')
   .select('id, refresh_interval_hours')
-  .eq('status', 'live');
+  .eq('status', 'live')
+  .eq('is_active', true);
 
 if (liveSitesError) {
   console.error(`[worker] Failed to fetch live sites for ProductRefreshJob scheduler: ${liveSitesError.message}`);

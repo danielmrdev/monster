@@ -135,6 +135,9 @@ export async function updateSite(
     template_slug: (formData.get('template_slug') as string) || 'classic',
   }
 
+  // Checkbox: present with value "true" when checked, absent when unchecked
+  const isActive = formData.get('is_active') === 'true'
+
   const rawCustomization = {
     primaryColor: (formData.get('primaryColor') as string) || undefined,
     accentColor: (formData.get('accentColor') as string) || undefined,
@@ -186,6 +189,7 @@ export async function updateSite(
       customization: Object.keys(customizationJson).length > 0 ? customizationJson : null,
       focus_keyword: focusKeyword,
       homepage_seo_text: homepageSeoText,
+      is_active: isActive,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)

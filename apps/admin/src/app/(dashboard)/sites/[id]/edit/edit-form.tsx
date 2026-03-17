@@ -87,6 +87,7 @@ interface EditFormProps {
     customization: SiteCustomization | null
     focus_keyword: string | null
     homepage_seo_text: string | null
+    is_active: boolean
   }
 }
 
@@ -163,6 +164,27 @@ export function EditForm({ site }: EditFormProps) {
           <CardTitle>Basic Info</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Active toggle */}
+          <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">Site active</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Inactive sites are excluded from all automated jobs (product refresh, generate, deploy)
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="is_active"
+                value="true"
+                defaultChecked={site.is_active}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-muted rounded-full peer peer-checked:bg-primary transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2" />
+              <div className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+            </label>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Name */}
             <div className="space-y-1.5">

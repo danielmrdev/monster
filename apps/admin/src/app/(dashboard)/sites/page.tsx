@@ -31,7 +31,7 @@ export default async function SitesPage() {
   const supabase = createServiceClient()
   const { data: sites, error } = await supabase
     .from('sites')
-    .select('id, name, domain, status, market, created_at')
+    .select('id, name, domain, status, is_active, market, created_at')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -89,9 +89,16 @@ export default async function SitesPage() {
                     {site.domain || '—'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusBadgeVariant(site.status)}>
-                      {site.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={statusBadgeVariant(site.status)}>
+                        {site.status}
+                      </Badge>
+                      {!site.is_active && (
+                        <Badge variant="outline" className="text-muted-foreground border-muted-foreground/40">
+                          inactive
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {site.market || '—'}

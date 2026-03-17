@@ -63,6 +63,7 @@ export default async function EditSitePage({ params }: PageProps) {
     customization: (site.customization as SiteCustomization | null),
     focus_keyword: site.focus_keyword,
     homepage_seo_text: site.homepage_seo_text,
+    is_active: site.is_active ?? true,
   }
 
   return (

@@ -906,6 +906,7 @@ export type Database = {
           focus_keyword: string | null
           homepage_seo_text: string | null
           id: string
+          is_active: boolean
           language: string | null
           last_refreshed_at: string | null
           market: string | null
@@ -929,6 +930,7 @@ export type Database = {
           focus_keyword?: string | null
           homepage_seo_text?: string | null
           id?: string
+          is_active?: boolean
           language?: string | null
           last_refreshed_at?: string | null
           market?: string | null
@@ -952,6 +954,7 @@ export type Database = {
           focus_keyword?: string | null
           homepage_seo_text?: string | null
           id?: string
+          is_active?: boolean
           language?: string | null
           last_refreshed_at?: string | null
           market?: string | null
