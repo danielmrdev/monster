@@ -48,11 +48,17 @@ export default function JobStatus({ siteId }: Props) {
 
   useEffect(() => {
     const status = job?.status as JobStatus | undefined;
-    if (!status || status === 'completed' || status === 'failed') return;
+    // Always poll while running/pending, but also poll when completed/failed
+    // to catch a new job that may have been enqueued after the last terminal state.
+    // Stop only when status is terminal AND the job was completed > 10s ago.
+    if (status === 'completed' || status === 'failed') {
+      const completedAt = job?.completed_at ? new Date(job.completed_at).getTime() : 0;
+      if (Date.now() - completedAt > 10_000) return;
+    }
 
     const id = setInterval(poll, 5000);
     return () => clearInterval(id);
-  }, [job?.status, poll]);
+  }, [job?.status, job?.completed_at, poll]);
 
   if (!job) {
     return (

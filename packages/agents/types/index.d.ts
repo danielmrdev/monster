@@ -42,7 +42,7 @@ export interface DataForSEOProduct {
   availability: 'available' | 'limited' | 'unavailable';
 }
 export declare class DataForSEOClient {
-  searchProducts(keyword: string, market: string): Promise<DataForSEOProduct[]>;
+  searchProducts(keyword: string, market: string, depth?: number): Promise<DataForSEOProduct[]>;
   fetchAuthHeader(): Promise<string>;
 }
 
