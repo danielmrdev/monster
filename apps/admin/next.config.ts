@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
     'node-ssh',
     'ssh2',
     'cpu-features',
+    'sharp',
   ],
   webpack: (config, { isServer }) => {
     if (isServer) {

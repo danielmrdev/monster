@@ -44,6 +44,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.99.1
+      adm-zip:
+        specifier: ^0.5.16
+        version: 0.5.16
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -80,6 +83,9 @@ importers:
       shadcn:
         specifier: ^4.0.6
         version: 4.0.6(@types/node@22.19.15)(typescript@5.9.3)
+      sharp:
+        specifier: ^0.33.5
+        version: 0.33.5
       tailwind-merge:
         specifier: ^3.5.0
         version: 3.5.0
@@ -93,6 +99,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.0.0
         version: 4.2.1
+      '@types/adm-zip':
+        specifier: ^0.5.8
+        version: 0.5.8
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.15
@@ -1696,6 +1705,9 @@ packages:
   '@ts-morph/common@0.27.0':
     resolution: {integrity: sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ==}
 
+  '@types/adm-zip@0.5.8':
+    resolution: {integrity: sha512-RVVH7QvZYbN+ihqZ4kX/dMiowf6o+Jk1fNwiSdx0NahBJLU787zkULhGhJM8mf/obmLGmgdMM0bXsQTmyfbR7Q==}
+
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
 
@@ -1834,6 +1846,10 @@ packages:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+
+  adm-zip@0.5.16:
+    resolution: {integrity: sha512-TGw5yVi4saajsSEgz25grObGHEUaDrniwvA2qwSC060KfqGPdglhvPMA2lPIoxs3PQIItj2iag35fONcQqgUaQ==}
+    engines: {node: '>=12.0'}
 
   agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
@@ -5754,6 +5770,10 @@ snapshots:
       minimatch: 10.2.4
       path-browserify: 1.0.1
 
+  '@types/adm-zip@0.5.8':
+    dependencies:
+      '@types/node': 22.19.15
+
   '@types/chai@5.2.3':
     dependencies:
       '@types/deep-eql': 4.0.2
@@ -5931,6 +5951,8 @@ snapshots:
       negotiator: 1.0.0
 
   acorn@8.16.0: {}
+
+  adm-zip@0.5.16: {}
 
   agent-base@7.1.4: {}
 

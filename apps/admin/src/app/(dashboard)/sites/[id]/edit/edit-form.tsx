@@ -98,6 +98,16 @@ export function EditForm({ site, templates }: EditFormProps) {
   const errors = state?.errors
   const c = site.customization
 
+  // Logo upload state — initialized from current customization value
+  const [logoUploadState, setLogoUploadState] = useState<{
+    uploading: boolean; path: string | null; error: string | null
+  }>({ uploading: false, path: c?.logoUrl ?? null, error: null })
+
+  // Favicon upload state — initialized from current customization value
+  const [faviconUploadState, setFaviconUploadState] = useState<{
+    uploading: boolean; path: string | null; error: string | null
+  }>({ uploading: false, path: c?.faviconDir ?? null, error: null })
+
   // Homepage SEO — AI generation state
   const homepageSeoTextRef = useRef<HTMLTextAreaElement>(null)
   const [isGeneratingHomepageSeo, setIsGeneratingHomepageSeo] = useState(false)
@@ -150,6 +160,44 @@ export function EditForm({ site, templates }: EditFormProps) {
       setHomepageSeoError(e instanceof Error ? e.message : 'Generation failed')
     } finally {
       setIsGeneratingHomepageSeo(false)
+    }
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setLogoUploadState({ uploading: true, path: null, error: null })
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch(`/api/sites/${site.id}/upload-logo`, { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) {
+        setLogoUploadState({ uploading: false, path: null, error: json.error ?? 'Upload failed' })
+      } else {
+        setLogoUploadState({ uploading: false, path: json.logoUrl, error: null })
+      }
+    } catch {
+      setLogoUploadState({ uploading: false, path: null, error: 'Upload failed' })
+    }
+  }
+
+  async function handleFaviconUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setFaviconUploadState({ uploading: true, path: null, error: null })
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch(`/api/sites/${site.id}/upload-favicon`, { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) {
+        setFaviconUploadState({ uploading: false, path: null, error: json.error ?? 'Upload failed' })
+      } else {
+        setFaviconUploadState({ uploading: false, path: json.faviconDir, error: null })
+      }
+    } catch {
+      setFaviconUploadState({ uploading: false, path: null, error: 'Upload failed' })
     }
   }
 
@@ -381,30 +429,48 @@ export function EditForm({ site, templates }: EditFormProps) {
               <FieldError messages={errors?.fontFamily} />
             </div>
 
-            {/* Logo URL */}
+            {/* Logo upload */}
             <div className="space-y-1.5">
-              <Label htmlFor="logoUrl">Logo URL</Label>
-              <Input
-                id="logoUrl"
-                name="logoUrl"
-                defaultValue={c?.logoUrl ?? ''}
-                placeholder="https://..."
-                aria-invalid={!!errors?.logoUrl}
+              <Label>Logo (PNG or JPEG)</Label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                onChange={handleLogoUpload}
+                disabled={logoUploadState.uploading}
+                className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
               />
-              <FieldError messages={errors?.logoUrl} />
+              {logoUploadState.uploading && (
+                <p className="text-sm text-muted-foreground">Uploading…</p>
+              )}
+              {logoUploadState.path && !logoUploadState.uploading && (
+                <p className="text-sm text-green-600 truncate">✓ {logoUploadState.path}</p>
+              )}
+              {logoUploadState.error && (
+                <p className="text-sm text-destructive">{logoUploadState.error}</p>
+              )}
+              <input type="hidden" name="logoUrl" value={logoUploadState.path ?? ''} />
             </div>
 
-            {/* Favicon URL */}
+            {/* Favicon upload */}
             <div className="space-y-1.5">
-              <Label htmlFor="faviconUrl">Favicon URL</Label>
-              <Input
-                id="faviconUrl"
-                name="faviconUrl"
-                defaultValue={c?.faviconUrl ?? ''}
-                placeholder="https://..."
-                aria-invalid={!!errors?.faviconUrl}
+              <Label>Favicon (favicon.io ZIP)</Label>
+              <input
+                type="file"
+                accept=".zip,application/zip"
+                onChange={handleFaviconUpload}
+                disabled={faviconUploadState.uploading}
+                className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
               />
-              <FieldError messages={errors?.faviconUrl} />
+              {faviconUploadState.uploading && (
+                <p className="text-sm text-muted-foreground">Uploading…</p>
+              )}
+              {faviconUploadState.path && !faviconUploadState.uploading && (
+                <p className="text-sm text-green-600 truncate">✓ {faviconUploadState.path}</p>
+              )}
+              {faviconUploadState.error && (
+                <p className="text-sm text-destructive">{faviconUploadState.error}</p>
+              )}
+              <input type="hidden" name="faviconDir" value={faviconUploadState.path ?? ''} />
             </div>
           </div>
         </CardContent>

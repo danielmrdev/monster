@@ -11,6 +11,7 @@ export const SiteCustomizationSchema = z.object({
   fontFamily: z.string().optional(),
   logoUrl: z.string().optional(),
   faviconUrl: z.string().optional(),
+  faviconDir: z.string().optional(),
 });
 
 export type SiteCustomization = z.infer<typeof SiteCustomizationSchema>;

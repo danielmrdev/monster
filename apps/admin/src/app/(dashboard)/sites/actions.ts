@@ -144,6 +144,7 @@ export async function updateSite(
     fontFamily: (formData.get('fontFamily') as string) || undefined,
     logoUrl: (formData.get('logoUrl') as string) || undefined,
     faviconUrl: (formData.get('faviconUrl') as string) || undefined,
+    faviconDir: (formData.get('faviconDir') as string) || undefined,
   }
 
   const focusKeyword = (formData.get('focus_keyword') as string) || null

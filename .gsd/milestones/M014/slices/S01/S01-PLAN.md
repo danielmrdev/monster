@@ -40,6 +40,13 @@ pnpm --filter @monster/admin build   # must exit 0; confirms serverExternalPacka
 # 4. Type-only validation (rejection tests — no dev server needed)
 # curl -F "file=@/tmp/test.png" …/upload-favicon → 415 Unsupported Media Type
 # curl -F "file=@/tmp/test.gif" …/upload-logo    → 415 Unsupported Media Type
+
+# 5. Failure-path diagnostic (structured error body check)
+# curl -s -o /dev/null -w "%{http_code}" -F "file=@/tmp/test.gif" http://localhost:3004/api/sites/<id>/upload-logo
+# Expected: 415
+# curl -s -F "file=@/tmp/test.gif" http://localhost:3004/api/sites/<id>/upload-logo | jq .error
+# Expected: non-null string (e.g. "Unsupported file type. Only PNG and JPEG images are accepted.")
+# Confirms structured JSON error body { "error": "..." } is returned, not an HTML 500 page
 ```
 
 ## Observability / Diagnostics
@@ -57,21 +64,21 @@ pnpm --filter @monster/admin build   # must exit 0; confirms serverExternalPacka
 
 ## Tasks
 
-- [ ] **T01: Add deps, extend schema, update action** `est:30m`
+- [x] **T01: Add deps, extend schema, update action** `est:30m`
   - Why: Every downstream task depends on `faviconDir` existing in the schema and deps being installable. Zero runtime risk — pure config/type changes.
   - Files: `apps/admin/package.json`, `packages/shared/src/types/customization.ts`, `apps/admin/src/app/(dashboard)/sites/actions.ts`, `apps/admin/next.config.ts`
   - Do: Add `"sharp": "^0.33.5"` and `"adm-zip": "^0.5.16"` to `apps/admin/package.json` dependencies; add `"@types/adm-zip": "^0.5.8"` to devDependencies. Run `pnpm install`. Add `faviconDir: z.string().optional()` to `SiteCustomizationSchema` in `customization.ts`. In `updateSite` action, add `faviconDir: formData.get('faviconDir') as string | null` to the `rawCustomization` object (alongside existing `faviconUrl` — both can coexist). Add `'sharp'` to `serverExternalPackages` array in `next.config.ts`.
   - Verify: `pnpm --filter @monster/shared build` exits 0; `pnpm --filter @monster/admin build` exits 0
   - Done when: Both builds pass clean with no type errors
 
-- [ ] **T02: Implement upload Route Handlers** `est:1h`
+- [x] **T02: Implement upload Route Handlers** `est:1h`
   - Why: The core I/O logic. Two small, parallel Route Handlers — logo converts PNG→WebP via sharp, favicon extracts ZIP via adm-zip.
   - Files: `apps/admin/src/app/api/sites/[id]/upload-logo/route.ts` (new), `apps/admin/src/app/api/sites/[id]/upload-favicon/route.ts` (new)
   - Do: See T02-PLAN.md for full implementation steps.
   - Verify: Dev server curl tests (logo + favicon) as described in slice Verification section
   - Done when: Both curl tests return 200 with correct JSON bodies and output files exist on disk
 
-- [ ] **T03: Replace edit form upload widgets** `est:45m`
+- [x] **T03: Replace edit form upload widgets** `est:45m`
   - Why: Closes the slice — connects the Route Handlers to the UI so users can actually upload files and have them persisted via the existing `updateSite` action.
   - Files: `apps/admin/src/app/(dashboard)/sites/[id]/edit/edit-form.tsx`
   - Do: See T03-PLAN.md for full implementation steps.

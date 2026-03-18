@@ -56,3 +56,11 @@ Pure config/type changes with zero runtime risk. Adds `sharp`, `adm-zip`, and `@
 - `apps/admin/src/app/(dashboard)/sites/actions.ts` — `faviconDir` read in `updateSite`
 - `apps/admin/next.config.ts` — `sharp` in `serverExternalPackages`
 - Both `@monster/shared` and `@monster/admin` build clean
+
+## Observability Impact
+
+This task is pure config/type — no runtime signals are emitted during T01 itself. However it sets up the observable failure surface for T02:
+
+- **Sharp externalization** — if `'sharp'` is missing from `serverExternalPackages`, the Route Handlers in T02 will fail at import time with `Error: Could not load the "sharp" module using the linux-x64 runtime`. The build itself won't catch this — it surfaces only at runtime when the route is first hit. Presence in `serverExternalPackages` can be verified with: `grep 'sharp' apps/admin/next.config.ts`.
+- **Schema field** — `faviconDir` in `SiteCustomizationSchema` gates whether `updateSite` accepts and persists the field. If missing, the customization Zod parse strips the value silently and `faviconDir` is never written to DB. Inspect with: `grep 'faviconDir' packages/shared/dist/index.d.ts` after rebuild.
+- **FormData read** — if missing from `rawCustomization`, the Route Handler in T02 can return a valid `faviconDir` path but `updateSite` will ignore it. No error is thrown — the field is just absent from the DB record. Inspect with: `grep 'faviconDir' apps/admin/src/app/(dashboard)/sites/actions.ts`.
