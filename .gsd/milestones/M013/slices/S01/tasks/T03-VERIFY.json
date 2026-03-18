@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T03",
+  "unitId": "M013/S01/T03",
+  "timestamp": 1773835193284,
+  "passed": false,
+  "discoverySource": "task-plan",
+  "checks": [
+    {
+      "command": "Full slice verification suite (see Verification section above)",
+      "exitCode": 2,
+      "durationMs": 6,
+      "verdict": "fail"
+    }
+  ],
+  "retryAttempt": 1,
+  "maxRetries": 2
+}
