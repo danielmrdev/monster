@@ -81,6 +81,21 @@ grep 'ProductsSection' apps/admin/src/app/\(dashboard\)/sites/\[id\]/page.tsx &&
 grep 'categories/\${cat.id}' apps/admin/src/app/\(dashboard\)/sites/\[id\]/CategoriesSection.tsx
 ```
 
+## Observability Impact
+
+**Signals that change in this task:**
+- `CategoriesSection` rows now surface a `productCount` badge — zero indicates either a new/empty category or a broken `category_products` relationship. Observable without DB access.
+- `description` field replaces `seo_text` excerpt in row display — if the field is null, a `"No description"` muted fallback renders instead of nothing. Silent data gaps become visible.
+
+**How a future agent inspects this task's state:**
+- `grep 'category_products(count)' apps/admin/src/app/\(dashboard\)/sites/\[id\]/page.tsx` — confirms the query was updated.
+- `grep 'productsSlot' apps/admin/src/app/\(dashboard\)/sites/\[id\]/` — must return empty (PASS). Any match is a regression.
+- `cd apps/admin && npx tsc --noEmit` — zero errors is the authoritative health signal.
+
+**Failure state visibility:**
+- If the `as unknown as { count: number }[]` cast is wrong at runtime (Supabase shape changed), the count falls through to `?? 0`, displaying `0 products` rather than crashing. Degraded-but-functional.
+- TypeScript mismatches between the updated `Category` interface in `CategoriesSection.tsx` and the mapped object in `page.tsx` fail at compile time, not runtime.
+
 ## Inputs
 
 - `apps/admin/src/app/(dashboard)/sites/[id]/page.tsx` — existing server component with categories + products fetch; remove products fetch, update categories query

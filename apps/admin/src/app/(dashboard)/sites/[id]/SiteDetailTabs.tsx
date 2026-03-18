@@ -82,7 +82,6 @@ interface TabsProps {
   }
   // Content
   categoriesSlot: React.ReactNode
-  productsSlot: React.ReactNode
   // Deploy
   deploySlot: React.ReactNode
   domainSlot: React.ReactNode
@@ -98,7 +97,6 @@ interface TabsProps {
 export function SiteDetailTabs({
   site,
   categoriesSlot,
-  productsSlot,
   deploySlot,
   domainSlot,
   generationSlot,
@@ -112,7 +110,7 @@ export function SiteDetailTabs({
     <Tabs defaultValue="overview" className="space-y-6">
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="content">Content</TabsTrigger>
+        <TabsTrigger value="categories">Categories</TabsTrigger>
         <TabsTrigger value="deploy">Deploy</TabsTrigger>
         <TabsTrigger value="seo">SEO &amp; Alerts</TabsTrigger>
       </TabsList>
@@ -215,10 +213,9 @@ export function SiteDetailTabs({
         </div>
       </TabsContent>
 
-      {/* ── Content ─────────────────────────────────────────────────────────── */}
-      <TabsContent value="content" className="space-y-6">
+      {/* ── Categories ──────────────────────────────────────────────────────── */}
+      <TabsContent value="categories" className="space-y-6">
         {categoriesSlot}
-        {productsSlot}
       </TabsContent>
 
       {/* ── Deploy ──────────────────────────────────────────────────────────── */}

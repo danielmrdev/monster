@@ -8,6 +8,8 @@ interface Category {
   focus_keyword: string | null
   keywords: string[] | null
   seo_text: string | null
+  description: string | null
+  productCount: number
 }
 
 interface Props {
@@ -49,8 +51,9 @@ export function CategoriesSection({ siteId, categories }: Props) {
       ) : (
         <div className="divide-y divide-border -mx-6">
           {categories.map((cat) => (
-            <div
+            <Link
               key={cat.id}
+              href={`/sites/${siteId}/categories/${cat.id}`}
               className="px-6 py-3 flex items-start justify-between gap-4 hover:bg-muted/10 transition-colors"
             >
               <div className="min-w-0 flex-1">
@@ -62,23 +65,23 @@ export function CategoriesSection({ siteId, categories }: Props) {
                       {cat.focus_keyword}
                     </span>
                   )}
+                  <span className="text-xs text-muted-foreground bg-muted/40 rounded-full px-2 py-0.5">
+                    {cat.productCount} products
+                  </span>
                 </div>
-                {cat.seo_text && (
+                {cat.description ? (
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                    {cat.seo_text.slice(0, 120)}…
+                    {cat.description}
                   </p>
-                )}
-                {cat.keywords && cat.keywords.length > 0 && (
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    {cat.keywords.slice(0, 4).join(', ')}
-                    {cat.keywords.length > 4 && ` +${cat.keywords.length - 4} more`}
-                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground/40 mt-1 italic">No description</p>
                 )}
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.preventDefault()}>
                 <Link
                   href={`/sites/${siteId}/categories/${cat.id}/edit`}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   Edit
                 </Link>
@@ -88,7 +91,7 @@ export function CategoriesSection({ siteId, categories }: Props) {
                   categoryName={cat.name}
                 />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

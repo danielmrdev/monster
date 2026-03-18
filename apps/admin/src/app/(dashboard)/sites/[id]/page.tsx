@@ -10,7 +10,6 @@ import { GenerateSiteButton } from './GenerateSiteButton'
 import DeployStatus from './DeployStatus'
 import DomainManagement from './DomainManagement'
 import { CategoriesSection } from './CategoriesSection'
-import { ProductsSection } from './ProductsSection'
 import { SiteDetailTabs } from './SiteDetailTabs'
 
 export const dynamic = 'force-dynamic'
@@ -38,7 +37,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
     ? existsSync(join(GENERATOR_ROOT, '.generated-sites', siteSlug, 'dist', 'index.html'))
     : false
 
-  const [seoScoresResult, deployCard, siteAlertsResult, categoriesResult, productsResult] =
+  const [seoScoresResult, deployCard, siteAlertsResult, categoriesResult] =
     await Promise.all([
       supabase
         .from('seo_scores')
@@ -56,25 +55,17 @@ export default async function SiteDetailPage({ params }: PageProps) {
         .order('created_at', { ascending: false }),
       supabase
         .from('tsa_categories')
-        .select('id, name, slug, focus_keyword, keywords, seo_text')
+        .select('id, name, slug, focus_keyword, keywords, seo_text, description, category_products(count)')
         .eq('site_id', id)
         .order('name', { ascending: true }),
-      supabase
-        .from('tsa_products')
-        .select(
-          'id, asin, title, current_price, rating, review_count, is_prime, source_image_url, images',
-          { count: 'exact' }
-        )
-        .eq('site_id', id)
-        .order('created_at', { ascending: false })
-        .range(0, 24),
     ])
 
   if (siteAlertsResult.error) throw siteAlertsResult.error
 
-  const categories = categoriesResult.data ?? []
-  const products = productsResult.data ?? []
-  const productsTotal = productsResult.count ?? 0
+  const categories = (categoriesResult.data ?? []).map((cat) => ({
+    ...cat,
+    productCount: (cat.category_products as unknown as { count: number }[] | null)?.[0]?.count ?? 0,
+  }))
 
   const statusBadge = (status: string | null) => {
     const s = status ?? 'draft'
@@ -276,7 +267,6 @@ export default async function SiteDetailPage({ params }: PageProps) {
           homepage_seo_text: site.homepage_seo_text,
         }}
         categoriesSlot={<CategoriesSection siteId={id} categories={categories} />}
-        productsSlot={<ProductsSection siteId={id} initialProducts={products} initialTotal={productsTotal} />}
         generationSlot={<JobStatus siteId={site.id} />}
         deploySlot={deploySlot}
         domainSlot={<DomainManagement siteId={site.id} existingDomain={site.domain} />}
