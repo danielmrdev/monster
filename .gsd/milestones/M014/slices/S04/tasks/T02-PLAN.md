@@ -148,6 +148,33 @@ grep 'catId' apps/admin/src/app/api/sites/\[id\]/categories/\[catId\]/products/r
 grep 'categories/\${catId}/products' apps/admin/src/app/\(dashboard\)/sites/\[id\]/categories/\[catId\]/CategoryProductsSection.tsx
 ```
 
+## Observability Impact
+
+**New signals this task creates:**
+
+- **API route structured error log:** `[API /categories/[catId]/products] Supabase error: <message>` with `{ siteId, catId }` context — emitted by the `console.error` in `route.ts`. A future agent can correlate Supabase join failures to a specific category ID from server logs.
+- **`notFound()` in page.tsx:** If a category UUID does not exist or does not belong to the site, Next.js renders a 404. This is an explicit, named failure path — not a silent empty page.
+- **Empty state in `CategoryProductsSection`:** When `initialTotal === 0`, the component renders "No products in this category yet." — zero is an inspectable, non-silent value.
+
+**How a future agent inspects this task's state:**
+
+```bash
+# Confirm API route has structured error logging
+grep 'console.error' apps/admin/src/app/api/sites/\[id\]/categories/\[catId\]/products/route.ts
+
+# Confirm client component targets the correct API endpoint
+grep 'categories/\${catId}/products' apps/admin/src/app/\(dashboard\)/sites/\[id\]/categories/\[catId\]/CategoryProductsSection.tsx
+
+# Confirm page.tsx calls notFound() for missing categories
+grep 'notFound' apps/admin/src/app/\(dashboard\)/sites/\[id\]/categories/\[catId\]/page.tsx
+```
+
+**What failure state becomes visible:**
+- Supabase join misconfiguration → 500 response from API route with `{ error: "<message>" }` body + server-side `console.error` with full context.
+- Category UUID not in DB → Next.js 404 page (not a blank or broken render).
+- Category has zero products → visible "No products in this category yet." empty state in the section (not hidden).
+- TypeScript errors in any of the three new files → `tsc --noEmit` fails with location-specific messages.
+
 ## Inputs
 
 - `apps/admin/src/app/api/sites/[id]/products/route.ts` — existing products API to mirror (same shape, same params, add catId scoping)

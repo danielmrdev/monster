@@ -17,13 +17,20 @@
 # TypeScript — zero errors
 cd apps/admin && npx tsc --noEmit
 
-# Tab rename — "Categories" present, "Content" absent (as a tab label)
-grep -r '"Categories"' apps/admin/src/app/\(dashboard\)/sites/\[id\]/SiteDetailTabs.tsx
+# Tab rename — "Categories" present as JSX text in the trigger
+grep 'Categories' apps/admin/src/app/\(dashboard\)/sites/\[id\]/SiteDetailTabs.tsx
 grep -r 'productsSlot' apps/admin/src/app/\(dashboard\)/sites/\[id\]/ && echo "FAIL: productsSlot still present" || echo "PASS: productsSlot removed"
 
 # New files exist
 test -f apps/admin/src/app/\(dashboard\)/sites/\[id\]/categories/\[catId\]/page.tsx && echo "PASS" || echo "FAIL: detail page missing"
 test -f apps/admin/src/app/api/sites/\[id\]/categories/\[catId\]/products/route.ts && echo "PASS" || echo "FAIL: API route missing"
+
+# Failure-path: API route logs structured error on Supabase failure
+# (grep confirms the console.error call with siteId/catId context is present)
+grep 'console.error.*Supabase error' apps/admin/src/app/api/sites/\[id\]/categories/\[catId\]/products/route.ts && echo "PASS: structured error log present" || echo "FAIL: no error log in API route"
+
+# Failure-path: category_products null count falls through to 0 in CategoriesSection
+grep 'productCount.*0\|?? 0' apps/admin/src/app/\(dashboard\)/sites/\[id\]/CategoriesSection.tsx && echo "PASS: zero fallback present" || echo "WARN: no zero fallback"
 ```
 
 ## Observability / Diagnostics
@@ -59,7 +66,7 @@ grep 'productCount.*0' apps/admin/src/app/\(dashboard\)/sites/\[id\]/CategoriesS
   - Verify: `cd apps/admin && npx tsc --noEmit` exits 0; tab label is "Categories"; rows show description + count
   - Done when: TypeScript clean; `productsSlot` prop does not appear anywhere in the three modified files; CategoriesSection rows link to `/sites/[id]/categories/[catId]`
 
-- [ ] **T02: Create category-scoped products API route + category detail page** `est:1h`
+- [x] **T02: Create category-scoped products API route + category detail page** `est:1h`
   - Why: T01 establishes the navigation target URL; T02 implements the destination page and its data source.
   - Files: `apps/admin/src/app/api/sites/[id]/categories/[catId]/products/route.ts` (new), `apps/admin/src/app/(dashboard)/sites/[id]/categories/[catId]/page.tsx` (new), `apps/admin/src/app/(dashboard)/sites/[id]/categories/[catId]/CategoryProductsSection.tsx` (new)
   - Do: see T02-PLAN.md
