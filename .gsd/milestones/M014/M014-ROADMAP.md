@@ -64,7 +64,7 @@ This milestone is complete only when all are true:
 - [x] **S04: Categories Tab Redesign + Category Detail Page** `risk:medium` `depends:[]`
   > After this: tab renamed "Categories", each row shows description + product count; clicking a category navigates to /sites/[id]/categories/[catId] showing that category's products with search.
 
-- [ ] **S05: SEO Score Filter + Legend** `risk:low` `depends:[]`
+- [x] **S05: SEO Score Filter + Legend** `risk:low` `depends:[]`
   > After this: SEO scores table contains no /go/ or legal rows; a legend card above the table explains each score dimension.
 
 - [ ] **S06: VPS Local Mode + Domain Management Relocation** `risk:medium` `depends:[]`
