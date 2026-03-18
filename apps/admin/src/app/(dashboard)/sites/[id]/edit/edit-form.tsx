@@ -42,11 +42,7 @@ const CURRENCIES = [
   { value: 'AUD', label: 'Australian Dollar (AUD)' },
 ]
 
-const TEMPLATES = [
-  { value: 'classic', label: 'Classic' },
-  { value: 'modern', label: 'Modern' },
-  { value: 'minimal', label: 'Minimal' },
-]
+const TEMPLATES: { value: string; label: string }[] = [] // kept for type reference; actual data comes from DB via props
 
 function FieldError({ messages }: { messages?: string[] }) {
   if (!messages?.length) return null
@@ -89,9 +85,10 @@ interface EditFormProps {
     homepage_seo_text: string | null
     is_active: boolean
   }
+  templates: { value: string; label: string }[]
 }
 
-export function EditForm({ site }: EditFormProps) {
+export function EditForm({ site, templates }: EditFormProps) {
   const updateSiteWithId = updateSite.bind(null, site.id)
   const [state, formAction, isPending] = useActionState<UpdateSiteState, FormData>(
     updateSiteWithId,
@@ -293,8 +290,8 @@ export function EditForm({ site }: EditFormProps) {
               <Label htmlFor="template_slug">
                 Template <span className="text-destructive">*</span>
               </Label>
-              <NativeSelect name="template_slug" defaultValue={site.template_slug ?? 'classic'}>
-                {TEMPLATES.map(({ value, label }) => (
+              <NativeSelect name="template_slug" defaultValue={site.template_slug ?? 'tsa/classic'}>
+                {templates.map(({ value, label }) => (
                   <option key={value} value={value}>
                     {label}
                   </option>

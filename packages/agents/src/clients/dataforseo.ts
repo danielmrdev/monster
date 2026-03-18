@@ -9,6 +9,8 @@ export interface DataForSEOProduct {
   title: string;
   imageUrl: string | null;
   price: number | null;
+  /** Original (before-discount) price derived from percentage_discount on ASIN lookup. Null from keyword search. */
+  originalPrice: number | null;
   rating: number;
   reviewCount: number;
   isPrime: boolean;
@@ -197,6 +199,35 @@ export class DataForSEOClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  // ── Poll tasks_ready until taskId appears ─────────────────────────────────
+
+  /**
+   * Polls a tasks_ready endpoint until `taskId` appears or max attempts exceeded.
+   * Shared by searchProducts (products/tasks_ready) and lookupAsin (asin/tasks_ready).
+   */
+  private async awaitTask(tasksReadyPath: string, auth: string, taskId: string, label: string): Promise<void> {
+    for (let attempt = 0; attempt < DataForSEOClient.MAX_POLL_ATTEMPTS; attempt++) {
+      const delay = 5000 * Math.pow(2, Math.min(attempt, 3));
+      await this.sleep(delay);
+
+      const readyResponse = await this.apiGet<DFSRawResponse>(tasksReadyPath, auth);
+      const readyTasks = readyResponse?.tasks ?? [];
+
+      for (const task of readyTasks) {
+        for (const result of task.result ?? []) {
+          if ((result as unknown as { id?: string }).id === taskId) {
+            console.log(`[DataForSEO] task ready after ${attempt + 1} attempt(s) ${label}`);
+            return;
+          }
+        }
+      }
+    }
+
+    throw new Error(
+      `DataForSEO task ${taskId} did not complete within timeout (${DataForSEOClient.MAX_POLL_ATTEMPTS} attempts) ${label}`
+    );
+  }
+
   // ── Core search ──────────────────────────────────────────────────────────
 
   /**
@@ -246,40 +277,7 @@ export class DataForSEOClient {
     console.log(`[DataForSEO] task_post id=${taskId} keyword="${keyword}"`);
 
     // ── Step 2: poll tasks_ready ───────────────────────────────────────────
-    let taskReady = false;
-
-    for (let attempt = 0; attempt < DataForSEOClient.MAX_POLL_ATTEMPTS; attempt++) {
-      const delay = 5000 * Math.pow(2, Math.min(attempt, 3));
-      await this.sleep(delay);
-
-      const readyResponse = await this.apiGet<DFSRawResponse>(
-        '/merchant/amazon/products/tasks_ready',
-        auth
-      );
-
-      const readyTasks = readyResponse?.tasks ?? [];
-      for (const task of readyTasks) {
-        for (const result of task.result ?? []) {
-          // tasks_ready returns result entries with `id` field
-          if ((result as unknown as { id?: string }).id === taskId) {
-            taskReady = true;
-            break;
-          }
-        }
-        if (taskReady) break;
-      }
-
-      if (taskReady) {
-        console.log(`[DataForSEO] task ready after ${attempt + 1} attempt(s) keyword="${keyword}"`);
-        break;
-      }
-    }
-
-    if (!taskReady) {
-      throw new Error(
-        `DataForSEO task ${taskId} did not complete within timeout (${DataForSEOClient.MAX_POLL_ATTEMPTS} attempts)`
-      );
-    }
+    await this.awaitTask('/merchant/amazon/products/tasks_ready', auth, taskId, `keyword="${keyword}"`);
 
     // ── Step 3: task_get/advanced ──────────────────────────────────────────
     const getResponse = await this.apiGet<DFSRawResponse>(
@@ -310,6 +308,7 @@ export class DataForSEOClient {
         title: item.title ?? '',
         imageUrl: item.image_url ?? null,
         price: item.price_from ?? null,
+        originalPrice: null, // not available from keyword search — populated by lookupAsin()
         rating: parseFloat(item.rating?.value ?? '0'),
         reviewCount: item.rating?.votes_count ?? 0,
         isPrime: item.is_prime ?? item.delivery_info?.is_free_delivery ?? false,
@@ -322,6 +321,59 @@ export class DataForSEOClient {
     }
 
     return products;
+  }
+
+  // ── ASIN lookup (individual product detail) ──────────────────────────────
+
+  /**
+   * Look up a single ASIN on the Amazon Merchant API to get price and percentage_discount.
+   *
+   * Uses async task flow: asin/task_post → poll tasks_ready → asin/task_get/advanced.
+   * The ASIN endpoint returns `percentage_discount` which the keyword-search endpoint does not.
+   * We derive originalPrice = price / (1 - pct/100) when discount > 0.
+   *
+   * Returns null if the ASIN is not found or DFS returns no item.
+   * Does NOT throw on not-found — callers should handle null gracefully.
+   */
+  async lookupAsin(asin: string, market: string): Promise<{ price: number | null; originalPrice: number | null } | null> {
+    const config = MARKET_CONFIG[market];
+    if (!config) {
+      throw new Error(`DataForSEO: unknown market "${market}"`);
+    }
+
+    const auth = await this.fetchAuthHeader();
+
+    // Step 1: POST task
+    interface AsinTaskResponse { tasks?: Array<{ id?: string | null }> | null }
+    const postBody = [{ asin, location_code: config.location_code, language_code: config.language_code, se_domain: config.se_domain }];
+    const postResp = await this.apiPost<AsinTaskResponse>('/merchant/amazon/asin/task_post', auth, postBody);
+    const taskId = postResp?.tasks?.[0]?.id;
+    if (!taskId) throw new Error(`[DataForSEO] lookupAsin(${asin}): no task_id in response`);
+
+    // Step 2: Poll tasks_ready
+    await this.awaitTask('/merchant/amazon/asin/tasks_ready', auth, taskId, `asin=${asin}`);
+
+    // Step 3: GET results
+    interface AsinItem { price_from?: number | null; price_to?: number | null; percentage_discount?: number | null }
+    interface AsinGetResponse { tasks?: Array<{ result?: Array<{ items?: AsinItem[] | null }> | null }> | null }
+    const getResp = await this.apiGet<AsinGetResponse>(`/merchant/amazon/asin/task_get/advanced/${taskId}`, auth);
+    const item = getResp?.tasks?.[0]?.result?.[0]?.items?.[0] ?? null;
+
+    if (!item) {
+      console.log(`[DataForSEO] lookupAsin(${asin}) market=${market}: no item returned`);
+      return null;
+    }
+
+    const price = item.price_from ?? null;
+    const pct = item.percentage_discount ?? null;
+
+    // Derive original price: if discount % known and price exists, back-calculate
+    let originalPrice: number | null = null;
+    if (price !== null && pct !== null && pct > 0) {
+      originalPrice = Math.round((price / (1 - pct / 100)) * 100) / 100;
+    }
+
+    return { price, originalPrice };
   }
 
   // ── Labs: keyword ideas (live endpoint) ─────────────────────────────────

@@ -2,6 +2,11 @@
 import TsaLayout from "../../layouts/tsa/Layout.astro";
 import { loadSiteData } from "../../lib/data";
 import { buildCloakUrl } from "../../lib/cloaking";
+import { marked } from "marked";
+
+function toTitleCase(str: string): string {
+  return str.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1));
+}
 import type { SiteData, SiteInfo, CategoryData, ProductData } from "../../lib/data";
 
 export async function getStaticPaths() {
@@ -31,7 +36,7 @@ const title = `${category.name} — ${site.name}`;
 const CURRENCY = site.currency;
 const metaDescription = category.meta_description ?? undefined;
 
-// Related categories: up to 3 others (excluding the current one)
+// Related categories: up to 3 others (excluding current)
 const relatedCategories = categories.filter((c) => c.slug !== category.slug).slice(0, 3);
 ---
 
@@ -39,24 +44,24 @@ const relatedCategories = categories.filter((c) => c.slug !== category.slug).sli
 
   <!-- ── Category header ───────────────────────────────────────────────── -->
   <div class="mb-8">
-    <nav class="text-xs text-gray-400 mb-3">
+    <nav class="text-xs text-gray-400 mb-3 flex items-center gap-1">
       <a href="/" class="hover:text-gray-600 transition-colors">Inicio</a>
-      <span class="mx-1">/</span>
+      <span>/</span>
       <span class="text-gray-600">{category.name}</span>
     </nav>
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">
-      {category.name}
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 text-center">
+      {toTitleCase(category.name)}
     </h1>
-    {(category.description ?? category.seo_text) && (
-      <p class="text-gray-600 max-w-3xl leading-relaxed text-sm sm:text-base">
-        {category.description ?? category.seo_text}
+    {category.description && (
+      <p class="text-gray-500 max-w-3xl leading-relaxed text-sm sm:text-base">
+        {category.description}
       </p>
     )}
   </div>
 
   <!-- ── Product grid ──────────────────────────────────────────────────── -->
   {products.length > 0 ? (
-    <section class="mb-12">
+    <section class="mb-14">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {products.map((p) => {
           const hasDiscount = p.original_price !== null && p.original_price > p.current_price;
@@ -64,18 +69,18 @@ const relatedCategories = categories.filter((c) => c.slug !== category.slug).sli
             ? Math.round(((p.original_price! - p.current_price) / p.original_price!) * 100)
             : 0;
           return (
-            <div class="flex flex-col rounded-lg border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow duration-150">
-              <!-- Product image -->
+            <div class="flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow duration-150">
+              <!-- Fixed height image — object-contain so full product visible -->
               <a href={`/products/${p.slug}/`} class="block relative">
                 {p.images[0] ? (
                   <img
                     src={p.images[0]}
                     alt={p.title}
-                    class="w-full h-52 object-cover"
+                    class="w-full h-48 object-contain bg-white p-3"
                     loading="lazy"
                   />
                 ) : (
-                  <div class="w-full h-52 bg-gray-50 flex items-center justify-center">
+                  <div class="w-full h-48 bg-gray-50 flex items-center justify-center">
                     <span class="text-gray-300 text-xs">Sin imagen</span>
                   </div>
                 )}
@@ -107,7 +112,7 @@ const relatedCategories = categories.filter((c) => c.slug !== category.slug).sli
                     </span>
                   )}
                 </div>
-                <!-- CTA row: "+info" + "comprar" -->
+                <!-- CTA row -->
                 <div class="flex gap-2 mt-1">
                   <a
                     href={`/products/${p.slug}/`}
@@ -132,31 +137,53 @@ const relatedCategories = categories.filter((c) => c.slug !== category.slug).sli
       </div>
     </section>
   ) : (
-    <p class="text-gray-500 text-sm mb-12">No hay productos en esta categoría aún.</p>
+    <p class="text-gray-500 text-sm mb-14">No hay productos en esta categoría aún.</p>
   )}
 
-  <!-- ── SEO text ───────────────────────────────────────────────────────── -->
+  <!-- ── SEO prose text — at bottom ────────────────────────────────────── -->
   {category.seo_text && (
-    <section class="mb-12 border-t border-gray-100 pt-8">
-      <div class="prose prose-sm max-w-none text-gray-600">
-        <p>{category.seo_text}</p>
-      </div>
+    <section class="mb-14 border-t border-gray-100 pt-8">
+      <div
+        class="prose prose-sm max-w-none text-gray-600"
+        set:html={marked(category.seo_text)}
+      />
     </section>
   )}
 
-  <!-- ── Related categories ────────────────────────────────────────────── -->
+  <!-- ── Related categories — at bottom ───────────────────────────────── -->
   {relatedCategories.length > 0 && (
     <section class="border-t border-gray-100 pt-8">
-      <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4">
+      <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-6 text-center">
         Otras categorías
       </h2>
-      <div class="flex flex-wrap gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {relatedCategories.map((cat) => (
           <a
             href={`/categories/${cat.slug}/`}
-            class="inline-block rounded-full border border-gray-200 px-4 py-1.5 text-sm text-gray-600 hover:border-gray-400 hover:text-gray-800 transition-colors"
+            class="group flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden hover:border-gray-300 hover:shadow-md transition-all duration-150"
           >
-            {cat.name}
+            {cat.category_image ? (
+              <img
+                src={cat.category_image}
+                alt={cat.name}
+                class="w-full h-48 object-contain p-2"
+                loading="lazy"
+              />
+            ) : (
+              <div class="w-full h-48 flex items-center justify-center">
+                <span class="text-gray-300 text-xs">Sin imagen</span>
+              </div>
+            )}
+            <div class="p-5 flex flex-col gap-1.5 items-center text-center">
+              <h3 class="font-semibold text-gray-800 group-hover:text-[var(--color-primary)] transition-colors">
+                {cat.name}
+              </h3>
+              {cat.description && (
+                <p class="text-sm text-gray-500 leading-relaxed">
+                  {cat.description}
+                </p>
+              )}
+            </div>
           </a>
         ))}
       </div>

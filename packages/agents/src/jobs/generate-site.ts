@@ -295,6 +295,7 @@ export class GenerateSiteJob {
               fontFamily: customization?.fontFamily ?? 'sans-serif',
             },
             focus_keyword: (site.focus_keyword ?? null) as string | null,
+            homepage_seo_text: (site.homepage_seo_text ?? null) as string | null,
             company_name: (site.company_name ?? site.name) as string,
             contact_email: (site.contact_email ?? `contact@${site.domain ?? 'example.com'}`) as string,
             id: siteId,
@@ -317,7 +318,8 @@ export class GenerateSiteJob {
             category_image: cat.category_image ?? null,
             keywords: (cat.keywords as string[]) ?? [],
             focus_keyword: cat.focus_keyword ?? null,
-            meta_description: cat.description ?? null,
+            description: cat.description ?? null,
+            meta_description: cat.meta_description ?? null,
           })),
           products: dbProducts
             .filter((p) => productCategorySlug.has(p.id))
@@ -327,6 +329,7 @@ export class GenerateSiteJob {
               title: p.title,
               slug: p.slug,
               current_price: p.current_price ?? 0,
+              original_price: p.original_price ?? null,
               images: (p.images as string[]) ?? [],
               rating: p.rating ?? 0,
               is_prime: p.is_prime ?? false,

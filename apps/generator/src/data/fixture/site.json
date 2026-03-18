@@ -27,7 +27,11 @@
       "description": "Las mejores freidoras de aire para cocinar sano y delicioso con mínimo aceite.",
       "seo_text": "Las freidoras de aire son el electrodoméstico estrella de los últimos años. Con tecnología de aire caliente circulante, permiten cocinar alimentos crujientes con muy poco aceite. Descubre nuestra selección de las mejores freidoras de aire del mercado, con análisis detallados, comparativas de precios y opiniones reales de usuarios. Desde modelos compactos para una persona hasta grandes capacidades para familias, tenemos la freidora perfecta para cada necesidad y presupuesto.",
       "category_image": null,
-      "keywords": ["freidora de aire", "airfryer", "freidora sin aceite"],
+      "keywords": [
+        "freidora de aire",
+        "airfryer",
+        "freidora sin aceite"
+      ],
       "focus_keyword": null,
       "meta_description": null
     },
@@ -38,7 +42,10 @@
       "description": "Accesorios compatibles con las principales marcas de freidoras de aire del mercado.",
       "seo_text": "Amplía las posibilidades de tu freidora de aire con los accesorios adecuados. Rejillas, moldes, bandejas perforadas y kits completos que transforman tu freidora en un horno versátil. Compatibles con las principales marcas del mercado: Philips, Tefal, Cosori y muchas más.",
       "category_image": null,
-      "keywords": ["accesorios freidora de aire", "moldes airfryer"],
+      "keywords": [
+        "accesorios freidora de aire",
+        "moldes airfryer"
+      ],
       "focus_keyword": null,
       "meta_description": null
     }
@@ -50,7 +57,7 @@
       "title": "Philips HD9252/90 Airfryer Compact",
       "slug": "philips-hd9252-90",
       "current_price": 89.99,
-      "original_price": null,
+      "original_price": 112.49,
       "images": [],
       "rating": 4.5,
       "is_prime": true,
@@ -67,12 +74,21 @@
       "title": "Cosori Air Fryer 4.7L Pro",
       "slug": "cosori-air-fryer-47l-pro",
       "current_price": 74.99,
-      "original_price": null,
+      "original_price": 93.74,
       "images": [],
       "rating": 4.4,
       "is_prime": true,
       "detailed_description": null,
-      "pros_cons": { "pros": ["Gran capacidad", "Fácil limpieza", "App WiFi"], "cons": ["Algo ruidosa"] },
+      "pros_cons": {
+        "pros": [
+          "Gran capacidad",
+          "Fácil limpieza",
+          "App WiFi"
+        ],
+        "cons": [
+          "Algo ruidosa"
+        ]
+      },
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,

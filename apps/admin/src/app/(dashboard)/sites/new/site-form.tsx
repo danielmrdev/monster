@@ -41,11 +41,7 @@ const CURRENCIES = [
   { value: 'AUD', label: 'Australian Dollar (AUD)' },
 ]
 
-const TEMPLATES = [
-  { value: 'classic', label: 'Classic' },
-  { value: 'modern', label: 'Modern' },
-  { value: 'minimal', label: 'Minimal' },
-]
+const TEMPLATES: { value: string; label: string }[] = [] // kept for type reference; actual data comes from DB via props
 
 function FieldError({ messages }: { messages?: string[] }) {
   if (!messages?.length) return null
@@ -77,7 +73,7 @@ function NativeSelect({
   )
 }
 
-export function SiteForm({ defaultValues }: { defaultValues?: { niche?: string; market?: string } } = {}) {
+export function SiteForm({ defaultValues, templates = [] }: { defaultValues?: { niche?: string; market?: string }; templates?: { value: string; label: string }[] } = {}) {
   const [state, formAction, isPending] = useActionState<CreateSiteState, FormData>(
     createSite,
     null
@@ -198,8 +194,8 @@ export function SiteForm({ defaultValues }: { defaultValues?: { niche?: string; 
               <Label htmlFor="template_slug">
                 Template <span className="text-destructive">*</span>
               </Label>
-              <NativeSelect name="template_slug" defaultValue="classic">
-                {TEMPLATES.map(({ value, label }) => (
+              <NativeSelect name="template_slug" defaultValue={templates[0]?.value ?? 'tsa/classic'}>
+                {templates.map(({ value, label }) => (
                   <option key={value} value={value}>
                     {label}
                   </option>

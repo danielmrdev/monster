@@ -51,6 +51,14 @@ try {
       @import "tailwindcss";
       @plugin "@tailwindcss/typography";
     </style>
+    <style is:global>
+      /* Global resets — Astro scopes component styles, so these must be is:global
+         to apply across all child components and page slots. */
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+    </style>
     <style define:vars={{ primary, accent, font }}>
       :root {
         --color-primary: var(--primary);

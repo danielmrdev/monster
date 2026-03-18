@@ -44,11 +44,39 @@ const { affiliateUrl, productTitle } = Astro.props;
     <meta name="robots" content="noindex, nofollow" />
     <meta http-equiv="refresh" content={`0; url=${affiliateUrl}`} />
     <link rel="canonical" href={affiliateUrl} />
-    <title>Redirigiendo a Amazon…</title>
+    <title>Redirigiendo…</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        background: #f9fafb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        color: #6b7280;
+      }
+      .wrap { text-align: center; padding: 2rem; }
+      .spinner {
+        width: 32px; height: 32px;
+        border: 3px solid #e5e7eb;
+        border-top-color: #6b7280;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        margin: 0 auto 1rem;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      p { font-size: 0.875rem; }
+      a { color: inherit; text-decoration: none; }
+    </style>
   </head>
   <body>
-    <p>
-      Redirigiendo a <a href={affiliateUrl} rel="nofollow sponsored">{productTitle}</a> en Amazon…
-    </p>
+    <div class="wrap">
+      <div class="spinner"></div>
+      <p><a href={affiliateUrl} rel="nofollow sponsored">Abriendo en Amazon…</a></p>
+    </div>
+    <script is:inline define:vars={{ affiliateUrl }}>
+      setTimeout(function() { window.location.href = affiliateUrl; }, 100);
+    </script>
   </body>
 </html>

@@ -2,6 +2,7 @@
 import TsaLayout from "../../layouts/tsa/Layout.astro";
 import { loadSiteData } from "../../lib/data";
 import { buildCloakUrl } from "../../lib/cloaking";
+import { marked } from "marked";
 import type { SiteData, SiteInfo, CategoryData, ProductData, ProsCons } from "../../lib/data";
 
 export async function getStaticPaths() {
@@ -168,9 +169,10 @@ const parentCategory = categories.find((c) => c.slug === product.category_slug) 
   {product.detailed_description && (
     <section class="mt-10 border-t border-gray-100 pt-8">
       <h2 class="text-lg font-semibold text-gray-800 mb-3">Descripción</h2>
-      <div class="prose prose-sm max-w-none text-gray-600">
-        <p>{product.detailed_description}</p>
-      </div>
+      <div
+        class="prose prose-sm max-w-none text-gray-600"
+        set:html={marked(product.detailed_description)}
+      />
     </section>
   )}
 
@@ -178,9 +180,10 @@ const parentCategory = categories.find((c) => c.slug === product.category_slug) 
   {product.user_opinions_summary && (
     <section class="mt-8 border-t border-gray-100 pt-8">
       <h2 class="text-lg font-semibold text-gray-800 mb-3">Opiniones de compradores</h2>
-      <div class="prose prose-sm max-w-none text-gray-600">
-        <p>{product.user_opinions_summary}</p>
-      </div>
+      <div
+        class="prose prose-sm max-w-none text-gray-600"
+        set:html={marked(product.user_opinions_summary)}
+      />
     </section>
   )}
 

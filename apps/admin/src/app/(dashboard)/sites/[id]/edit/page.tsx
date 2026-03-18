@@ -28,7 +28,11 @@ export default async function EditSitePage({ params }: PageProps) {
   }
 
   // Fetch legal templates and existing assignments for this site
-  const [templatesResult, assignmentsResult] = await Promise.all([
+  const [templatesResult, legalTemplatesResult, assignmentsResult] = await Promise.all([
+    anySupabase
+      .from('site_templates')
+      .select('slug, name')
+      .order('slug'),
     anySupabase
       .from('legal_templates')
       .select('id, title, type, language')
@@ -40,8 +44,9 @@ export default async function EditSitePage({ params }: PageProps) {
       .eq('site_id', id),
   ])
 
+  const siteTemplates = (templatesResult.data ?? []).map((t: { slug: string; name: string }) => ({ value: t.slug, label: t.name }))
   const templates: Array<{ id: string; title: string; type: string; language: string }> =
-    templatesResult.data ?? []
+    legalTemplatesResult.data ?? []
   const assignments: Array<{ template_type: string; template_id: string }> =
     assignmentsResult.data ?? []
 
@@ -78,7 +83,7 @@ export default async function EditSitePage({ params }: PageProps) {
         <span className="text-muted-foreground">/</span>
         <h1 className="text-2xl font-bold tracking-tight">Edit Site</h1>
       </div>
-      <EditForm site={siteForForm} />
+      <EditForm site={siteForForm} templates={siteTemplates} />
       <LegalTemplateAssignment
         siteId={id}
         templates={templates}

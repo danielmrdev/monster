@@ -221,7 +221,38 @@ async function handler(job: import('bullmq').Job<ProductRefreshPayload>): Promis
     throw new Error(`tsa_products upsert (fetched): ${fetchedUpsertError.message}`);
   }
 
-  // ── Step 6: Upsert SERP-absent products — availability=limited only ────
+  // ── Step 5b: Enrich original_price for products missing it (max 20/run) ──
+  const { data: missingDiscount } = await supabase
+    .from('tsa_products')
+    .select('id, asin, current_price')
+    .eq('site_id', siteId)
+    .is('original_price', null)
+    .not('current_price', 'is', null)
+    .limit(20);
+
+  if (missingDiscount && missingDiscount.length > 0) {
+    console.log(`[ProductRefreshJob] site ${siteId} enriching original_price for ${missingDiscount.length} products`);
+
+    for (const prod of missingDiscount) {
+      try {
+        const detail = await client.lookupAsin(prod.asin, market);
+        if (detail?.originalPrice !== null && detail?.originalPrice !== undefined) {
+          await supabase
+            .from('tsa_products')
+            .update({ original_price: detail.originalPrice })
+            .eq('id', prod.id);
+
+          console.log(`[ProductRefreshJob] site ${siteId} original_price=${detail.originalPrice} asin=${prod.asin}`);
+        }
+      } catch (err) {
+        // Non-fatal: log and continue with next product
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[ProductRefreshJob] site ${siteId} lookupAsin failed asin=${prod.asin}: ${msg}`);
+      }
+    }
+  }
+
+
   if (diffResult.serpAbsentAsins.length > 0) {
     const absentUpsertRows = diffResult.serpAbsentAsins.map((asin) => ({
       site_id: siteId,
