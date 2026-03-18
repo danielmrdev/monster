@@ -381,36 +381,36 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 
 ### R045 — TSA unified template (homepage, category, product, legales)
 - Class: differentiator
-- Status: active
+- Status: validated
 - Description: A single polished TSA template replaces the three generic variants. Homepage: centered logo, horizontal cat nav, H1/focus_keyword, category grid (description + vertical image), SEO text. Category: H1, description, product grid (uniform vertical image, price, discount badge, +info/comprar buttons), SEO text, 3 related categories. Product: image gallery, price/discount, buy button, pros/cons, AI description, breadcrumb. Legal: prose typography.
 - Why it matters: Generated sites are the product. Design quality directly affects CTR, bounce rate, and perceived authority — all of which affect ranking and affiliate earnings.
 - Source: user
 - Primary owning slice: M013/S01–S04
 - Supporting slices: M013/S05
-- Validation: unmapped
+- Validation: M013 — SITE_SLUG=fixture build exits 0 (15 pages). Homepage: grid-cols-3 centered logo, H1 from focus_keyword="freidoras de aire", category grid with description+image/placeholder, prose SEO text. Category pages: H1, description, product grid with price/+info/comprar, SEO text, related categories. Product pages: image gallery, EUR price, buy button via /go/, breadcrumb. Legal pages: prose prose-sm typography + shared Layout.astro. astro check exits 0.
 - Notes: One template now; architecture allows more in future. Each site has exactly one template_slug assigned.
 
 ### R046 — Link cloaking for affiliate links
 - Class: primary-user-loop
-- Status: active
+- Status: validated
 - Description: All affiliate links in generated sites use `/go/<product-slug>` redirects instead of direct Amazon URLs. Meta-refresh redirect pages generated at build time. Module is template-agnostic and reusable by future templates. All affiliate `<a>` tags carry `rel="nofollow sponsored"`.
 - Why it matters: Clean URLs improve CTR (users see `/go/ninja-af101` not a long Amazon tag URL). Centralizes link management — change an ASIN, update one map. Analytics tracking is simplified. Complies with Amazon Associates ToS when combined with `rel="nofollow sponsored"`.
 - Source: user
 - Primary owning slice: M013/S05
 - Supporting slices: none
-- Validation: unmapped
+- Validation: M013 — cloaking.ts exports buildCloakUrl/buildCloakMap (template-agnostic). /go/[slug].astro generates 4 static redirect pages in fixture build. grep for amazon. URLs in <a href> outside /go/ pages returns empty. All affiliate <a> carry rel="nofollow sponsored". /go/ pages have noindex,nofollow meta + meta-refresh + window.location fallback.
 - Notes: Meta-refresh (static) is sufficient for Phase 1. HTTP 302 via Caddy rules is a future enhancement if needed.
 
 ### R047 — Category `description` field mapped in generator
 - Class: quality-attribute
-- Status: active
+- Status: validated
 - Description: `CategoryData` interface in the generator includes the `description` field (already in `tsa_categories` DB schema). All templates can use it to display a short descriptive text distinct from `seo_text`.
 - Why it matters: `description` (short) and `seo_text` (long SEO prose) serve different UX roles. Without the mapping, short descriptions can't be shown in the admin panel or templates.
 - Source: inferred
 - Primary owning slice: M013/S01
 - Supporting slices: none
-- Validation: unmapped
-- Notes: Field already exists in DB (`tsa_categories.description text`). Only the generator interface and fixture need updating.
+- Validation: M013 — CategoryData.description: string | null added to data.ts interface. Fixture both categories have non-null descriptions. Description rendered in category grid cards on homepage and in category page header. astro check confirms type safety.
+- Notes: Field already exists in DB (`tsa_categories.description text`). Only the generator interface and fixture needed updating.
 
 ## Traceability
 
@@ -452,13 +452,13 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R042 | primary-user-loop | active | M009/S06 | none | unmapped |
 | R043 | failure-visibility | active | M009/S01 | none | unmapped |
 | R044 | constraint | active | M009/S01 | none | unmapped |
-| R045 | differentiator | active | M013/S01–S04 | M013/S05 | unmapped |
-| R046 | primary-user-loop | active | M013/S05 | none | unmapped |
-| R047 | quality-attribute | active | M013/S01 | none | unmapped |
+| R045 | differentiator | validated | M013/S01–S04 | M013/S05 | M013 — fixture build 15 pages, all page types verified, astro check 0 errors |
+| R046 | primary-user-loop | validated | M013/S05 | none | M013 — zero amazon. URLs in <a href> outside /go/, 4 /go/ redirect pages, rel="nofollow sponsored" on all affiliate links |
+| R047 | quality-attribute | validated | M013/S01 | none | M013 — CategoryData.description in interface and fixture, rendered in category grid cards and page headers |
 
 ## Coverage Summary
 
 - Active requirements: 30
 - Mapped to milestones: 30
-- Validated: 4 (R013, R004, R005, R015)
+- Validated: 7 (R013, R004, R005, R015, R045, R046, R047)
 - Unmapped active requirements: 0
