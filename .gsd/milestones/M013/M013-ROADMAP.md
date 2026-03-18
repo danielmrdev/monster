@@ -66,7 +66,7 @@ This milestone is complete only when all are true:
 - [x] **S05: Link cloaking** `risk:low` `depends:[S02, S03]`
   > After this: All affiliate links in built HTML are `/go/<slug>`; `/go/[slug].astro` meta-refresh redirect pages present in dist/; zero direct Amazon URLs on affiliate `<a>` tags; `cloaking.ts` module is template-agnostic and reusable.
 
-- [ ] **S06: Homepage design completeness** `risk:low` `depends:[S01, S02]`
+- [x] **S06: Homepage design completeness** `risk:low` `depends:[S01, S02]`
   > After this: Homepage renders centered logo (two-row header or grid-cols-3 layout), H1 from `focus_keyword` when non-null, prose SEO text section at bottom, category grid cards with vertical image. Fixture updated with `homepage_seo_text` and non-null `focus_keyword`. `astro check` exits 0. All previously passing criteria remain green.
 
 ## Boundary Map
