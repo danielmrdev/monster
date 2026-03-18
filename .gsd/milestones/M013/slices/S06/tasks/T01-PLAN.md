@@ -140,6 +140,25 @@ All four changes touch the same 4 files. There are no inter-dependencies between
 - [ ] `astro check` exits 0
 - [ ] Zero `amazon.` URLs in `<a href>` in `dist/index.html`
 
+## Observability Impact
+
+**Signals that change after this task:**
+- `dist/index.html` becomes the primary inspection surface. All four design gaps are verifiable by grepping the built output:
+  - `grep -i 'freidoras de aire' dist/index.html` → confirms H1 uses `focus_keyword`
+  - `grep 'grid-cols-3' dist/index.html` → confirms centered-logo nav
+  - `grep 'prose' dist/index.html` → confirms SEO prose section exists
+  - `grep 'bg-gray-100 h-40' dist/index.html` → confirms category image placeholder rendered
+  - `grep -oP 'href="[^"]*amazon\.[^"]*"' dist/index.html` → must return empty (affiliate regression check)
+- `astro check` reports type errors if `homepage_seo_text` is referenced before being added to `SiteInfo` — a type error here means the interface update was missed.
+
+**Failure states that become visible:**
+- If `marked` import fails (wrong specifier), the Astro build will throw a module-not-found error at build time — visible in `astro build` stdout.
+- If `homepage_seo_text` is missing from `SiteInfo` but used in `index.astro`, `astro check` will report a type error on that property access.
+- If the fixture JSON is missing `homepage_seo_text`, the `{site.homepage_seo_text && ...}` guard silently skips rendering — `grep 'prose' dist/index.html` will return no matches, catching this.
+- Category placeholder: if `category_image` check is absent, an `<img src="">` with empty src is rendered — catchable by inspecting the built card HTML.
+
+**Redaction:** No secrets baked into these static assets; `supabase_url` and `supabase_anon_key` in fixture are empty strings, so no credentials appear in `dist/index.html`.
+
 ## Verification
 
 ```bash

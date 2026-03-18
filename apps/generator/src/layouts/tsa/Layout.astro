@@ -41,31 +41,35 @@ const LEGAL_LINKS = [
   <!-- TSA header: centered logo + horizontal category nav + hamburger -->
   <header class="border-b border-gray-200 bg-white shadow-sm">
     <div class="mx-auto max-w-6xl px-4">
-      <nav class="flex h-14 items-center justify-between gap-6">
-        <!-- Logo: image if configured, else styled site name link -->
-        {logoUrl ? (
-          <a href="/" class="shrink-0">
-            <img src={logoUrl} alt={site.name} class="h-8" />
-          </a>
-        ) : (
-          <a href="/" class="text-xl font-bold shrink-0" style="color: var(--color-primary)">
-            {site.name}
-          </a>
-        )}
-        <!-- Hamburger button: visible on mobile (< md), hidden on md+ -->
-        <button
-          id="nav-toggle-tsa"
-          class="md:hidden flex flex-col justify-center gap-1.5 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
-          aria-label="Toggle navigation"
-          aria-expanded="false"
-          aria-controls="mobile-menu-tsa-dropdown"
-        >
-          <span class="block w-5 h-0.5 bg-current"></span>
-          <span class="block w-5 h-0.5 bg-current"></span>
-          <span class="block w-5 h-0.5 bg-current"></span>
-        </button>
-        <!-- Category links: hidden on mobile, flex row on md+ -->
-        <div id="mobile-menu-tsa" class="hidden md:flex gap-4">
+      <nav class="grid grid-cols-3 h-14 items-center">
+        <!-- Left cell: hamburger (mobile only) -->
+        <div class="flex items-center">
+          <button
+            id="nav-toggle-tsa"
+            class="md:hidden flex flex-col justify-center gap-1.5 p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
+            aria-label="Toggle navigation"
+            aria-expanded="false"
+            aria-controls="mobile-menu-tsa-dropdown"
+          >
+            <span class="block w-5 h-0.5 bg-current"></span>
+            <span class="block w-5 h-0.5 bg-current"></span>
+            <span class="block w-5 h-0.5 bg-current"></span>
+          </button>
+        </div>
+        <!-- Center cell: logo (always visible, always centered) -->
+        <div class="flex justify-center min-w-0">
+          {logoUrl ? (
+            <a href="/" class="shrink-0 min-w-0">
+              <img src={logoUrl} alt={site.name} class="h-8" />
+            </a>
+          ) : (
+            <a href="/" class="text-xl font-bold truncate min-w-0" style="color: var(--color-primary)">
+              {site.name}
+            </a>
+          )}
+        </div>
+        <!-- Right cell: desktop category links -->
+        <div id="mobile-menu-tsa" class="hidden md:flex gap-4 justify-end">
           {categories.map((cat) => (
             <a
               href={`/categories/${cat.slug}/`}

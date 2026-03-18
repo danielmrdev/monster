@@ -23,6 +23,8 @@ export interface SiteInfo {
   template_slug: SiteTemplate;
   customization: SiteCustomization;
   focus_keyword: string | null;
+  /** Homepage SEO prose text rendered at the bottom of the homepage. */
+  homepage_seo_text: string | null;
   /** Site UUID — used by the analytics tracker as the `site_id` POST field. */
   id: string;
   /** Contact email address — shown on legal pages. Optional; defaults to empty string. */

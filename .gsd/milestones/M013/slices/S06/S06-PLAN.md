@@ -16,6 +16,21 @@
 - `astro check` exits 0
 - Zero direct Amazon URLs in built `dist/index.html` `<a href>` attributes
 
+## Observability / Diagnostics
+
+**Runtime inspection surfaces:**
+- `apps/generator/.generated-sites/fixture/dist/index.html` — the canonical artifact. All four design gaps can be verified by grepping this file without running a dev server.
+- `astro check` — Astro's type checker surfaces TypeScript errors in `.astro` files. Any mismatch between `SiteInfo` and actual usage will be caught here.
+- `astro build` stdout — build errors (missing imports, type errors promoted to build failures) are printed here. A non-zero exit from `astro build` is the primary failure signal.
+
+**Failure state visibility:**
+- Missing `homepage_seo_text` in `SiteInfo` → `astro check` reports type error; build may still succeed but type safety is gone.
+- `marked` import using wrong syntax (e.g. default import) → build fails with module error; error includes the import path.
+- Category cards rendering `<img src="">` (forgot null check) → visible in built HTML; `grep 'src=""' dist/index.html` will catch it.
+- H1 still showing `site.name` (forgot the `??` expression) → `grep 'Airfryer Pro ES' dist/index.html | grep 'h1'` would match; the focus_keyword grep would miss it.
+
+**Redaction:** `supabase_url` and `supabase_anon_key` are empty strings in fixture — no credentials in built output.
+
 ## Verification
 
 ```bash
@@ -34,11 +49,15 @@ grep 'prose' apps/generator/.generated-sites/fixture/dist/index.html | head -3
 # 5. No regressions: zero direct Amazon URLs
 grep -oP 'href="[^"]*amazon\.[^"]*"' apps/generator/.generated-sites/fixture/dist/index.html
 # → must return empty (exit 1 is fine; what matters is zero matches printed)
+
+# 6. Diagnostic failure check: no empty src attributes on category card images
+grep -c 'src=""' apps/generator/.generated-sites/fixture/dist/index.html || true
+# → must print 0 (any non-zero means a null image was rendered as <img src="">)
 ```
 
 ## Tasks
 
-- [ ] **T01: Apply all four homepage design gaps** `est:45m`
+- [x] **T01: Apply all four homepage design gaps** `est:45m`
   - Why: Closes all four S06 gaps in one atomic commit: data interface, fixture data, header centering, homepage template changes.
   - Files: `apps/generator/src/lib/data.ts`, `apps/generator/src/data/fixture/site.json`, `apps/generator/src/layouts/tsa/Layout.astro`, `apps/generator/src/pages/index.astro`
   - Do: See T01-PLAN.md for full steps and constraints.
