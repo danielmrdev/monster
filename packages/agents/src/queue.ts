@@ -155,3 +155,21 @@ export function nicheResearchQueue(): Queue {
   }
   return _nicheResearchQueue;
 }
+
+/**
+ * BullMQ Queue for SEO content generation jobs.
+ * Named 'seo-content' — matches the Worker name in SeoContentJob.
+ */
+export function createSeoContentQueue(): Queue {
+  const connection = createRedisConnection();
+  return new Queue('seo-content', { connection });
+}
+
+let _seoContentQueue: Queue | null = null;
+
+export function seoContentQueue(): Queue {
+  if (!_seoContentQueue) {
+    _seoContentQueue = createSeoContentQueue();
+  }
+  return _seoContentQueue;
+}
