@@ -97,7 +97,7 @@ console.log('logoUrl:', d.site.customization.logoUrl ?? '(not set)');
   - Verify: `pnpm --filter @monster/generator tsc --noEmit` exits 0
   - Done when: TypeScript check exits 0 with no errors in any of the four modified files
 
-- [ ] **T02: Update fixture and run end-to-end build verification** `est:20m`
+- [x] **T02: Update fixture and run end-to-end build verification** `est:20m`
   - Why: Proves the T01 code changes actually work at runtime — files copied, tags rendered.
   - Files: `apps/generator/src/data/fixture/site.json`
   - Do: See `T02-PLAN.md` for full steps.
