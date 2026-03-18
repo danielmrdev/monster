@@ -115,6 +115,32 @@ grep -n "TsaLayout" apps/generator/src/pages/index.astro apps/generator/src/page
 # Expected: one import line per file
 ```
 
+## Observability Impact
+
+**Signals introduced by this task:**
+- `SITE_SLUG=fixture pnpm --filter @monster/generator check` exit code: 0 = all 8 pre-existing dispatch errors resolved; non-zero = old import or comparison remained.
+- `SITE_SLUG=fixture pnpm --filter @monster/generator build` page count: `find apps/generator/dist -name "*.html" | wc -l` must print `11` (index + 2 categories + 4 products + 4 legal).
+- `grep -rn "ClassicLayout\|ModernLayout\|MinimalLayout" apps/generator/src/pages/` → zero output confirms the old dispatch is fully removed.
+- `ls apps/generator/src/layouts/` → `BaseLayout.astro  tsa/` confirms the old layout directories are gone.
+
+**Failure visibility:**
+- If any old layout import remains, `astro check` will produce a "Cannot find module" error referencing the deleted directory. The error line names the exact file and import path.
+- If `TsaLayout` props don't match the `SiteInfo`/`CategoryData` interfaces, `astro check` reports "Argument of type X is not assignable to parameter of type Y" — line-precise in the output.
+- If BaseLayout is called without all six required props, `astro check` catches the missing prop at build time.
+- If hamburger IDs collide with a future layout (IDs `nav-toggle-tsa` and `mobile-menu-tsa-dropdown`), the toggle script will silently fail to find the elements — visible in browser console as nothing (no error), and visible in DOM inspection as `hidden` class not toggling.
+
+**Inspection surface:**
+```bash
+# Quick diagnostics snapshot (run after any edit)
+SITE_SLUG=fixture pnpm --filter @monster/generator check 2>&1 | head -40
+
+# Confirm page count after build
+find apps/generator/dist -name "*.html" | wc -l
+
+# Confirm no old imports remain
+grep -rn "ClassicLayout\|ModernLayout\|MinimalLayout\|tsa/modern\|tsa/minimal" apps/generator/src/pages/ && echo "REGRESSION" || echo "OK"
+```
+
 ## Inputs
 
 - `apps/generator/src/layouts/classic/Layout.astro` — Copy hamburger pattern exactly (IDs, script structure, KN013)

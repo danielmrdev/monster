@@ -1,8 +1,7 @@
 ---
-import ClassicLayout from "../../layouts/classic/Layout.astro";
-import ModernLayout from "../../layouts/modern/Layout.astro";
-import MinimalLayout from "../../layouts/minimal/Layout.astro";
+import TsaLayout from "../../layouts/tsa/Layout.astro";
 import { loadSiteData } from "../../lib/data";
+import { buildCloakUrl } from "../../lib/cloaking";
 import type { SiteData, SiteInfo, CategoryData, ProductData } from "../../lib/data";
 
 export async function getStaticPaths() {
@@ -31,88 +30,137 @@ const { site, categories, category, products } = Astro.props;
 const title = `${category.name} — ${site.name}`;
 const CURRENCY = site.currency;
 const metaDescription = category.meta_description ?? undefined;
+
+// Related categories: up to 3 others (excluding the current one)
+const relatedCategories = categories.filter((c) => c.slug !== category.slug).slice(0, 3);
 ---
 
-{site.template_slug === "tsa/modern" ? (
-  <ModernLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
-    <h1 class="text-3xl font-bold text-gray-900 mb-4">{category.name}</h1>
-    <p class="text-gray-600 mb-10 max-w-3xl">{category.seo_text}</p>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {products.map((p) => (
-        <a
-          href={`/products/${p.slug}/`}
-          class="block rounded-xl border border-gray-200 bg-white shadow-md hover:shadow-lg transition-shadow overflow-hidden"
-        >
-          {p.images[0] ? (
-            <img src={p.images[0]} alt={p.title} class="w-full h-44 object-cover" />
-          ) : (
-            <div class="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Sin imagen</div>
-          )}
-          <div class="p-4">
-            <p class="font-semibold text-gray-800 line-clamp-2">{p.title}</p>
-            <p class="text-lg font-bold mt-1" style="color: var(--color-primary)">{CURRENCY} {p.current_price.toFixed(2)}</p>
-          </div>
-        </a>
-      ))}
-    </div>
-    {products.length === 0 && (
-      <p class="text-gray-500 mt-8">No hay productos en esta categoría aún.</p>
+<TsaLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
+
+  <!-- ── Category header ───────────────────────────────────────────────── -->
+  <div class="mb-8">
+    <nav class="text-xs text-gray-400 mb-3">
+      <a href="/" class="hover:text-gray-600 transition-colors">Inicio</a>
+      <span class="mx-1">/</span>
+      <span class="text-gray-600">{category.name}</span>
+    </nav>
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">
+      {category.name}
+    </h1>
+    {(category.description ?? category.seo_text) && (
+      <p class="text-gray-600 max-w-3xl leading-relaxed text-sm sm:text-base">
+        {category.description ?? category.seo_text}
+      </p>
     )}
-  </ModernLayout>
-) : site.template_slug === "tsa/minimal" ? (
-  <MinimalLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
-    <h1 class="text-2xl font-bold text-gray-900 mb-2">{category.name}</h1>
-    <p class="text-sm text-gray-500 border-b border-gray-100 pb-6 mb-8">{category.seo_text}</p>
-    <ul class="divide-y divide-gray-100">
-      {products.map((p) => (
-        <li>
-          <a
-            href={`/products/${p.slug}/`}
-            class="flex items-center gap-4 py-4 hover:bg-gray-50 transition-colors"
-          >
-            {p.images[0] ? (
-              <img src={p.images[0]} alt={p.title} class="w-14 h-14 object-cover rounded border border-gray-200 shrink-0" />
-            ) : (
-              <div class="w-14 h-14 rounded border border-gray-100 bg-gray-50 shrink-0" />
-            )}
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-800 truncate">{p.title}</p>
-              <p class="text-sm text-gray-500">{CURRENCY} {p.current_price.toFixed(2)}</p>
+  </div>
+
+  <!-- ── Product grid ──────────────────────────────────────────────────── -->
+  {products.length > 0 ? (
+    <section class="mb-12">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {products.map((p) => {
+          const hasDiscount = p.original_price !== null && p.original_price > p.current_price;
+          const discountPct = hasDiscount
+            ? Math.round(((p.original_price! - p.current_price) / p.original_price!) * 100)
+            : 0;
+          return (
+            <div class="flex flex-col rounded-lg border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow duration-150">
+              <!-- Product image -->
+              <a href={`/products/${p.slug}/`} class="block relative">
+                {p.images[0] ? (
+                  <img
+                    src={p.images[0]}
+                    alt={p.title}
+                    class="w-full h-52 object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="w-full h-52 bg-gray-50 flex items-center justify-center">
+                    <span class="text-gray-300 text-xs">Sin imagen</span>
+                  </div>
+                )}
+                {hasDiscount && (
+                  <span
+                    class="absolute top-2 right-2 text-xs font-bold text-white px-2 py-0.5 rounded-full"
+                    style="background-color: var(--color-accent)"
+                  >
+                    -{discountPct}%
+                  </span>
+                )}
+              </a>
+              <!-- Product info -->
+              <div class="flex flex-col flex-1 p-4 gap-2">
+                <a
+                  href={`/products/${p.slug}/`}
+                  class="text-sm font-semibold text-gray-800 line-clamp-2 hover:text-[var(--color-primary)] transition-colors leading-snug"
+                >
+                  {p.title}
+                </a>
+                <!-- Price row -->
+                <div class="flex items-baseline gap-2 mt-auto">
+                  <span class="text-base font-bold" style="color: var(--color-primary)">
+                    {CURRENCY} {p.current_price.toFixed(2)}
+                  </span>
+                  {hasDiscount && (
+                    <span class="text-xs text-gray-400 line-through">
+                      {CURRENCY} {p.original_price!.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <!-- CTA row: "+info" + "comprar" -->
+                <div class="flex gap-2 mt-1">
+                  <a
+                    href={`/products/${p.slug}/`}
+                    class="flex-1 text-center text-xs font-medium border border-gray-300 text-gray-700 py-1.5 rounded-md hover:border-gray-400 hover:bg-gray-50 transition-colors"
+                  >
+                    + info
+                  </a>
+                  <a
+                    href={buildCloakUrl(p.slug)}
+                    rel="nofollow sponsored"
+                    data-affiliate={p.asin}
+                    class="flex-1 text-center text-xs font-semibold text-white py-1.5 rounded-md transition-opacity hover:opacity-90"
+                    style="background-color: var(--color-accent)"
+                  >
+                    Comprar
+                  </a>
+                </div>
+              </div>
             </div>
-            <span class="text-gray-400 text-sm">→</span>
+          );
+        })}
+      </div>
+    </section>
+  ) : (
+    <p class="text-gray-500 text-sm mb-12">No hay productos en esta categoría aún.</p>
+  )}
+
+  <!-- ── SEO text ───────────────────────────────────────────────────────── -->
+  {category.seo_text && (
+    <section class="mb-12 border-t border-gray-100 pt-8">
+      <div class="prose prose-sm max-w-none text-gray-600">
+        <p>{category.seo_text}</p>
+      </div>
+    </section>
+  )}
+
+  <!-- ── Related categories ────────────────────────────────────────────── -->
+  {relatedCategories.length > 0 && (
+    <section class="border-t border-gray-100 pt-8">
+      <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4">
+        Otras categorías
+      </h2>
+      <div class="flex flex-wrap gap-3">
+        {relatedCategories.map((cat) => (
+          <a
+            href={`/categories/${cat.slug}/`}
+            class="inline-block rounded-full border border-gray-200 px-4 py-1.5 text-sm text-gray-600 hover:border-gray-400 hover:text-gray-800 transition-colors"
+          >
+            {cat.name}
           </a>
-        </li>
-      ))}
-    </ul>
-    {products.length === 0 && (
-      <p class="text-sm text-gray-400 mt-6">No hay productos en esta categoría aún.</p>
-    )}
-  </MinimalLayout>
-) : (
-  /* Default: tsa/classic is the default */
-  <ClassicLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
-    <h1 class="text-2xl font-bold text-gray-800 mb-3">{category.name}</h1>
-    <p class="text-gray-600 mb-8 max-w-2xl">{category.seo_text}</p>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {products.map((p) => (
-        <a
-          href={`/products/${p.slug}/`}
-          class="block rounded-lg border border-gray-200 bg-white overflow-hidden hover:border-gray-300 hover:shadow-sm transition"
-        >
-          {p.images[0] ? (
-            <img src={p.images[0]} alt={p.title} class="w-full h-40 object-cover" />
-          ) : (
-            <div class="w-full h-40 bg-gray-50 flex items-center justify-center text-gray-300 text-xs">Sin imagen</div>
-          )}
-          <div class="p-3">
-            <p class="text-sm font-medium text-gray-800 line-clamp-2">{p.title}</p>
-            <p class="text-sm font-bold mt-1" style="color: var(--color-primary)">{CURRENCY} {p.current_price.toFixed(2)}</p>
-          </div>
-        </a>
-      ))}
-    </div>
-    {products.length === 0 && (
-      <p class="text-gray-500 mt-6">No hay productos en esta categoría aún.</p>
-    )}
-  </ClassicLayout>
-)}
+        ))}
+      </div>
+    </section>
+  )}
+
+</TsaLayout>

@@ -1,8 +1,7 @@
 ---
-import ClassicLayout from "../layouts/classic/Layout.astro";
-import ModernLayout from "../layouts/modern/Layout.astro";
-import MinimalLayout from "../layouts/minimal/Layout.astro";
-import { loadSiteData, buildAffiliateUrl } from "../lib/data";
+import TsaLayout from "../layouts/tsa/Layout.astro";
+import { loadSiteData } from "../lib/data";
+import { buildCloakUrl } from "../lib/cloaking";
 
 // Read SITE_SLUG from env — set before build() is called.
 // process.cwd() = generator project root during `astro build`.
@@ -12,164 +11,127 @@ const { site, categories, products } = data;
 const featuredProducts = products.slice(0, 4);
 
 const title = `${site.name} — Inicio`;
+const metaDescription = site.focus_keyword
+  ? `Las mejores ${site.focus_keyword} al mejor precio. Compara, elige y ahorra en Amazon.`
+  : `${site.name} — productos seleccionados al mejor precio en Amazon.`;
 const heroUrl =
   "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=80";
 
 const CURRENCY = site.currency;
-const MARKET = site.market;
-const TAG = site.affiliate_tag;
 ---
 
-{site.template_slug === "tsa/modern" ? (
-  <ModernLayout title={title} site={site} categories={categories} heroImageUrl={heroUrl}>
-    <!-- Category grid -->
-    <section class="mb-12">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Categorías</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((cat) => (
-          <a
-            href={`/categories/${cat.slug}/`}
-            class="block rounded-xl border border-gray-200 bg-white p-6 shadow-md hover:shadow-lg transition-shadow"
-          >
-            <h3 class="font-semibold text-gray-800">{cat.name}</h3>
-            <p class="text-sm text-gray-500 mt-1 line-clamp-2">{cat.seo_text}</p>
-          </a>
-        ))}
-      </div>
-    </section>
-    <!-- Featured products -->
-    <section>
-      <h2 class="text-2xl font-bold text-gray-900 mb-6">Productos Destacados</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {featuredProducts.map((p) => (
-          <div class="rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            {p.images[0] ? (
-              <img src={p.images[0]} alt={p.title} class="w-full h-40 object-cover" />
-            ) : (
-              <div class="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 text-xs">Sin imagen</div>
-            )}
-            <div class="p-4">
-              <p class="text-sm font-medium text-gray-800 line-clamp-2">{p.title}</p>
-              <p class="text-base font-bold mt-1" style="color: var(--color-primary)">{CURRENCY} {p.current_price.toFixed(2)}</p>
-              <a
-                href={buildAffiliateUrl(p.asin, MARKET, TAG)}
-                rel="nofollow sponsored"
-                target="_blank"
-                class="mt-3 block text-center text-sm font-medium text-white py-2 rounded-lg transition-opacity hover:opacity-90"
-                style="background-color: var(--color-accent)"
-              >
-                Ver en Amazon
-              </a>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  </ModernLayout>
-) : site.template_slug === "tsa/minimal" ? (
-  <MinimalLayout title={title} site={site} categories={categories}>
-    <!-- Minimal hero: just a headline -->
-    <h1 class="text-3xl font-bold text-gray-900 mb-2">{site.name}</h1>
-    <p class="text-gray-500 mb-10 text-sm border-b border-gray-100 pb-6">
-      Tu guía de freidoras de aire y accesorios.
-    </p>
-    <!-- Category list -->
-    <section class="mb-10">
-      <h2 class="text-xs uppercase tracking-widest text-gray-400 mb-4">Categorías</h2>
-      <ul class="divide-y divide-gray-100">
-        {categories.map((cat) => (
-          <li>
-            <a
-              href={`/categories/${cat.slug}/`}
-              class="flex items-center justify-between py-3 text-sm text-gray-700 hover:text-gray-900 transition-colors"
-            >
-              <span>{cat.name}</span>
-              <span class="text-gray-400">→</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </section>
-    <!-- Featured products: text list -->
-    <section>
-      <h2 class="text-xs uppercase tracking-widest text-gray-400 mb-4">Destacados</h2>
-      <ul class="divide-y divide-gray-100">
-        {featuredProducts.map((p) => (
-          <li class="py-4 flex items-start gap-4">
-            {p.images[0] ? (
-              <img src={p.images[0]} alt={p.title} class="w-16 h-16 object-cover rounded border border-gray-200 shrink-0" />
-            ) : (
-              <div class="w-16 h-16 rounded border border-gray-200 bg-gray-50 shrink-0" />
-            )}
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-800 truncate">{p.title}</p>
-              <p class="text-sm text-gray-500">{CURRENCY} {p.current_price.toFixed(2)}</p>
-              <a
-                href={buildAffiliateUrl(p.asin, MARKET, TAG)}
-                rel="nofollow sponsored"
-                target="_blank"
-                class="text-xs underline text-gray-500 hover:text-gray-700"
-              >
-                Amazon →
-              </a>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
-  </MinimalLayout>
-) : (
-  /* Default: tsa/classic is the default */
-  <ClassicLayout title={title} site={site} categories={categories}>
-    <!-- Classic hero: image banner -->
-    <div class="rounded-xl overflow-hidden mb-10 relative h-56">
-      <img src={heroUrl} alt={site.name} class="w-full h-full object-cover" />
-      <div class="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex items-center px-8">
-        <h1 class="text-3xl font-bold text-white">{site.name}</h1>
-      </div>
+<TsaLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
+
+  <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+  <section class="relative rounded-xl overflow-hidden mb-12 h-64 sm:h-80">
+    <img
+      src={heroUrl}
+      alt={site.name}
+      class="absolute inset-0 w-full h-full object-cover"
+      loading="eager"
+    />
+    <!-- Gradient overlay: dark on left, fading right -->
+    <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+    <div class="relative h-full flex flex-col justify-end px-8 pb-8 max-w-xl">
+      <h1 class="text-3xl sm:text-4xl font-bold text-white leading-tight mb-2">
+        {site.name}
+      </h1>
+      <p class="text-sm sm:text-base text-white/80">
+        {site.focus_keyword
+          ? `Todo sobre ${site.focus_keyword} — guía de compra y mejores precios en Amazon`
+          : "Tu tienda de confianza — los mejores productos al mejor precio"}
+      </p>
     </div>
-    <!-- Category grid -->
-    <section class="mb-10">
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Categorías</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {categories.map((cat) => (
-          <a
-            href={`/categories/${cat.slug}/`}
-            class="block rounded-lg border border-gray-200 bg-white p-5 hover:border-gray-300 hover:shadow-sm transition"
-          >
-            <h3 class="font-semibold text-gray-800">{cat.name}</h3>
-            <p class="text-sm text-gray-500 mt-1 line-clamp-2">{cat.seo_text}</p>
-          </a>
-        ))}
-      </div>
-    </section>
-    <!-- Featured products -->
-    <section>
-      <h2 class="text-xl font-bold text-gray-800 mb-4">Productos Destacados</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {featuredProducts.map((p) => (
-          <div class="rounded-lg border border-gray-200 bg-white overflow-hidden hover:shadow-sm transition">
-            {p.images[0] ? (
-              <img src={p.images[0]} alt={p.title} class="w-full h-36 object-cover" />
-            ) : (
-              <div class="w-full h-36 bg-gray-50 flex items-center justify-center text-gray-300 text-xs">Sin imagen</div>
-            )}
-            <div class="p-3">
-              <p class="text-sm font-medium text-gray-800 line-clamp-2 mb-1">{p.title}</p>
-              <p class="text-sm font-bold" style="color: var(--color-primary)">{CURRENCY} {p.current_price.toFixed(2)}</p>
+  </section>
+
+  <!-- ── Category grid ─────────────────────────────────────────────────── -->
+  <section class="mb-12">
+    <h2 class="text-lg font-semibold text-gray-800 mb-5 flex items-center gap-2">
+      <span class="inline-block w-1 h-5 rounded-full" style="background-color: var(--color-primary)"></span>
+      Categorías
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {categories.map((cat) => (
+        <a
+          href={`/categories/${cat.slug}/`}
+          class="group block rounded-lg border border-gray-200 bg-white p-5 hover:border-gray-300 hover:shadow-md transition-all duration-150"
+        >
+          <h3 class="font-semibold text-gray-800 group-hover:text-[var(--color-primary)] transition-colors mb-2">
+            {cat.name}
+          </h3>
+          <p class="text-sm text-gray-500 line-clamp-3 leading-relaxed">
+            {cat.description ?? cat.seo_text}
+          </p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- ── Featured products ─────────────────────────────────────────────── -->
+  <section class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-800 mb-5 flex items-center gap-2">
+      <span class="inline-block w-1 h-5 rounded-full" style="background-color: var(--color-accent)"></span>
+      Productos Destacados
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {featuredProducts.map((p) => {
+        const hasDiscount = p.original_price !== null && p.original_price > p.current_price;
+        const discountPct = hasDiscount
+          ? Math.round(((p.original_price! - p.current_price) / p.original_price!) * 100)
+          : 0;
+        return (
+          <div class="flex flex-col rounded-lg border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow duration-150">
+            <!-- Product image -->
+            <a href={`/products/${p.slug}/`} class="block relative">
+              {p.images[0] ? (
+                <img
+                  src={p.images[0]}
+                  alt={p.title}
+                  class="w-full h-44 object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div class="w-full h-44 bg-gray-50 flex items-center justify-center">
+                  <span class="text-gray-300 text-xs">Sin imagen</span>
+                </div>
+              )}
+              {hasDiscount && (
+                <span class="absolute top-2 right-2 text-xs font-bold text-white px-2 py-0.5 rounded-full" style="background-color: var(--color-accent)">
+                  -{discountPct}%
+                </span>
+              )}
+            </a>
+            <!-- Product info -->
+            <div class="flex flex-col flex-1 p-3 gap-2">
+              <a href={`/products/${p.slug}/`} class="text-sm font-medium text-gray-800 line-clamp-2 hover:text-[var(--color-primary)] transition-colors leading-snug">
+                {p.title}
+              </a>
+              <!-- Price -->
+              <div class="flex items-baseline gap-2">
+                <span class="text-base font-bold" style="color: var(--color-primary)">
+                  {CURRENCY} {p.current_price.toFixed(2)}
+                </span>
+                {hasDiscount && (
+                  <span class="text-xs text-gray-400 line-through">
+                    {CURRENCY} {p.original_price!.toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <!-- CTA -->
               <a
-                href={buildAffiliateUrl(p.asin, MARKET, TAG)}
+                href={buildCloakUrl(p.slug)}
                 rel="nofollow sponsored"
-                target="_blank"
-                class="mt-2 block text-center text-xs text-white py-1.5 rounded transition-opacity hover:opacity-90"
+                data-affiliate={p.asin}
+                class="mt-auto block text-center text-xs font-semibold text-white py-2 rounded-md transition-opacity hover:opacity-90"
                 style="background-color: var(--color-accent)"
               >
                 Ver en Amazon
               </a>
             </div>
           </div>
-        ))}
-      </div>
-    </section>
-  </ClassicLayout>
-)}
+        );
+      })}
+    </div>
+  </section>
+
+</TsaLayout>

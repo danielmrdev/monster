@@ -51,19 +51,19 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Data layer + new layout base** `risk:medium` `depends:[]`
+- [x] **S01: Data layer + new layout base** `risk:medium` `depends:[]`
   > After this: `SITE_SLUG=fixture pnpm build` succeeds with the new layout shell; `CategoryData` has `description`; `ProductData` has `original_price`; `@tailwindcss/typography` confirmed installed; old layout files removed.
 
-- [ ] **S02: Homepage + category page** `risk:medium` `depends:[S01]`
+- [x] **S02: Homepage + category page** `risk:medium` `depends:[S01]`
   > After this: Homepage and category pages render in browser from `dist/` with new design: centered logo, category grid with description, product grid with price/discount badges.
 
-- [ ] **S03: Product page** `risk:low` `depends:[S01]`
+- [x] **S03: Product page** `risk:low` `depends:[S01]`
   > After this: Product page renders with image gallery, price/discount, pros/cons, AI description, breadcrumb to category.
 
-- [ ] **S04: Legal pages** `risk:low` `depends:[S01]`
+- [x] **S04: Legal pages** `risk:low` `depends:[S01]`
   > After this: All four legal pages render with prose typography, coherent header/footer, correct legal content.
 
-- [ ] **S05: Link cloaking** `risk:low` `depends:[S02, S03]`
+- [x] **S05: Link cloaking** `risk:low` `depends:[S02, S03]`
   > After this: All affiliate links in built HTML are `/go/<slug>`; `/go/[slug].astro` meta-refresh redirect pages present in dist/; zero direct Amazon URLs on affiliate `<a>` tags; `cloaking.ts` module is template-agnostic and reusable.
 
 ## Boundary Map

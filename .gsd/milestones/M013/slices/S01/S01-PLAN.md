@@ -42,6 +42,15 @@ grep "@plugin" apps/generator/src/layouts/BaseLayout.astro
 
 # Diagnostic failure path: confirm astro check has 0 errors (non-zero = data gap or dispatch remains)
 SITE_SLUG=fixture pnpm --filter @monster/generator check 2>&1 | grep -E "^(✓|error|warning)" | head -20
+
+# Structured error surface: on build failure, print full error output to identify missing fields or broken imports
+SITE_SLUG=fixture pnpm --filter @monster/generator build 2>&1 | tail -30
+
+# Confirm old dispatch code is fully removed (any match = regression)
+grep -rn "ClassicLayout\|ModernLayout\|MinimalLayout\|tsa/modern\|tsa/minimal" apps/generator/src/pages/ && echo "REGRESSION: old dispatch found" || echo "OK: no dispatch"
+
+# Count built HTML pages to confirm 11 pages rendered
+find apps/generator/dist -name "*.html" | wc -l
 ```
 
 ## Observability / Diagnostics
@@ -84,7 +93,7 @@ SITE_SLUG=fixture pnpm --filter @monster/generator check 2>&1 | grep -E "^(✓|e
   - Verify: `grep "@plugin" apps/generator/src/layouts/BaseLayout.astro` shows the directive; `SITE_SLUG=fixture pnpm --filter @monster/generator build` exits 0
   - Done when: `@tailwindcss/typography` in generator `package.json` dependencies, `@plugin "@tailwindcss/typography"` in `BaseLayout.astro` `<style>` block, build still exits 0
 
-- [ ] **T03: Write tsa/Layout.astro, strip triple-dispatch from all four page files, delete old layouts** `est:1h`
+- [x] **T03: Write tsa/Layout.astro, strip triple-dispatch from all four page files, delete old layouts** `est:1h`
   - Why: The entire milestone depends on a single polished layout replacing three mediocre ones. All four page files currently import three layouts and switch on `template_slug` — this dispatch code causes the 8 pre-existing `astro check` errors and is the primary target of S01.
   - Files: `apps/generator/src/layouts/tsa/Layout.astro` (new), `apps/generator/src/pages/index.astro`, `apps/generator/src/pages/categories/[slug].astro`, `apps/generator/src/pages/products/[slug].astro`, `apps/generator/src/pages/[legal].astro`, `apps/generator/src/layouts/classic/` (delete), `apps/generator/src/layouts/modern/` (delete), `apps/generator/src/layouts/minimal/` (delete)
   - Do: See T03-PLAN.md

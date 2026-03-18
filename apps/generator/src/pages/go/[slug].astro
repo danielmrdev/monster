@@ -1,0 +1,54 @@
+---
+/**
+ * /go/[slug]/ — Static affiliate link redirect pages.
+ *
+ * One page generated per product at build time.
+ * Uses HTML meta-refresh for the actual redirect (static site — no server-side 302).
+ *
+ * SEO: noindex + nofollow on these pages so only the product pages rank.
+ * The affiliate link itself is on the product/category pages as /go/{slug}/
+ * with rel="nofollow sponsored".
+ */
+import { loadSiteData } from "../../lib/data";
+import { buildCloakMap } from "../../lib/cloaking";
+import type { SiteData } from "../../lib/data";
+
+export function getStaticPaths() {
+  const slug = import.meta.env.SITE_SLUG ?? process.env.SITE_SLUG ?? "default";
+  const data: SiteData = loadSiteData(slug);
+  const { site, products } = data;
+
+  const cloakMap = buildCloakMap(products, site.market, site.affiliate_tag);
+
+  return products.map((product) => ({
+    params: { slug: product.slug },
+    props: {
+      affiliateUrl: cloakMap[product.slug] ?? "",
+      productTitle: product.title,
+    },
+  }));
+}
+
+interface Props {
+  affiliateUrl: string;
+  productTitle: string;
+}
+
+const { affiliateUrl, productTitle } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta http-equiv="refresh" content={`0; url=${affiliateUrl}`} />
+    <link rel="canonical" href={affiliateUrl} />
+    <title>Redirigiendo a Amazon…</title>
+  </head>
+  <body>
+    <p>
+      Redirigiendo a <a href={affiliateUrl} rel="nofollow sponsored">{productTitle}</a> en Amazon…
+    </p>
+  </body>
+</html>

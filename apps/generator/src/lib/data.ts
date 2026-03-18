@@ -9,6 +9,8 @@ export interface SiteCustomization {
   primaryColor: string;
   accentColor: string;
   fontFamily: string;
+  /** Optional logo image URL. If set, rendered in the layout header instead of the site name. */
+  logoUrl?: string;
 }
 
 export interface SiteInfo {

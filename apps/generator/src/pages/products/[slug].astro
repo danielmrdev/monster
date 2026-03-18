@@ -1,8 +1,7 @@
 ---
-import ClassicLayout from "../../layouts/classic/Layout.astro";
-import ModernLayout from "../../layouts/modern/Layout.astro";
-import MinimalLayout from "../../layouts/minimal/Layout.astro";
-import { loadSiteData, buildAffiliateUrl } from "../../lib/data";
+import TsaLayout from "../../layouts/tsa/Layout.astro";
+import { loadSiteData } from "../../lib/data";
+import { buildCloakUrl } from "../../lib/cloaking";
 import type { SiteData, SiteInfo, CategoryData, ProductData, ProsCons } from "../../lib/data";
 
 export async function getStaticPaths() {
@@ -26,154 +25,229 @@ const { site, categories, product } = Astro.props as {
 };
 const title = `${product.title} — ${site.name}`;
 const CURRENCY = site.currency;
-const affiliateUrl = buildAffiliateUrl(product.asin, site.market, site.affiliate_tag);
+const cloakUrl = buildCloakUrl(product.slug);
 const prosCons = product.pros_cons as ProsCons | null;
 const metaDescription = product.meta_description ?? undefined;
+
+// Discount logic
+const hasDiscount =
+  product.original_price !== null && product.original_price > product.current_price;
+const discountPct = hasDiscount
+  ? Math.round(
+      ((product.original_price! - product.current_price) / product.original_price!) * 100
+    )
+  : 0;
+
+// Parent category for breadcrumb
+const parentCategory = categories.find((c) => c.slug === product.category_slug) ?? null;
 ---
 
-{site.template_slug === "tsa/modern" ? (
-  <ModernLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
-    <div class="max-w-3xl mx-auto">
-      <!-- Product image -->
-      {product.images[0] ? (
-        <img src={product.images[0]} alt={product.title} class="w-full max-h-96 object-contain rounded-xl border border-gray-200 bg-white shadow-md mb-8" />
+<TsaLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
+
+  <!-- ── Breadcrumb ────────────────────────────────────────────────────── -->
+  <nav class="text-xs text-gray-400 mb-6 flex items-center gap-1">
+    <a href="/" class="hover:text-gray-600 transition-colors">Inicio</a>
+    {parentCategory && (
+      <>
+        <span>/</span>
+        <a href={`/categories/${parentCategory.slug}/`} class="hover:text-gray-600 transition-colors">
+          {parentCategory.name}
+        </a>
+      </>
+    )}
+    <span>/</span>
+    <span class="text-gray-600 truncate max-w-[200px]">{product.title}</span>
+  </nav>
+
+  <div class="lg:grid lg:grid-cols-[1fr_400px] lg:gap-10">
+
+    <!-- ── Left: image gallery ─────────────────────────────────────────── -->
+    <div class="mb-8 lg:mb-0">
+      {product.images.length > 0 ? (
+        <div class="space-y-3">
+          <!-- Main image -->
+          <div class="rounded-xl overflow-hidden border border-gray-200 bg-white">
+            <img
+              src={product.images[0]}
+              alt={product.title}
+              class="w-full max-h-96 object-contain p-4"
+              loading="eager"
+              id="product-main-img"
+            />
+          </div>
+          <!-- Thumbnail row (if more than one image) -->
+          {product.images.length > 1 && (
+            <div class="flex gap-2 overflow-x-auto pb-1">
+              {product.images.map((img, i) => (
+                <button
+                  type="button"
+                  class="shrink-0 rounded-lg border-2 overflow-hidden transition-colors hover:border-[var(--color-primary)]"
+                  style={i === 0 ? "border-color: var(--color-primary)" : "border-color: transparent"}
+                  data-img={img}
+                  data-thumb-btn
+                >
+                  <img src={img} alt={`${product.title} — imagen ${i + 1}`} class="w-16 h-16 object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       ) : (
-        <div class="w-full h-64 rounded-xl border border-gray-200 bg-gray-100 flex items-center justify-center text-gray-400 mb-8">Sin imagen</div>
+        <div class="rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center h-72 lg:h-full">
+          <span class="text-gray-300 text-sm">Sin imagen</span>
+        </div>
       )}
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
-      <p class="text-2xl font-extrabold mb-4" style="color: var(--color-primary)">{CURRENCY} {product.current_price.toFixed(2)}</p>
-      {product.is_prime && <span class="inline-block text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded mb-4">Prime</span>}
+    </div>
+
+    <!-- ── Right: product info panel ──────────────────────────────────── -->
+    <div class="flex flex-col gap-4">
+
+      <!-- Title + badges -->
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-800 leading-snug mb-3">
+          {product.title}
+        </h1>
+        <div class="flex flex-wrap items-center gap-2">
+          {product.is_prime && (
+            <span class="inline-flex items-center gap-1 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded">
+              Prime
+            </span>
+          )}
+          {product.rating > 0 && (
+            <span class="inline-flex items-center gap-1 text-xs text-gray-500 border border-gray-200 px-2 py-0.5 rounded bg-white">
+              ★ {product.rating.toFixed(1)}
+            </span>
+          )}
+          {hasDiscount && (
+            <span class="inline-flex items-center text-xs font-bold text-white px-2 py-0.5 rounded" style="background-color: var(--color-accent)">
+              -{discountPct}% dto.
+            </span>
+          )}
+        </div>
+      </div>
+
+      <!-- Price block -->
+      <div class="border-t border-b border-gray-100 py-4">
+        <div class="flex items-baseline gap-3">
+          <span class="text-3xl font-bold" style="color: var(--color-primary)">
+            {CURRENCY} {product.current_price.toFixed(2)}
+          </span>
+          {hasDiscount && (
+            <span class="text-base text-gray-400 line-through">
+              {CURRENCY} {product.original_price!.toFixed(2)}
+            </span>
+          )}
+        </div>
+        {hasDiscount && (
+          <p class="text-xs text-gray-500 mt-1">
+            Ahorra {CURRENCY} {(product.original_price! - product.current_price).toFixed(2)} ({discountPct}%)
+          </p>
+        )}
+      </div>
+
+      <!-- Comprar button -->
       <a
-        href={affiliateUrl}
+        href={cloakUrl}
         rel="nofollow sponsored"
-        target="_blank"
         data-affiliate={product.asin}
-        class="block w-full text-center text-white font-semibold py-3 rounded-xl text-lg mb-8 transition-opacity hover:opacity-90"
+        class="block w-full text-center text-sm font-semibold text-white py-3 rounded-lg transition-opacity hover:opacity-90"
         style="background-color: var(--color-accent)"
       >
         Comprar en Amazon →
       </a>
-      {product.detailed_description && (
-        <div class="prose prose-gray max-w-none mb-8">
-          <h2 class="text-xl font-semibold text-gray-800 mb-2">Descripción</h2>
-          <p class="text-gray-600">{product.detailed_description}</p>
-        </div>
-      )}
-      {prosCons && (
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-          <div class="rounded-xl border border-green-200 bg-green-50 p-5">
-            <h3 class="font-semibold text-green-800 mb-3">Ventajas</h3>
-            <ul class="space-y-1">
-              {prosCons.pros.map((pro) => <li class="text-sm text-green-700 flex gap-2"><span>✓</span><span>{pro}</span></li>)}
-            </ul>
-          </div>
-          <div class="rounded-xl border border-red-200 bg-red-50 p-5">
-            <h3 class="font-semibold text-red-800 mb-3">Inconvenientes</h3>
-            <ul class="space-y-1">
-              {prosCons.cons.map((con) => <li class="text-sm text-red-700 flex gap-2"><span>✗</span><span>{con}</span></li>)}
-            </ul>
-          </div>
-        </div>
-      )}
+
+      <!-- Disclosure -->
+      <p class="text-xs text-gray-400 leading-relaxed">
+        Como Asociado de Amazon obtenemos ingresos por las compras adscritas que cumplen los requisitos aplicables.
+      </p>
+
     </div>
-  </ModernLayout>
-) : site.template_slug === "tsa/minimal" ? (
-  <MinimalLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
-    <nav class="text-xs text-gray-400 mb-6">
-      <a href="/" class="hover:text-gray-600">Inicio</a>
-      {" / "}
-      <span class="text-gray-600">{product.title}</span>
-    </nav>
-    {product.images[0] ? (
-      <img src={product.images[0]} alt={product.title} class="w-full max-h-72 object-contain border border-gray-100 rounded mb-6" />
-    ) : (
-      <div class="w-full h-48 border border-gray-100 bg-gray-50 rounded mb-6" />
-    )}
-    <h1 class="text-2xl font-bold text-gray-900 mb-1">{product.title}</h1>
-    <p class="text-xl font-semibold text-gray-700 mb-4">{CURRENCY} {product.current_price.toFixed(2)}</p>
-    <a
-      href={affiliateUrl}
-      rel="nofollow sponsored"
-      target="_blank"
-      data-affiliate={product.asin}
-      class="block w-full text-center border border-gray-800 text-gray-800 text-sm px-6 py-2 rounded hover:bg-gray-800 hover:text-white transition-colors mb-8"
-    >
-      Ver en Amazon →
-    </a>
-    {product.detailed_description && (
-      <div class="border-t border-gray-100 pt-6 mb-6">
-        <h2 class="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">Descripción</h2>
-        <p class="text-sm text-gray-600 leading-relaxed">{product.detailed_description}</p>
+  </div>
+
+  <!-- ── AI description ─────────────────────────────────────────────────── -->
+  {product.detailed_description && (
+    <section class="mt-10 border-t border-gray-100 pt-8">
+      <h2 class="text-lg font-semibold text-gray-800 mb-3">Descripción</h2>
+      <div class="prose prose-sm max-w-none text-gray-600">
+        <p>{product.detailed_description}</p>
       </div>
-    )}
-    {prosCons && (
-      <div class="border-t border-gray-100 pt-6 mb-6">
-        <h2 class="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Pros y Contras</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <p class="text-xs text-gray-400 uppercase tracking-wide mb-2">Ventajas</p>
-            <ul class="space-y-1">
-              {prosCons.pros.map((pro) => <li class="text-sm text-gray-600">+ {pro}</li>)}
-            </ul>
-          </div>
-          <div>
-            <p class="text-xs text-gray-400 uppercase tracking-wide mb-2">Inconvenientes</p>
-            <ul class="space-y-1">
-              {prosCons.cons.map((con) => <li class="text-sm text-gray-600">- {con}</li>)}
-            </ul>
-          </div>
+    </section>
+  )}
+
+  <!-- ── User opinions summary ──────────────────────────────────────────── -->
+  {product.user_opinions_summary && (
+    <section class="mt-8 border-t border-gray-100 pt-8">
+      <h2 class="text-lg font-semibold text-gray-800 mb-3">Opiniones de compradores</h2>
+      <div class="prose prose-sm max-w-none text-gray-600">
+        <p>{product.user_opinions_summary}</p>
+      </div>
+    </section>
+  )}
+
+  <!-- ── Pros/cons ──────────────────────────────────────────────────────── -->
+  {prosCons && (
+    <section class="mt-8 border-t border-gray-100 pt-8">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Pros y contras</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="rounded-lg border border-green-200 bg-green-50 p-4">
+          <h3 class="text-sm font-semibold text-green-800 mb-3 flex items-center gap-1.5">
+            <span>✓</span> Ventajas
+          </h3>
+          <ul class="space-y-2">
+            {prosCons.pros.map((pro) => (
+              <li class="text-sm text-green-700 flex gap-2 leading-snug">
+                <span class="shrink-0 mt-0.5">·</span>
+                <span>{pro}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="rounded-lg border border-red-200 bg-red-50 p-4">
+          <h3 class="text-sm font-semibold text-red-800 mb-3 flex items-center gap-1.5">
+            <span>✗</span> Inconvenientes
+          </h3>
+          <ul class="space-y-2">
+            {prosCons.cons.map((con) => (
+              <li class="text-sm text-red-700 flex gap-2 leading-snug">
+                <span class="shrink-0 mt-0.5">·</span>
+                <span>{con}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
-    )}
-  </MinimalLayout>
-) : (
-  /* Default: tsa/classic is the default */
-  <ClassicLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
-    <div class="max-w-2xl">
-      <!-- Product image -->
-      {product.images[0] ? (
-        <img src={product.images[0]} alt={product.title} class="w-full max-h-80 object-contain rounded-lg border border-gray-200 bg-white mb-6" />
-      ) : (
-        <div class="w-full h-56 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-300 mb-6">Sin imagen</div>
-      )}
-      <h1 class="text-2xl font-bold text-gray-800 mb-2">{product.title}</h1>
-      <div class="flex items-center gap-3 mb-4">
-        <p class="text-xl font-bold" style="color: var(--color-primary)">{CURRENCY} {product.current_price.toFixed(2)}</p>
-        {product.is_prime && <span class="text-xs font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">Prime</span>}
-        {product.rating && <span class="text-sm text-gray-500">★ {product.rating}</span>}
-      </div>
+    </section>
+  )}
+
+  <!-- ── Back to category ───────────────────────────────────────────────── -->
+  {parentCategory && (
+    <div class="mt-10 pt-6 border-t border-gray-100">
       <a
-        href={affiliateUrl}
-        rel="nofollow sponsored"
-        target="_blank"
-        data-affiliate={product.asin}
-        class="block w-full text-center text-white text-sm font-medium px-6 py-2.5 rounded-lg mb-8 transition-opacity hover:opacity-90"
-        style="background-color: var(--color-accent)"
+        href={`/categories/${parentCategory.slug}/`}
+        class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
       >
-        Comprar en Amazon →
+        ← Ver todos los productos de {parentCategory.name}
       </a>
-      {product.detailed_description && (
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold text-gray-800 mb-2">Descripción</h2>
-          <p class="text-gray-600 text-sm leading-relaxed">{product.detailed_description}</p>
-        </div>
-      )}
-      {prosCons && (
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div class="rounded-lg border border-green-200 bg-green-50 p-4">
-            <h3 class="font-semibold text-green-800 text-sm mb-2">✓ Ventajas</h3>
-            <ul class="space-y-1">
-              {prosCons.pros.map((pro) => <li class="text-sm text-green-700">{pro}</li>)}
-            </ul>
-          </div>
-          <div class="rounded-lg border border-red-200 bg-red-50 p-4">
-            <h3 class="font-semibold text-red-800 text-sm mb-2">✗ Inconvenientes</h3>
-            <ul class="space-y-1">
-              {prosCons.cons.map((con) => <li class="text-sm text-red-700">{con}</li>)}
-            </ul>
-          </div>
-        </div>
-      )}
     </div>
-  </ClassicLayout>
+  )}
+
+</TsaLayout>
+
+<!-- Thumbnail gallery switcher: inline script, no bundle (D163) -->
+{product.images.length > 1 && (
+  <script is:inline>
+    (function () {
+      var mainImg = document.getElementById('product-main-img');
+      var thumbBtns = document.querySelectorAll('[data-thumb-btn]');
+      if (!mainImg || !thumbBtns.length) return;
+      thumbBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var src = btn.getAttribute('data-img');
+          if (src) mainImg.setAttribute('src', src);
+          thumbBtns.forEach(function (b) { b.style.borderColor = 'transparent'; });
+          btn.style.borderColor = 'var(--color-primary)';
+        });
+      });
+    })();
+  </script>
 )}
