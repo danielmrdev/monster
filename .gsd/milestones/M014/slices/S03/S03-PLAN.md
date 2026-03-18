@@ -13,6 +13,21 @@
 - `edit/page.tsx` forwards `refresh_interval_hours` to `siteForForm` so the form displays the current DB value
 - TypeScript typecheck passes
 
+## Observability / Diagnostics
+
+**Runtime signals:**
+- Deploy tab renders the current pipeline status badge (`deployCard.siteStatus`) and last deployment record (status, deployed_at, duration_ms, error string). Failure state is visible in the tab UI as a red error string in `deployCard.latestDeployment.error`.
+- If `enqueueSiteDeploy` fails (e.g. queue unavailable), the server action throws — Next.js surfaces this as an error boundary in the browser and logs the stack to server stdout.
+- `<GenerateSiteButton>` is a Client Component; its loading/error state is managed internally and visible via the button's UI state.
+
+**Inspection:**
+- To inspect deploy queue state: check BullMQ dashboard or `SELECT * FROM deployments ORDER BY created_at DESC LIMIT 10;` in Supabase.
+- To inspect refresh interval: `SELECT id, name, refresh_interval_hours FROM sites WHERE id = '<id>';`
+
+**Redaction:** No secrets flow through this UI layer. `site.id` and `deployCard` contain only structural data.
+
+**Failure visibility:** A failed `enqueueSiteDeploy` call writes a row to `deployments` with `status = 'failed'` and `error` populated — visible in the Deploy tab deployment history block.
+
 ## Verification
 
 - `pnpm --filter @monster/admin typecheck` exits 0
@@ -20,10 +35,11 @@
 - Grep confirms buttons present in `deploySlot`: `rg "GenerateSiteButton" apps/admin/src/app/\(dashboard\)/sites/\[id\]/page.tsx` returns a match inside the `deploySlot` block
 - Grep confirms `refresh_interval_days` in form and action: `rg "refresh_interval" apps/admin/src/app/\(dashboard\)/sites/\[id\]/edit/edit-form.tsx apps/admin/src/app/\(dashboard\)/sites/actions.ts`
 - Grep confirms `refresh_interval_hours` forwarded in `edit/page.tsx`: `rg "refresh_interval_hours" apps/admin/src/app/\(dashboard\)/sites/\[id\]/edit/page.tsx`
+- Diagnostic check: `rg "latestDeployment.error" apps/admin/src/app/\(dashboard\)/sites/\[id\]/page.tsx` returns a match confirming failure-path error display is present in the deploy slot
 
 ## Tasks
 
-- [ ] **T01: Move Generate/Deploy buttons from header to Deploy tab slot** `est:45m`
+- [x] **T01: Move Generate/Deploy buttons from header to Deploy tab slot** `est:45m`
   - Why: Closes the header cleanup and Deploy tab button wiring — the primary UX change of this slice.
   - Files: `apps/admin/src/app/(dashboard)/sites/[id]/page.tsx`
   - Do: Remove `<GenerateSiteButton siteId={site.id} />` and the Deploy `<form>` block (both the enabled and disabled variants) from the header `<div className="flex items-center gap-2">`. Keep Preview and Edit buttons. Add both `<GenerateSiteButton siteId={site.id} />` and the Deploy `<form>`/disabled-button block (same conditional on `site.domain`) into the `deploySlot` JSX — append them above the `<DeployStatus>` component, inside the existing `<div className="space-y-3">`. Preserve the full conditional logic: if `site.domain` → enabled form with server action; else → disabled button with `title="Set a domain first"`.

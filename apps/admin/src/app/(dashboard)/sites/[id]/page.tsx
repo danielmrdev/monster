@@ -150,6 +150,34 @@ export default async function SiteDetailPage({ params }: PageProps) {
         </div>
       )}
 
+      <div className="flex items-center gap-2">
+        <GenerateSiteButton siteId={site.id} />
+        {site.domain ? (
+          <form
+            action={async () => {
+              'use server'
+              await enqueueSiteDeploy(site.id)
+            }}
+          >
+            <button
+              type="submit"
+              className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              Deploy
+            </button>
+          </form>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title="Set a domain first"
+            className="inline-flex items-center rounded-md bg-primary/30 px-4 py-2 text-sm font-medium text-primary-foreground/50 cursor-not-allowed"
+          >
+            Deploy
+          </button>
+        )}
+      </div>
+
       <DeployStatus siteId={site.id} />
     </div>
   )
@@ -215,31 +243,6 @@ export default async function SiteDetailPage({ params }: PageProps) {
               </svg>
               Preview
             </span>
-          )}
-          <GenerateSiteButton siteId={site.id} />
-          {site.domain ? (
-            <form
-              action={async () => {
-                'use server'
-                await enqueueSiteDeploy(site.id)
-              }}
-            >
-              <button
-                type="submit"
-                className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-              >
-                Deploy
-              </button>
-            </form>
-          ) : (
-            <button
-              type="button"
-              disabled
-              title="Set a domain first"
-              className="inline-flex items-center rounded-md bg-primary/30 px-4 py-2 text-sm font-medium text-primary-foreground/50 cursor-not-allowed"
-            >
-              Deploy
-            </button>
           )}
           <Link
             href={`/sites/${site.id}/edit`}

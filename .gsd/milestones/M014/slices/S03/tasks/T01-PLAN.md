@@ -41,6 +41,17 @@ grep "enqueueSiteDeploy" apps/admin/src/app/\(dashboard\)/sites/\[id\]/page.tsx
 # Should show match inside deploySlot block only
 ```
 
+## Observability Impact
+
+This task moves UI-level action triggers (Generate, Deploy) from the header into the Deploy tab slot. No new server-side observability surfaces are added, but the following signals are preserved or become more contextually visible:
+
+- **Deploy error display**: `deployCard.latestDeployment.error` is rendered in red font-mono text inside `deploySlot`. After this move, the Generate and Deploy buttons appear adjacent to this error — making it easier to diagnose and retry in one glance.
+- **Pipeline status badge**: `deployCard.siteStatus` badge in `deploySlot` is now co-located with the action buttons. Status transitions (deploying → succeeded/failed) are visible in the same panel as the triggers.
+- **Failure inspection**: To check if `enqueueSiteDeploy` ran: `SELECT status, error, created_at FROM deployments WHERE site_id = '<id>' ORDER BY created_at DESC LIMIT 1;`
+- **Generate button state**: `<GenerateSiteButton>` exposes loading/error state in its own UI — inspectable by viewing the button text after clicking.
+
+No secrets flow through this change. The moved code paths are identical to what existed before.
+
 ## Inputs
 
 - `apps/admin/src/app/(dashboard)/sites/[id]/page.tsx` — current file with `<GenerateSiteButton>` and Deploy form in the header's `<div className="flex items-center gap-2">` block, and existing `deploySlot` const starting at the `// ── Deploy tab content` comment

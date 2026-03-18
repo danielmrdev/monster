@@ -173,3 +173,15 @@ SITE_SLUG=fixture pnpm --filter @monster/generator build
 ```bash
 grep 'tsa/classic' packages/shared/dist/index.d.ts
 ```
+
+## KN016 — `@monster/admin` has no `typecheck` script; use `npx tsc --noEmit` directly
+
+**Discovered:** M014/S03/T01
+
+`pnpm --filter @monster/admin typecheck` fails with `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT` — the admin `package.json` has no `typecheck` script. Run TypeScript type checking directly:
+
+```bash
+cd apps/admin && npx tsc --noEmit
+```
+
+Zero output = zero errors. This applies to all M014+ task plans that reference the `typecheck` pnpm filter script.
