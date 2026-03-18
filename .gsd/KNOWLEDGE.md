@@ -257,3 +257,11 @@ Each execSync call should be individually try/caught — a single top-level catc
 **Discovered:** M014/S01/T02
 
 When adding a new Route Handler file (e.g. `app/api/sites/[id]/upload-logo/route.ts`), the Next.js dev server does **not** pick it up automatically. You must stop and restart `next dev` before the new route is accessible. Changes to existing route files hot-reload normally. This applies to any new file-based route in the App Router.
+
+## KN023 — Componentes con `onClick` deben tener `'use client'` aunque no lo parezca necesario
+
+**Discovered:** M014 post-merge
+
+`CategoriesSection.tsx` tenía `onClick={(e) => e.preventDefault()}` y `onClick={(e) => e.stopPropagation()}` en elementos JSX pero no tenía `'use client'`. Next.js lo trataba como Server Component y lanzaba `Error: Event handlers cannot be passed to Client Component props` al abrir el tab de Categorías.
+
+Regla: cualquier componente que use event handlers (`onClick`, `onChange`, `onSubmit`, etc.) **debe** tener `'use client'` en la primera línea, aunque el resto del componente parezca estático. El error no aparece en `tsc --noEmit` ni en el build — solo en runtime.
