@@ -58,7 +58,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Generator Integration — Logo Path + Favicon Install** `risk:medium` `depends:[S01]`
   > After this: generate site with fixture → dist/ contains logo.webp at /logo.webp, dist/ root has favicon.ico + site.webmanifest, and BaseLayout `<head>` has `<link rel="manifest">` + favicon link tags.
 
-- [ ] **S03: Edit Form & Deploy Tab Reorganization** `risk:low` `depends:[]`
+- [x] **S03: Edit Form & Deploy Tab Reorganization** `risk:low` `depends:[]`
   > After this: page header has no Generate/Deploy buttons; Deploy tab has both buttons + refresh interval field (days); edit form has refresh interval field.
 
 - [ ] **S04: Categories Tab Redesign + Category Detail Page** `risk:medium` `depends:[]`
