@@ -11,6 +11,8 @@ export interface SiteCustomization {
   fontFamily: string;
   /** Optional logo image URL. If set, rendered in the layout header instead of the site name. */
   logoUrl?: string;
+  /** Optional favicon directory path (relative to admin public root). When set, favicon files are copied into dist/ root during site generation. */
+  faviconDir?: string;
 }
 
 export interface SiteInfo {

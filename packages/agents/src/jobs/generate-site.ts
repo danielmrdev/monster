@@ -1,7 +1,7 @@
 import { Worker } from 'bullmq';
 import { createServiceClient } from '@monster/db';
 import type { TablesInsert } from '@monster/db';
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync, copyFileSync, cpSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRedisOptions } from '../queue.js';
@@ -278,6 +278,8 @@ export class GenerateSiteJob {
           primaryColor?: string;
           accentColor?: string;
           fontFamily?: string;
+          logoUrl?: string;
+          faviconDir?: string;
         } | null;
 
         const siteData = {
@@ -293,6 +295,8 @@ export class GenerateSiteJob {
               primaryColor: customization?.primaryColor ?? '#4f46e5',
               accentColor: customization?.accentColor ?? '#7c3aed',
               fontFamily: customization?.fontFamily ?? 'sans-serif',
+              logoUrl: customization?.logoUrl,
+              faviconDir: customization?.faviconDir,
             },
             focus_keyword: (site.focus_keyword ?? null) as string | null,
             homepage_seo_text: (site.homepage_seo_text ?? null) as string | null,
@@ -421,6 +425,32 @@ export class GenerateSiteJob {
 
         console.log(`[GenerateSiteJob] Astro build complete for "${slug}"`);
 
+        // ── 5b. Copy logo and favicon assets into dist/ ───────────────────
+        const distDir = join(GENERATOR_ROOT, '.generated-sites', slug, 'dist');
+        const adminPublicRoot = resolve(__dirname, '../../../apps/admin/public');
+        const { logoUrl: logoSrc, faviconDir: faviconSrc } = siteData.site.customization;
+
+        if (logoSrc) {
+          const srcPath = join(adminPublicRoot, logoSrc);
+          const destPath = join(distDir, 'logo.webp');
+          if (existsSync(srcPath)) {
+            copyFileSync(srcPath, destPath);
+            console.log(`[GenerateSiteJob] Copied logo → dist/logo.webp`);
+          } else {
+            console.warn(`[GenerateSiteJob] logo source not found: ${srcPath} — skipping`);
+          }
+        }
+
+        if (faviconSrc) {
+          const srcDir = join(adminPublicRoot, faviconSrc);
+          if (existsSync(srcDir)) {
+            cpSync(srcDir, distDir, { recursive: true });
+            console.log(`[GenerateSiteJob] Copied favicon dir → dist/`);
+          } else {
+            console.warn(`[GenerateSiteJob] favicon source dir not found: ${srcDir} — skipping`);
+          }
+        }
+
         // ── 6. Score pages ────────────────────────────────────────────────
         await supabase
           .from('ai_jobs')
@@ -437,7 +467,6 @@ export class GenerateSiteJob {
           keywordMap.set(`/products/${prod.slug}/`, prod.focus_keyword ?? '');
         }
 
-        const distDir = join(GENERATOR_ROOT, '.generated-sites', slug, 'dist');
         const { glob } = await import('node:fs/promises');
         const htmlFiles: string[] = [];
         for await (const f of glob('**/*.html', { cwd: distDir })) {

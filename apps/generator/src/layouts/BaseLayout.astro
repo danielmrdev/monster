@@ -11,6 +11,8 @@ interface Props {
     accentColor?: string;
     fontFamily?: string;
   };
+  /** When set, four standard favicon <link> tags are emitted in <head>. The value is a presence signal only — hrefs use the standard filenames favicon.io generates. */
+  faviconDir?: string;
   /** Analytics: site UUID written into the tracker at build time. */
   siteId?: string;
   /** Analytics: Supabase project URL written into the tracker at build time. */
@@ -19,7 +21,7 @@ interface Props {
   supabaseAnonKey?: string;
 }
 
-const { title, lang = "es", metaDescription, customization, siteId, supabaseUrl, supabaseAnonKey } = Astro.props;
+const { title, lang = "es", metaDescription, customization, faviconDir, siteId, supabaseUrl, supabaseAnonKey } = Astro.props;
 const primary = customization?.primaryColor ?? "#4f46e5";
 const accent = customization?.accentColor ?? "#7c3aed";
 const font = customization?.fontFamily ?? "sans-serif";
@@ -47,6 +49,14 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     {metaDescription && <meta name="description" content={metaDescription} />}
+    {faviconDir && (
+      <>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+      </>
+    )}
     <style>
       @import "tailwindcss";
       @plugin "@tailwindcss/typography";

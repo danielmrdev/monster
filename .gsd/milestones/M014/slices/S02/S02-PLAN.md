@@ -42,6 +42,46 @@ pnpm --filter @monster/generator tsc --noEmit 2>&1 | tail -5
 
 All five checks must pass (exit 0 / non-empty grep matches).
 
+## Observability / Diagnostics
+
+Runtime signals emitted by `generate-site.ts` during the copy phase:
+
+| Signal | Level | When |
+|--------|-------|------|
+| `[GenerateSiteJob] Copied logo → dist/logo.webp` | `console.log` | Logo source found and copied |
+| `[GenerateSiteJob] Copied favicon dir → dist/` | `console.log` | Favicon dir found and copied |
+| `[GenerateSiteJob] logo source not found: <path> — skipping` | `console.warn` | `logoUrl` set but source file missing; non-fatal |
+| `[GenerateSiteJob] favicon source dir not found: <path> — skipping` | `console.warn` | `faviconDir` set but source dir missing; non-fatal |
+
+**Inspection commands (post-build):**
+```bash
+# Verify logo was copied
+ls apps/generator/.generated-sites/<slug>/dist/logo.webp
+
+# Verify favicon files exist
+ls apps/generator/.generated-sites/<slug>/dist/favicon.ico apps/generator/.generated-sites/<slug>/dist/site.webmanifest
+
+# Inspect <link> tags in HTML
+grep 'rel="icon"\|rel="manifest"\|rel="apple-touch-icon"' apps/generator/.generated-sites/<slug>/dist/index.html
+
+# Check for skip warnings in BullMQ worker output
+grep 'source not found' <worker-log-output>
+```
+
+**Failure visibility:** Missing source files produce `console.warn` with the absolute path — greppable in BullMQ worker logs. The build itself does not fail; missing assets are skipped silently (non-fatal path). Redaction: no secrets in these log messages (paths only).
+
+## Verification (Failure-Path Check)
+
+```bash
+# Diagnostic: verify skip warnings are produced when sources are absent
+# Remove customization fields from fixture to confirm no-op (no crash):
+node -e "
+const d = JSON.parse(require('fs').readFileSync('apps/generator/src/data/fixture/site.json','utf8'));
+console.log('faviconDir:', d.site.customization.faviconDir ?? '(not set)');
+console.log('logoUrl:', d.site.customization.logoUrl ?? '(not set)');
+"
+```
+
 ## Integration Closure
 
 - Upstream surfaces consumed: `customization.logoUrl` (string `/uploads/sites/[id]/logo.webp`), `customization.faviconDir` (string `/uploads/sites/[id]/favicon`) — both written by S01 upload routes
@@ -50,7 +90,7 @@ All five checks must pass (exit 0 / non-empty grep matches).
 
 ## Tasks
 
-- [ ] **T01: Wire faviconDir into data.ts, generate-site.ts, BaseLayout.astro, and Layout.astro** `est:45m`
+- [x] **T01: Wire faviconDir into data.ts, generate-site.ts, BaseLayout.astro, and Layout.astro** `est:45m`
   - Why: Four files need coordinated changes to thread `faviconDir` from the DB customization JSON through to HTML output. This is all code; no build needed until T02 verifies it.
   - Files: `apps/generator/src/lib/data.ts`, `packages/agents/src/jobs/generate-site.ts`, `apps/generator/src/layouts/BaseLayout.astro`, `apps/generator/src/layouts/tsa/Layout.astro`
   - Do: See `T01-PLAN.md` for full steps.
