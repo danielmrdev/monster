@@ -55,7 +55,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Logo & Favicon Upload** `risk:high` `depends:[]`
   > After this: PNG upload in edit form saves logo.webp to public/uploads/sites/[id]/; ZIP upload extracts favicon files to public/uploads/sites/[id]/favicon/; both paths stored in customization JSON.
 
-- [ ] **S02: Generator Integration — Logo Path + Favicon Install** `risk:medium` `depends:[S01]`
+- [x] **S02: Generator Integration — Logo Path + Favicon Install** `risk:medium` `depends:[S01]`
   > After this: generate site with fixture → dist/ contains logo.webp at /logo.webp, dist/ root has favicon.ico + site.webmanifest, and BaseLayout `<head>` has `<link rel="manifest">` + favicon link tags.
 
 - [ ] **S03: Edit Form & Deploy Tab Reorganization** `risk:low` `depends:[]`
