@@ -69,6 +69,7 @@ export default async function EditSitePage({ params }: PageProps) {
     focus_keyword: site.focus_keyword,
     homepage_seo_text: site.homepage_seo_text,
     is_active: site.is_active ?? true,
+    refresh_interval_hours: site.refresh_interval_hours ?? 48,
   }
 
   return (

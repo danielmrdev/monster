@@ -86,3 +86,20 @@ rg "refresh_interval" "apps/admin/src/app/(dashboard)/sites/[id]/page.tsx"
 - `apps/admin/src/app/(dashboard)/sites/[id]/edit/page.tsx` — `siteForForm` includes `refresh_interval_hours`
 - `apps/admin/src/app/(dashboard)/sites/actions.ts` — `updateSite` reads `refresh_interval_days`, validates, writes `refresh_interval_hours` to DB
 - `apps/admin/src/app/(dashboard)/sites/[id]/page.tsx` — `deploySlot` shows "Refresh interval: N days"
+
+## Observability Impact
+
+**What changes at runtime:** `updateSite` now writes `refresh_interval_hours` to the DB on every save. If the write fails (Supabase error), the action throws with a structured error message: `Failed to update site ${id}: ${error.message} (code: ${error.code})` — visible in server stdout and surfaced as a Next.js error boundary in the browser.
+
+**Failure state visibility:**
+- A malformed or missing `refresh_interval_days` field is silently clamped to 48 hours (2 days default guard). No error is returned to the user — this is intentional silent correction.
+- If `refresh_interval_hours` is missing from the DB row (pre-migration state), `site.refresh_interval_hours ?? 48` in `edit/page.tsx` prevents a crash and defaults to 2 days in the form.
+- The Deploy tab displays the live DB value (`Math.round(site.refresh_interval_hours / 24)`) — if the value is wrong, it's visible there immediately after save + page refresh.
+
+**Inspection:** To check the current value in the DB:
+```sql
+SELECT id, name, refresh_interval_hours FROM sites WHERE id = '<id>';
+```
+Or via Supabase REST: `GET /rest/v1/sites?select=id,name,refresh_interval_hours&id=eq.<id>`
+
+**Agent-readable signal:** After a successful save, the Deploy tab should display the new days value. If it shows `2` when a non-default was submitted, check the `refresh_interval_hours` column — the `Math.max(1, isNaN(rawDays) ? 2 : rawDays)` guard silently coerced an invalid input.

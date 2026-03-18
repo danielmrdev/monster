@@ -46,7 +46,7 @@
   - Verify: `pnpm --filter @monster/admin typecheck` exits 0. `rg "GenerateSiteButton" apps/admin/src/app/\(dashboard\)/sites/\[id\]/page.tsx` shows only one match inside the `deploySlot` block (not in the header). `grep "enqueueSiteDeploy" apps/admin/src/app/\(dashboard\)/sites/\[id\]/page.tsx` shows the inline server action present in `deploySlot` only.
   - Done when: Typecheck passes; header JSX contains no Generate or Deploy buttons; `deploySlot` contains both.
 
-- [ ] **T02: Add refresh interval field to edit form and wire through to DB and Deploy tab display** `est:1h`
+- [x] **T02: Add refresh interval field to edit form and wire through to DB and Deploy tab display** `est:1h`
   - Why: Closes the refresh interval data flow — form input → server action → DB → Deploy tab display.
   - Files: `apps/admin/src/app/(dashboard)/sites/[id]/edit/edit-form.tsx`, `apps/admin/src/app/(dashboard)/sites/[id]/edit/page.tsx`, `apps/admin/src/app/(dashboard)/sites/actions.ts`, `apps/admin/src/app/(dashboard)/sites/[id]/page.tsx`
   - Do:

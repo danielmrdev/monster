@@ -102,6 +102,11 @@ export default async function SiteDetailPage({ params }: PageProps) {
         <span className={statusBadge(deployCard.siteStatus)}>{deployCard.siteStatus ?? 'draft'}</span>
       </div>
 
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">Refresh interval:</span>
+        <span className="text-sm">{Math.round(site.refresh_interval_hours / 24)} days</span>
+      </div>
+
       {deployCard.latestDeployment ? (
         <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm space-y-1">
           <div className="flex items-center gap-2">

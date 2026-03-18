@@ -84,6 +84,7 @@ interface EditFormProps {
     focus_keyword: string | null
     homepage_seo_text: string | null
     is_active: boolean
+    refresh_interval_hours: number
   }
   templates: { value: string; label: string }[]
 }
@@ -346,6 +347,25 @@ export function EditForm({ site, templates }: EditFormProps) {
                 ))}
               </NativeSelect>
               <FieldError messages={errors?.template_slug} />
+            </div>
+          </div>
+
+          {/* Refresh Interval */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="refresh_interval_days">Refresh Interval (days)</Label>
+              <Input
+                id="refresh_interval_days"
+                name="refresh_interval_days"
+                type="number"
+                min={1}
+                defaultValue={Math.round(site.refresh_interval_hours / 24)}
+                aria-invalid={!!errors?.refresh_interval_hours}
+              />
+              <p className="text-xs text-muted-foreground">
+                How often product data is refreshed (minimum 1 day)
+              </p>
+              <FieldError messages={errors?.refresh_interval_hours} />
             </div>
           </div>
         </CardContent>

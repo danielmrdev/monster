@@ -114,6 +114,7 @@ export async function createSite(
 export type UpdateSiteErrors = CreateSiteErrors & {
   focus_keyword?: string[]
   homepage_seo_text?: string[]
+  refresh_interval_hours?: string[]
 }
 export type UpdateSiteState = {
   errors?: UpdateSiteErrors
@@ -137,6 +138,10 @@ export async function updateSite(
 
   // Checkbox: present with value "true" when checked, absent when unchecked
   const isActive = formData.get('is_active') === 'true'
+
+  // Refresh interval: form sends days, DB stores hours
+  const rawDays = parseInt(formData.get('refresh_interval_days') as string, 10)
+  const refreshIntervalHours = Math.max(1, isNaN(rawDays) ? 2 : rawDays) * 24
 
   const rawCustomization = {
     primaryColor: (formData.get('primaryColor') as string) || undefined,
@@ -191,6 +196,7 @@ export async function updateSite(
       focus_keyword: focusKeyword,
       homepage_seo_text: homepageSeoText,
       is_active: isActive,
+      refresh_interval_hours: refreshIntervalHours,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
