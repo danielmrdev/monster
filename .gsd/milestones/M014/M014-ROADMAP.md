@@ -52,7 +52,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Logo & Favicon Upload** `risk:high` `depends:[]`
+- [x] **S01: Logo & Favicon Upload** `risk:high` `depends:[]`
   > After this: PNG upload in edit form saves logo.webp to public/uploads/sites/[id]/; ZIP upload extracts favicon files to public/uploads/sites/[id]/favicon/; both paths stored in customization JSON.
 
 - [ ] **S02: Generator Integration — Logo Path + Favicon Install** `risk:medium` `depends:[S01]`
