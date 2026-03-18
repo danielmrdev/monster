@@ -71,6 +71,23 @@ grep 'tsa/classic' packages/shared/dist/index.js
 SITE_SLUG=fixture pnpm --filter @monster/generator check 2>&1 | grep -c "error"
 ```
 
+## Observability Impact
+
+**Signals changed by this task:**
+- `SITE_SLUG=fixture pnpm --filter @monster/generator check` error count goes from ≥8 (data-gap + dispatch) to ≤8 (dispatch only, no data-gap errors). After T03 it should reach 0.
+- `grep 'tsa/classic' packages/shared/dist/index.js` transitions from no output to a match — confirms the shared bundle is current.
+
+**How a future agent inspects this task:**
+- Run `grep -n "description\|original_price" apps/generator/src/lib/data.ts` — both fields must appear in the output.
+- Run `grep '"id": "fixture-site-001"' apps/generator/src/data/fixture/site.json` — confirms site object was updated.
+- Run `grep '"original_price": null' apps/generator/src/data/fixture/site.json | wc -l` — must print `4` (one per product).
+- Run `grep '"description": null' apps/generator/src/data/fixture/site.json | wc -l` — must print `2` (one per category).
+
+**Failure state visibility:**
+- If `astro check` still reports errors of the form `Property 'X' does not exist on type 'CategoryData'` or `ProductData`, the interface edits didn't land correctly.
+- If `packages/shared/dist/index.js` still lacks `tsa/classic`, the shared build step was skipped or failed silently.
+- All failures are surfaced as structured TypeScript diagnostics with file+line references — no silent failures.
+
 ## Inputs
 
 - `apps/generator/src/lib/data.ts` — Current interfaces without `description`/`original_price`; read it fully before editing to match exact field positions

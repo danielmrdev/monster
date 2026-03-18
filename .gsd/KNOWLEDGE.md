@@ -163,3 +163,13 @@ The `<script is:inline>` toggles only the `-dropdown` div; the desktop `hidden m
 ```bash
 SITE_SLUG=fixture pnpm --filter @monster/generator build
 ```
+
+## KN015 — `SiteTemplate` and other pure TypeScript type aliases don't appear in `dist/index.js`; check `dist/index.d.ts` instead
+
+**Discovered:** M013/S01/T01
+
+`SiteTemplate` (and any `export type`) is erased at compile time — it exists only in `packages/shared/dist/index.d.ts`, not in `dist/index.js`. Verification commands that `grep 'tsa/classic' packages/shared/dist/index.js` will always return empty/exit 1 even after a successful build. The correct check is:
+
+```bash
+grep 'tsa/classic' packages/shared/dist/index.d.ts
+```

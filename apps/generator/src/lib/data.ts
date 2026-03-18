@@ -38,6 +38,7 @@ export interface CategoryData {
   seo_text: string;
   category_image: string | null;
   keywords: string[];
+  description: string | null;
   focus_keyword: string | null;
   meta_description: string | null;
 }
@@ -53,6 +54,7 @@ export interface ProductData {
   title: string;
   slug: string;
   current_price: number;
+  original_price: number | null;
   images: string[];
   rating: number;
   is_prime: boolean;

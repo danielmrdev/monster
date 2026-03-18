@@ -28,7 +28,7 @@ export type AmazonMarket =
 
 export type Language = 'es' | 'en' | 'de' | 'fr' | 'it' | 'ja';
 
-export type SiteTemplate = 'classic' | 'modern' | 'minimal';
+export type SiteTemplate = 'classic' | 'modern' | 'minimal' | 'tsa/classic';
 
 // ── Domain interfaces (fields narrowed to union types where applicable) ─────
 

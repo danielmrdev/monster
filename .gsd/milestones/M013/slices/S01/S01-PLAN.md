@@ -39,7 +39,28 @@ grep -n "description\|original_price" apps/generator/src/lib/data.ts
 
 # Typography plugin configured
 grep "@plugin" apps/generator/src/layouts/BaseLayout.astro
+
+# Diagnostic failure path: confirm astro check has 0 errors (non-zero = data gap or dispatch remains)
+SITE_SLUG=fixture pnpm --filter @monster/generator check 2>&1 | grep -E "^(✓|error|warning)" | head -20
 ```
+
+## Observability / Diagnostics
+
+**Runtime signals introduced by this slice:**
+- `astro check` exit code: 0 = all type errors resolved; non-zero = remaining interface mismatches
+- `astro build` exit code and page count: `dist/` should contain 11 HTML files after a successful build
+- `grep -n "description\|original_price" apps/generator/src/lib/data.ts` — confirms interface fields exist
+- `grep 'tsa/classic' packages/shared/dist/index.js` — confirms shared bundle is up to date
+- `ls apps/generator/src/layouts/` — confirms old layout directories are gone
+
+**Failure visibility:**
+- `astro check` prints structured TypeScript diagnostics: file path, line, error message. Data-gap errors look like `Type 'null' is not assignable to type 'string'` or `Property 'description' does not exist`.
+- `astro build` ENOENT errors point to missing data files (wrong `SITE_SLUG` or missing fixture fields).
+- If `tsa/classic` is absent from the shared dist, `astro check` will flag `Argument of type '"tsa/classic"' is not assignable to parameter of type 'SiteTemplate'`.
+
+**Redaction constraints:** No secrets in fixture data. `supabase_url` and `supabase_anon_key` in fixture are empty strings (safe to commit). The analytics tracker bakes these at build time — production sites use real values from the database, not fixture values.
+
+**Inspection surface:** After any task completes, run `SITE_SLUG=fixture pnpm --filter @monster/generator check 2>&1 | head -40` to get a quick diagnostics snapshot.
 
 ## Integration Closure
 
@@ -49,7 +70,7 @@ grep "@plugin" apps/generator/src/layouts/BaseLayout.astro
 
 ## Tasks
 
-- [ ] **T01: Add description and original_price to data interfaces and fixture** `est:30m`
+- [x] **T01: Add description and original_price to data interfaces and fixture** `est:30m`
   - Why: `CategoryData` and `ProductData` in the generator's `data.ts` are missing fields that the milestone spec requires; fixture `site.json` is missing `id`, `focus_keyword`, `supabase_url`, `supabase_anon_key`, `contact_email` on `site`, plus `description` on categories, `original_price` on products. These gaps cause `astro check` type errors and will cause template rendering issues in S02+.
   - Files: `apps/generator/src/lib/data.ts`, `apps/generator/src/data/fixture/site.json`, `packages/shared/src/types/index.ts`
   - Do: See T01-PLAN.md

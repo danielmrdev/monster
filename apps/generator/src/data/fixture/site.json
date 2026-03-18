@@ -1,34 +1,45 @@
 {
   "site": {
+    "id": "fixture-site-001",
     "name": "Airfryer Pro ES",
     "domain": "airfryerpro.es",
     "market": "ES",
     "language": "es",
     "currency": "EUR",
     "affiliate_tag": "test-fixture-20",
-    "template_slug": "classic",
+    "template_slug": "tsa/classic",
     "customization": {
       "primaryColor": "#4f46e5",
       "accentColor": "#7c3aed",
       "fontFamily": "sans-serif"
-    }
+    },
+    "focus_keyword": null,
+    "contact_email": "",
+    "supabase_url": "",
+    "supabase_anon_key": ""
   },
   "categories": [
     {
       "id": "cat-001",
       "name": "Freidoras de Aire",
       "slug": "freidoras-de-aire",
+      "description": "Las mejores freidoras de aire para cocinar sano y delicioso con mínimo aceite.",
       "seo_text": "Las freidoras de aire son el electrodoméstico estrella de los últimos años. Con tecnología de aire caliente circulante, permiten cocinar alimentos crujientes con muy poco aceite. Descubre nuestra selección de las mejores freidoras de aire del mercado, con análisis detallados, comparativas de precios y opiniones reales de usuarios. Desde modelos compactos para una persona hasta grandes capacidades para familias, tenemos la freidora perfecta para cada necesidad y presupuesto.",
       "category_image": null,
-      "keywords": ["freidora de aire", "airfryer", "freidora sin aceite"]
+      "keywords": ["freidora de aire", "airfryer", "freidora sin aceite"],
+      "focus_keyword": null,
+      "meta_description": null
     },
     {
       "id": "cat-002",
       "name": "Accesorios Freidora",
       "slug": "accesorios-freidora",
+      "description": "Accesorios compatibles con las principales marcas de freidoras de aire del mercado.",
       "seo_text": "Amplía las posibilidades de tu freidora de aire con los accesorios adecuados. Rejillas, moldes, bandejas perforadas y kits completos que transforman tu freidora en un horno versátil. Compatibles con las principales marcas del mercado: Philips, Tefal, Cosori y muchas más.",
       "category_image": null,
-      "keywords": ["accesorios freidora de aire", "moldes airfryer"]
+      "keywords": ["accesorios freidora de aire", "moldes airfryer"],
+      "focus_keyword": null,
+      "meta_description": null
     }
   ],
   "products": [
@@ -38,12 +49,16 @@
       "title": "Philips HD9252/90 Airfryer Compact",
       "slug": "philips-hd9252-90",
       "current_price": 89.99,
+      "original_price": null,
       "images": [],
       "rating": 4.5,
       "is_prime": true,
       "detailed_description": null,
       "pros_cons": null,
-      "category_slug": "freidoras-de-aire"
+      "category_slug": "freidoras-de-aire",
+      "focus_keyword": null,
+      "user_opinions_summary": null,
+      "meta_description": null
     },
     {
       "id": "prod-002",
@@ -51,12 +66,16 @@
       "title": "Cosori Air Fryer 4.7L Pro",
       "slug": "cosori-air-fryer-47l-pro",
       "current_price": 74.99,
+      "original_price": null,
       "images": [],
       "rating": 4.4,
       "is_prime": true,
       "detailed_description": null,
       "pros_cons": { "pros": ["Gran capacidad", "Fácil limpieza", "App WiFi"], "cons": ["Algo ruidosa"] },
-      "category_slug": "freidoras-de-aire"
+      "category_slug": "freidoras-de-aire",
+      "focus_keyword": null,
+      "user_opinions_summary": null,
+      "meta_description": null
     },
     {
       "id": "prod-003",
@@ -64,12 +83,16 @@
       "title": "Tefal Easy Fry Precision EY401840",
       "slug": "tefal-easy-fry-precision",
       "current_price": 59.99,
+      "original_price": null,
       "images": [],
       "rating": 4.2,
       "is_prime": false,
       "detailed_description": "La freidora Tefal Easy Fry Precision es una opción equilibrada para quienes buscan calidad sin gastar demasiado.",
       "pros_cons": null,
-      "category_slug": "freidoras-de-aire"
+      "category_slug": "freidoras-de-aire",
+      "focus_keyword": null,
+      "user_opinions_summary": null,
+      "meta_description": null
     },
     {
       "id": "prod-004",
@@ -77,12 +100,16 @@
       "title": "Kit Accesorios Freidora 5 Piezas Universal",
       "slug": "kit-accesorios-freidora-5-piezas",
       "current_price": 24.99,
+      "original_price": null,
       "images": [],
       "rating": 4.3,
       "is_prime": true,
       "detailed_description": null,
       "pros_cons": null,
-      "category_slug": "accesorios-freidora"
+      "category_slug": "accesorios-freidora",
+      "focus_keyword": null,
+      "user_opinions_summary": null,
+      "meta_description": null
     }
   ]
 }
