@@ -84,7 +84,6 @@ interface TabsProps {
   categoriesSlot: React.ReactNode
   // Deploy
   deploySlot: React.ReactNode
-  domainSlot: React.ReactNode
   generationSlot: React.ReactNode
   refreshSlot: React.ReactNode
   // SEO & Alerts
@@ -98,7 +97,6 @@ export function SiteDetailTabs({
   site,
   categoriesSlot,
   deploySlot,
-  domainSlot,
   generationSlot,
   refreshSlot,
   seoScores,
@@ -222,7 +220,6 @@ export function SiteDetailTabs({
       <TabsContent value="deploy" className="space-y-6">
         <Card title="Site Generation">{generationSlot}</Card>
         <Card title="Deployment">{deploySlot}</Card>
-        <Card title="Domain Management">{domainSlot}</Card>
         <Card title="Product Refresh">{refreshSlot}</Card>
       </TabsContent>
 

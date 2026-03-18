@@ -8,7 +8,6 @@ import { RefreshCard } from './RefreshCard'
 import JobStatus from './JobStatus'
 import { GenerateSiteButton } from './GenerateSiteButton'
 import DeployStatus from './DeployStatus'
-import DomainManagement from './DomainManagement'
 import { CategoriesSection } from './CategoriesSection'
 import { SiteDetailTabs } from './SiteDetailTabs'
 
@@ -269,7 +268,6 @@ export default async function SiteDetailPage({ params }: PageProps) {
         categoriesSlot={<CategoriesSection siteId={id} categories={categories} />}
         generationSlot={<JobStatus siteId={site.id} />}
         deploySlot={deploySlot}
-        domainSlot={<DomainManagement siteId={site.id} existingDomain={site.domain} />}
         refreshSlot={
           <RefreshCard siteId={site.id} lastRefreshedAt={site.last_refreshed_at ?? null} />
         }

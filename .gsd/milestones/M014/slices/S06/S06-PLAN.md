@@ -73,7 +73,7 @@ grep "DomainManagement" apps/admin/src/app/\(dashboard\)/research/page.tsx
   - Verify: `grep "is_local" packages/db/src/types/supabase.ts` exits 0; `pnpm --filter @monster/deployment build` succeeds
   - Done when: deployment package builds clean, `infra.ts` has local branch with `execSync`, migration file exists with correct SQL
 
-- [ ] **T02: Make DomainManagement siteId optional and wire into Research Lab** `est:30m`
+- [x] **T02: Make DomainManagement siteId optional and wire into Research Lab** `est:30m`
   - Why: Domain availability checking is useful in the Research Lab (no site context) not just in the Deploy tab. Registration still requires a site, so the registration panel must be conditionally hidden.
   - Files: `apps/admin/src/app/(dashboard)/sites/[id]/DomainManagement.tsx`, `apps/admin/src/app/(dashboard)/research/page.tsx`, `apps/admin/src/app/(dashboard)/sites/[id]/SiteDetailTabs.tsx`, `apps/admin/src/app/(dashboard)/sites/[id]/page.tsx`
   - Do: Make `siteId` optional in `DomainManagementProps`; hide `registerAction` and registration panel JSX when `siteId` is absent; import component in `research/page.tsx` via `'@/app/(dashboard)/sites/[id]/DomainManagement'`; add Domain Management card to Research Lab left column; remove `domainSlot` prop from `SiteDetailTabs` and its Deploy tab card; remove `domainSlot` pass-through in `sites/[id]/page.tsx`.

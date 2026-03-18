@@ -5,6 +5,7 @@ import ResearchSessionStatus from './ResearchSessionStatus';
 import ResearchReportViewer from './ResearchReportViewer';
 import { ResearchReportSchema } from '@monster/shared';
 import { SpaceshipClient } from '@monster/domains';
+import DomainManagement from '@/app/(dashboard)/sites/[id]/DomainManagement';
 
 export const dynamic = 'force-dynamic'
 
@@ -66,6 +67,12 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
           <div className="rounded-lg border bg-card p-6 shadow-sm">
             <h2 className="text-base font-semibold mb-4">New Research Session</h2>
             <ResearchForm />
+          </div>
+
+          {/* Domain Management — availability check without site context */}
+          <div className="rounded-lg border bg-card p-6 shadow-sm">
+            <h2 className="text-base font-semibold mb-4">Domain Management</h2>
+            <DomainManagement />
           </div>
 
           {/* Active session: completed → full report; running/pending/failed → polling UI */}

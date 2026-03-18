@@ -4,7 +4,7 @@ import { useActionState } from 'react';
 import { checkDomainAvailability, registerDomain } from './actions';
 
 interface DomainManagementProps {
-  siteId: string;
+  siteId?: string;
   existingDomain?: string | null;
 }
 
@@ -101,63 +101,67 @@ export default function DomainManagement({ siteId, existingDomain }: DomainManag
         )}
       </div>
 
-      {/* --- Approve & Register --- */}
-      {isAvailable && domainToRegister && !registerState?.success && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-4 space-y-3">
-          <p className="text-sm font-semibold text-red-800">⚠️ Real registration</p>
-          <p className="text-sm text-red-700">
-            Clicking <strong>Approve &amp; Register</strong> will register{' '}
-            <strong className="font-mono">{domainToRegister}</strong> through your Spaceship
-            account. <strong>Charges will apply to your Spaceship account.</strong> This action
-            cannot be undone.
-          </p>
-          <form action={registerDispatch}>
-            <input type="hidden" name="siteId" value={siteId} />
-            <input type="hidden" name="domain" value={domainToRegister} />
-            <button
-              type="submit"
-              disabled={registerPending}
-              className="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-            >
-              {registerPending ? 'Registering… (this may take ~20s)' : 'Approve & Register'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Registration result */}
-      {registerState && !registerPending && (
-        <div>
-          {registerState.error ? (
-            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3">
-              <p className="text-sm font-semibold text-red-800">Registration failed</p>
-              <p className="text-sm text-red-700 mt-1">{registerState.error}</p>
-            </div>
-          ) : registerState.success ? (
-            <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 space-y-2">
-              <p className="text-sm font-semibold text-green-800">
-                ✓ Domain registered successfully
+      {/* --- Approve & Register (only when a siteId context exists) --- */}
+      {siteId && (
+        <>
+          {isAvailable && domainToRegister && !registerState?.success && (
+            <div className="rounded-md border border-red-300 bg-red-50 px-4 py-4 space-y-3">
+              <p className="text-sm font-semibold text-red-800">⚠️ Real registration</p>
+              <p className="text-sm text-red-700">
+                Clicking <strong>Approve &amp; Register</strong> will register{' '}
+                <strong className="font-mono">{domainToRegister}</strong> through your Spaceship
+                account. <strong>Charges will apply to your Spaceship account.</strong> This action
+                cannot be undone.
               </p>
-              {registerState.nameservers && registerState.nameservers.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-green-700 mb-1">
-                    Nameservers updated to:
-                  </p>
-                  <ul className="space-y-0.5">
-                    {registerState.nameservers.map((ns) => (
-                      <li
-                        key={ns}
-                        className="font-mono text-xs text-green-800 bg-green-100 rounded px-2 py-1 border border-green-200"
-                      >
-                        {ns}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              <form action={registerDispatch}>
+                <input type="hidden" name="siteId" value={siteId} />
+                <input type="hidden" name="domain" value={domainToRegister} />
+                <button
+                  type="submit"
+                  disabled={registerPending}
+                  className="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                >
+                  {registerPending ? 'Registering… (this may take ~20s)' : 'Approve & Register'}
+                </button>
+              </form>
             </div>
-          ) : null}
-        </div>
+          )}
+
+          {/* Registration result */}
+          {registerState && !registerPending && (
+            <div>
+              {registerState.error ? (
+                <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-red-800">Registration failed</p>
+                  <p className="text-sm text-red-700 mt-1">{registerState.error}</p>
+                </div>
+              ) : registerState.success ? (
+                <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 space-y-2">
+                  <p className="text-sm font-semibold text-green-800">
+                    ✓ Domain registered successfully
+                  </p>
+                  {registerState.nameservers && registerState.nameservers.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-green-700 mb-1">
+                        Nameservers updated to:
+                      </p>
+                      <ul className="space-y-0.5">
+                        {registerState.nameservers.map((ns) => (
+                          <li
+                            key={ns}
+                            className="font-mono text-xs text-green-800 bg-green-100 rounded px-2 py-1 border border-green-200"
+                          >
+                            {ns}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
