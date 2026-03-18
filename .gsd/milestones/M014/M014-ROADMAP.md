@@ -61,7 +61,7 @@ This milestone is complete only when all are true:
 - [x] **S03: Edit Form & Deploy Tab Reorganization** `risk:low` `depends:[]`
   > After this: page header has no Generate/Deploy buttons; Deploy tab has both buttons + refresh interval field (days); edit form has refresh interval field.
 
-- [ ] **S04: Categories Tab Redesign + Category Detail Page** `risk:medium` `depends:[]`
+- [x] **S04: Categories Tab Redesign + Category Detail Page** `risk:medium` `depends:[]`
   > After this: tab renamed "Categories", each row shows description + product count; clicking a category navigates to /sites/[id]/categories/[catId] showing that category's products with search.
 
 - [ ] **S05: SEO Score Filter + Legend** `risk:low` `depends:[]`
