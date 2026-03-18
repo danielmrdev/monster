@@ -379,6 +379,39 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 - Primary owning slice: none
 - Validation: n/a
 
+### R045 — TSA unified template (homepage, category, product, legales)
+- Class: differentiator
+- Status: active
+- Description: A single polished TSA template replaces the three generic variants. Homepage: centered logo, horizontal cat nav, H1/focus_keyword, category grid (description + vertical image), SEO text. Category: H1, description, product grid (uniform vertical image, price, discount badge, +info/comprar buttons), SEO text, 3 related categories. Product: image gallery, price/discount, buy button, pros/cons, AI description, breadcrumb. Legal: prose typography.
+- Why it matters: Generated sites are the product. Design quality directly affects CTR, bounce rate, and perceived authority — all of which affect ranking and affiliate earnings.
+- Source: user
+- Primary owning slice: M013/S01–S04
+- Supporting slices: M013/S05
+- Validation: unmapped
+- Notes: One template now; architecture allows more in future. Each site has exactly one template_slug assigned.
+
+### R046 — Link cloaking for affiliate links
+- Class: primary-user-loop
+- Status: active
+- Description: All affiliate links in generated sites use `/go/<product-slug>` redirects instead of direct Amazon URLs. Meta-refresh redirect pages generated at build time. Module is template-agnostic and reusable by future templates. All affiliate `<a>` tags carry `rel="nofollow sponsored"`.
+- Why it matters: Clean URLs improve CTR (users see `/go/ninja-af101` not a long Amazon tag URL). Centralizes link management — change an ASIN, update one map. Analytics tracking is simplified. Complies with Amazon Associates ToS when combined with `rel="nofollow sponsored"`.
+- Source: user
+- Primary owning slice: M013/S05
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Meta-refresh (static) is sufficient for Phase 1. HTTP 302 via Caddy rules is a future enhancement if needed.
+
+### R047 — Category `description` field mapped in generator
+- Class: quality-attribute
+- Status: active
+- Description: `CategoryData` interface in the generator includes the `description` field (already in `tsa_categories` DB schema). All templates can use it to display a short descriptive text distinct from `seo_text`.
+- Why it matters: `description` (short) and `seo_text` (long SEO prose) serve different UX roles. Without the mapping, short descriptions can't be shown in the admin panel or templates.
+- Source: inferred
+- Primary owning slice: M013/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Field already exists in DB (`tsa_categories.description text`). Only the generator interface and fixture need updating.
+
 ## Traceability
 
 | ID | Class | Status | Primary owner | Supporting | Proof |
@@ -419,10 +452,13 @@ This file is the explicit capability and coverage contract for BuilderMonster.
 | R042 | primary-user-loop | active | M009/S06 | none | unmapped |
 | R043 | failure-visibility | active | M009/S01 | none | unmapped |
 | R044 | constraint | active | M009/S01 | none | unmapped |
+| R045 | differentiator | active | M013/S01–S04 | M013/S05 | unmapped |
+| R046 | primary-user-loop | active | M013/S05 | none | unmapped |
+| R047 | quality-attribute | active | M013/S01 | none | unmapped |
 
 ## Coverage Summary
 
-- Active requirements: 27
-- Mapped to milestones: 27
+- Active requirements: 30
+- Mapped to milestones: 30
 - Validated: 4 (R013, R004, R005, R015)
 - Unmapped active requirements: 0
