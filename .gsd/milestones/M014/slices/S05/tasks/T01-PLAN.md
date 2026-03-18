@@ -12,6 +12,21 @@ estimated_files: 2
 
 Two targeted edits in two files. The scoring loop in `generate-site.ts` currently scores every `.html` in `dist/`, including `/go/` redirect stubs and legal pages. Both should be skipped entirely. Separately, `SiteDetailTabs.tsx` shows 8 score dimension columns with no explanation — a legend card above the table fixes that. No new dependencies, no migrations.
 
+## Observability Impact
+
+**Signals changed:**
+- `[GenerateSiteJob] score_pages: N pages to score` — `N` decreases by the number of skipped paths (typically: 4 legal pages + variable number of `/go/` stubs per site).
+- No new log line emitted for skipped paths; their absence from `seo_scores` is the signal.
+- The legend card is static UI — no runtime signal, no log. Its presence is verified by grep and tsc.
+
+**Inspection surfaces for future agents:**
+- After adding the skip guard, `grep -n "go/\|legal\|continue" packages/agents/src/jobs/generate-site.ts` should show the guard near the top of the scoring loop.
+- Post-generation DB check: `SELECT count(*) FROM seo_scores WHERE page_path LIKE '/go/%' OR page_type = 'legal'` should return 0.
+
+**Failure state:**
+- If the guard is missing or the condition is wrong, `seo_scores` will contain rows with `page_type = 'legal'` or `page_path LIKE '/go/%'`. Those are the diagnostic rows.
+- If `inferPageType` changes its fallback return (currently `'legal'`), the skip guard breaks silently — watch for legal-path rows appearing in the scores table.
+
 ## Steps
 
 1. **Read the scoring loop** in `packages/agents/src/jobs/generate-site.ts` around lines 471–515. Note the `for (const relPath of htmlFiles)` loop at line 480 and `inferPageType` at line 42.

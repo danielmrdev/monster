@@ -478,6 +478,8 @@ export class GenerateSiteJob {
         const scoreRows: TablesInsert<'seo_scores'>[] = [];
         let done = 0;
         for (const relPath of htmlFiles) {
+          // Skip redirect stubs and legal pages — they score poorly by design
+          if (relPath.startsWith('go/') || inferPageType(relPath) === 'legal') continue;
           try {
             const absPath = join(distDir, relPath);
             const html = readFileSync(absPath, 'utf-8');

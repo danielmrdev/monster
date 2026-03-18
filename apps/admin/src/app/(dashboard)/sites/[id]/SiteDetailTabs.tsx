@@ -278,6 +278,26 @@ export function SiteDetailTabs({
           )}
         </Card>
 
+        <Card title="SEO Score Dimensions">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {[
+              { name: 'Content', desc: 'Word count, keyword density, paragraph structure' },
+              { name: 'Meta', desc: 'Title tag, meta description presence and length' },
+              { name: 'Structure', desc: 'H1/H2 heading hierarchy and count' },
+              { name: 'Links', desc: 'Internal link count and anchor text quality' },
+              { name: 'Media', desc: 'Image presence, alt text coverage' },
+              { name: 'Schema', desc: 'JSON-LD / structured data blocks' },
+              { name: 'Technical', desc: 'Canonical tag, noindex, page size' },
+              { name: 'Social', desc: 'Open Graph and Twitter Card tags' },
+            ].map(({ name, desc }) => (
+              <div key={name} className="flex gap-2 text-sm">
+                <span className="font-medium text-foreground shrink-0">{name}:</span>
+                <span className="text-muted-foreground">{desc}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
         <Card title="SEO Scores">
           {!seoScores || seoScores.length === 0 ? (
             <p className="text-sm text-muted-foreground">
