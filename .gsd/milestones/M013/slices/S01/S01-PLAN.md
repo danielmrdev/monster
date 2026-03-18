@@ -77,7 +77,7 @@ SITE_SLUG=fixture pnpm --filter @monster/generator check 2>&1 | grep -E "^(✓|e
   - Verify: `grep -n "description\|original_price" apps/generator/src/lib/data.ts` shows both fields; `SITE_SLUG=fixture pnpm --filter @monster/generator check` exits 0 or has ≤0 data-gap errors
   - Done when: Both interface fields exist in `data.ts`, fixture has all required fields, `packages/shared` `SiteTemplate` type is updated, `pnpm --filter @monster/shared build` exits 0
 
-- [ ] **T02: Install @tailwindcss/typography and configure in BaseLayout** `est:20m`
+- [x] **T02: Install @tailwindcss/typography and configure in BaseLayout** `est:20m`
   - Why: Legal pages already use `prose prose-gray` and `prose prose-sm` classes. Without the plugin these classes produce no output (silent fail). The typography plugin is required before the tsa layout and legal page templates can render prose correctly in S04.
   - Files: `apps/generator/package.json`, `apps/generator/src/layouts/BaseLayout.astro`
   - Do: See T02-PLAN.md

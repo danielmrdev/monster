@@ -49,6 +49,7 @@ try {
     {metaDescription && <meta name="description" content={metaDescription} />}
     <style>
       @import "tailwindcss";
+      @plugin "@tailwindcss/typography";
     </style>
     <style define:vars={{ primary, accent, font }}>
       :root {
