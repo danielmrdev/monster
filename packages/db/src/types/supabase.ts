@@ -827,6 +827,7 @@ export type Database = {
           ssh_user: string
           created_at: string
           last_health_check: string | null
+          is_local: boolean
         }
         Insert: {
           id?: string
@@ -841,6 +842,7 @@ export type Database = {
           ssh_user?: string
           created_at?: string
           last_health_check?: string | null
+          is_local?: boolean
         }
         Update: {
           id?: string
@@ -855,6 +857,7 @@ export type Database = {
           ssh_user?: string
           created_at?: string
           last_health_check?: string | null
+          is_local?: boolean
         }
         Relationships: []
       }

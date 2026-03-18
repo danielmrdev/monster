@@ -185,3 +185,22 @@ cd apps/admin && npx tsc --noEmit
 ```
 
 Zero output = zero errors. This applies to all M014+ task plans that reference the `typecheck` pnpm filter script.
+
+## KN017 — Rebuild upstream packages before downstream packages when TypeScript types change
+
+**Discovered:** M014/S06/T01
+
+When `packages/db/src/types/supabase.ts` is edited, the changes only take effect for dependent packages (e.g. `@monster/deployment`) after `packages/db` is rebuilt. The deployment package's TypeScript compiler reads from `packages/db/dist/index.d.ts`, not the source. Build order:
+
+```bash
+pnpm --filter @monster/db build          # must come first
+pnpm --filter @monster/deployment build  # will now see updated types
+```
+
+Failing to do this produces TS2339 (`Property 'X' does not exist on type '...'`) even though the source was correctly updated. Applies any time a type-only change is made to a package that others depend on.
+
+## KN018 — `npx supabase db push --db-url $VAR` fails with local socket if the env var is not exported
+
+**Discovered:** M014/S06/T01
+
+`npx supabase db push --db-url $SUPABASE_DB_URL` in a subshell silently fails with `failed to connect to postgres: failed to connect to host=/tmp ...` if `SUPABASE_DB_URL` is not exported in the current shell environment. The CLI receives an empty string and falls back to local socket. Fix: source `.env.local` first, or pass the literal URL inline. The `apps/admin/.env.local` file contains the correct `postgresql://...` URL.

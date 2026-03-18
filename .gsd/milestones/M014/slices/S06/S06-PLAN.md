@@ -33,6 +33,11 @@ grep "is_local" packages/db/src/types/supabase.ts
 # T01: Deployment package builds
 pnpm --filter @monster/deployment build
 
+# T01: Failure-path — local-mode error logged when execSync command missing
+# (Inspect server stdout during a health poll with is_local=true; missing commands surface as
+#  "[InfraService] local-mode error for \"<name>\": <msg>" with reachable:false in the API response)
+grep "local-mode" packages/deployment/src/infra.ts
+
 # T02: Admin builds with no type errors
 cd apps/admin && npx tsc --noEmit
 
@@ -61,7 +66,7 @@ grep "DomainManagement" apps/admin/src/app/\(dashboard\)/research/page.tsx
 
 ## Tasks
 
-- [ ] **T01: Add is_local migration and wire local-mode execSync in InfraService** `est:45m`
+- [x] **T01: Add is_local migration and wire local-mode execSync in InfraService** `est:45m`
   - Why: Enables hel1 (admin VPS, local machine) to report real metrics without requiring SSH into itself — which is both unnecessary and may fail if the SSH agent socket is not available in the admin process.
   - Files: `packages/db/supabase/migrations/20260318120000_servers_is_local.sql`, `packages/db/src/types/supabase.ts`, `packages/deployment/src/infra.ts`
   - Do: Create migration file; update `servers.Row/Insert/Update` in supabase.ts; add `is_local: boolean` to the inline server shape in `checkServerHealth`; add `import { execSync } from 'node:child_process'` at top of infra.ts; add early-return local branch before SSH code; wrap each `execSync` call in individual try/catch.

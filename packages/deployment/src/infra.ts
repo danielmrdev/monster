@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { NodeSSH } from 'node-ssh';
 import { createServiceClient } from '@monster/db';
 
@@ -64,7 +65,16 @@ export class InfraService {
     console.log(`[InfraService] fleet health: checking ${servers.length} server(s)`);
 
     const results: ServerHealth[] = await Promise.all(
-      servers.map((server) => this.checkServerHealth(server)),
+      servers.map((server) =>
+        this.checkServerHealth({
+          id: server.id,
+          name: server.name,
+          tailscale_ip: server.tailscale_ip,
+          public_ip: server.public_ip,
+          ssh_user: server.ssh_user,
+          is_local: server.is_local ?? false,
+        }),
+      ),
     );
 
     return { servers: results, fetchedAt: now };
@@ -153,7 +163,12 @@ export class InfraService {
     tailscale_ip: string | null;
     public_ip: string | null;
     ssh_user: string;
+    is_local: boolean;
   }): Promise<ServerHealth> {
+    if (server.is_local) {
+      return this.checkServerHealthLocal(server);
+    }
+
     const host = server.tailscale_ip ?? server.public_ip;
     const base: ServerHealth = {
       serverId: server.id,
@@ -224,6 +239,91 @@ export class InfraService {
       return { ...base, error: message };
     } finally {
       conn.dispose();
+    }
+  }
+
+  /**
+   * Collects health metrics from the local machine via execSync (no SSH).
+   * Used when server.is_local === true — identical commands to the SSH path,
+   * parsed with identical logic.
+   *
+   * Each execSync call is individually wrapped in try/catch because
+   * `systemctl is-active caddy` exits non-zero (exit code 3) when Caddy is
+   * inactive, which causes execSync to throw even though stdout is valid.
+   */
+  private checkServerHealthLocal(server: {
+    id: string;
+    name: string;
+  }): ServerHealth {
+    const base: ServerHealth = {
+      serverId: server.id,
+      serverName: server.name,
+      reachable: false,
+      caddyActive: false,
+      diskUsedPct: null,
+      memUsedMb: null,
+      memTotalMb: null,
+    };
+
+    try {
+      // ── Caddy status ──────────────────────────────────────────────────
+      let caddyRaw = '';
+      try {
+        caddyRaw = execSync('systemctl is-active caddy', { encoding: 'utf8' }).trim();
+      } catch (err) {
+        // execSync throws on non-zero exit; stdout is in err.stdout
+        const e = err as { stdout?: string };
+        caddyRaw = (e.stdout ?? '').trim();
+      }
+      const caddyActive = caddyRaw === 'active';
+      console.log(`[InfraService] "${server.name}" caddy (local): ${caddyRaw}`);
+
+      // ── Disk usage ────────────────────────────────────────────────────
+      let diskRaw = '';
+      try {
+        diskRaw = execSync("df -h / | tail -1 | awk '{print $5}'", { encoding: 'utf8' })
+          .trim()
+          .replace('%', '');
+      } catch (err) {
+        const e = err as { stdout?: string };
+        diskRaw = (e.stdout ?? '').trim().replace('%', '');
+      }
+      const diskUsedPctParsed = diskRaw ? parseInt(diskRaw, 10) : null;
+      const diskUsedPct =
+        diskUsedPctParsed !== null && Number.isNaN(diskUsedPctParsed) ? null : diskUsedPctParsed;
+      console.log(`[InfraService] "${server.name}" disk (local): ${diskRaw}`);
+
+      // ── Memory usage ──────────────────────────────────────────────────
+      let memRaw = '';
+      try {
+        memRaw = execSync("free -m | awk '/^Mem:/{print $3, $2}'", { encoding: 'utf8' }).trim();
+      } catch (err) {
+        const e = err as { stdout?: string };
+        memRaw = (e.stdout ?? '').trim();
+      }
+      const memParts = memRaw.split(/\s+/);
+      const memUsedMbParsed = memParts[0] ? parseInt(memParts[0], 10) : null;
+      const memTotalMbParsed = memParts[1] ? parseInt(memParts[1], 10) : null;
+      const memUsedMb =
+        memUsedMbParsed !== null && Number.isNaN(memUsedMbParsed) ? null : memUsedMbParsed;
+      const memTotalMb =
+        memTotalMbParsed !== null && Number.isNaN(memTotalMbParsed) ? null : memTotalMbParsed;
+      console.log(`[InfraService] "${server.name}" memory (local): ${memRaw}`);
+
+      console.log(`[InfraService] local-mode metrics for "${server.name}"`);
+
+      return {
+        ...base,
+        reachable: true,
+        caddyActive,
+        diskUsedPct,
+        memUsedMb,
+        memTotalMb,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[InfraService] local-mode error for "${server.name}": ${message}`);
+      return { ...base, error: message };
     }
   }
 }
