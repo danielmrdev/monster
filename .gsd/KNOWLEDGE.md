@@ -204,3 +204,56 @@ Failing to do this produces TS2339 (`Property 'X' does not exist on type '...'`)
 **Discovered:** M014/S06/T01
 
 `npx supabase db push --db-url $SUPABASE_DB_URL` in a subshell silently fails with `failed to connect to postgres: failed to connect to host=/tmp ...` if `SUPABASE_DB_URL` is not exported in the current shell environment. The CLI receives an empty string and falls back to local socket. Fix: source `.env.local` first, or pass the literal URL inline. The `apps/admin/.env.local` file contains the correct `postgresql://...` URL.
+
+## KN019 — Supabase nested aggregate count: cast `as unknown as { count: number }[]` is load-bearing
+
+**Discovered:** M014/S04/T01
+
+When using Supabase's nested aggregate pattern (`.select('..., relation(count)')`), TypeScript cannot infer the shape of the nested count — the generated type has no `count` field. The pattern is:
+
+```ts
+const count = (cat.category_products as unknown as { count: number }[] | null)?.[0]?.count ?? 0
+```
+
+The `?? 0` fallback must live at the **data mapping layer** (where the DB query runs), not in the display component. If the Supabase schema changes the aggregate return shape, this silently returns `undefined` and shows 0 everywhere — visible degradation without a TypeScript error. Always verify with a live query if counts look wrong.
+
+## KN020 — Supabase !inner join for scoped sub-resource queries
+
+**Discovered:** M014/S04/T02
+
+To scope products to a specific category without a subquery, use the `!inner` join pattern:
+
+```ts
+.select('..., category_products!inner(category_id)')
+.eq('category_products.category_id', catId)
+```
+
+The `!inner` behaves like SQL INNER JOIN — only rows with a matching join record are returned. An empty intersection returns no rows (not an error). Strip join metadata before returning:
+
+```ts
+products.map(({ category_products: _cp, ...p }) => p)
+```
+
+This pattern is used in both the API route and the server component initial fetch in `/sites/[id]/categories/[catId]/`.
+
+## KN021 — execSync throws on non-zero exit; Caddy "inactive" state must recover stdout from error object
+
+**Discovered:** M014/S06/T01
+
+`systemctl is-active caddy` exits with code 3 when Caddy is inactive. `execSync` throws on any non-zero exit code, so the output `"inactive"` is lost unless you catch and recover it:
+
+```ts
+try {
+  caddyRaw = execSync('systemctl is-active caddy', { encoding: 'utf8' }).trim();
+} catch (e) {
+  caddyRaw = (e as { stdout?: string }).stdout?.trim() ?? 'inactive';
+}
+```
+
+Each execSync call should be individually try/caught — a single top-level catch suppresses all metrics on any single command failure. "inactive" is a valid operational state (e.g. fresh VPS before first site deploy), not an error.
+
+## KN022 — Next.js Route Handlers don't hot-reload on creation; dev server must be restarted
+
+**Discovered:** M014/S01/T02
+
+When adding a new Route Handler file (e.g. `app/api/sites/[id]/upload-logo/route.ts`), the Next.js dev server does **not** pick it up automatically. You must stop and restart `next dev` before the new route is accessible. Changes to existing route files hot-reload normally. This applies to any new file-based route in the App Router.
