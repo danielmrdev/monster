@@ -67,7 +67,7 @@ This milestone is complete only when all are true:
 - [x] **S05: SEO Score Filter + Legend** `risk:low` `depends:[]`
   > After this: SEO scores table contains no /go/ or legal rows; a legend card above the table explains each score dimension.
 
-- [ ] **S06: VPS Local Mode + Domain Management Relocation** `risk:medium` `depends:[]`
+- [x] **S06: VPS Local Mode + Domain Management Relocation** `risk:medium` `depends:[]`
   > After this: servers with is_local=true report real disk/memory/Caddy metrics via child_process; Domain Management section visible in Research Lab (removed from Deploy tab).
 
 ## Boundary Map
