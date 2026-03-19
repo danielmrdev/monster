@@ -1,6 +1,6 @@
-import { marked } from 'marked';
-import { scorePage } from '@monster/seo-scorer';
-import type { PageType } from '@monster/seo-scorer';
+import { marked } from "marked"
+import { scorePage } from "@monster/seo-scorer"
+import type { PageType } from "@monster/seo-scorer"
 
 /**
  * Score raw markdown text for content quality.
@@ -12,11 +12,20 @@ import type { PageType } from '@monster/seo-scorer';
  * all need the built Astro site. Only content_quality_score is meaningful here.
  *
  * KN009: marked(text) is synchronous in v17 — no await needed.
+ *
+ * @param language  BCP-47 language code (e.g. 'es', 'en', 'fr'). Passed to scorePage()
+ *                  so the Flesch sub-score is bypassed for non-English languages —
+ *                  the Flesch-Kincaid formula is calibrated for English only.
  */
-export function scoreMarkdown(text: string, keyword: string, pageType: PageType): number {
-  const htmlBody = marked(text) as string;
+export function scoreMarkdown(
+  text: string,
+  keyword: string,
+  pageType: PageType,
+  language = "en",
+): number {
+  const htmlBody = marked(text) as string
   const html = `<!DOCTYPE html>
-<html lang="es">
+<html lang="${language}">
 <head>
 <title>${keyword}</title>
 <meta name="description" content="${keyword}">
@@ -25,7 +34,7 @@ export function scoreMarkdown(text: string, keyword: string, pageType: PageType)
 <h1>${keyword}</h1>
 ${htmlBody}
 </body>
-</html>`;
-  const result = scorePage(html, keyword, pageType);
-  return result.content_quality;
+</html>`
+  const result = scorePage(html, keyword, pageType, language)
+  return result.content_quality
 }

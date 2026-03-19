@@ -1,7 +1,24 @@
-'use client'
+"use client"
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
+// ── Score helpers ─────────────────────────────────────────────────────────────
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+// Overview
+// Content — TSA only
+// Deploy
+// SEO & Alerts
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+// Read hash on mount (client only)
+/* ── Overview ────────────────────────────────────────────────────────── */ /* Logo */ /* Favicon */ /* ── Categories — TSA only ────────────────────────────────────────────── */ /* ── Deploy ──────────────────────────────────────────────────────────── */ /* ── SEO & Alerts ────────────────────────────────────────────────────── */
+
+// ── Local layout helpers ──────────────────────────────────────────────────────
+
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { MarkdownPreview } from "@/components/MarkdownPreview"
+import { useEffect, useState } from "react"
 import {
   Table,
   TableBody,
@@ -9,36 +26,44 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import type { SiteCustomization } from '@monster/shared'
-
-// ── Score helpers ─────────────────────────────────────────────────────────────
+} from "@/components/ui/table"
+import type { SiteCustomization } from "@monster/shared"
 
 function scoreColor(score: number | null): string {
-  if (score === null) return 'text-muted-foreground'
-  if (score >= 70) return 'text-green-400'
-  if (score >= 50) return 'text-amber-400'
-  return 'text-red-400'
+  if (
+    score ===
+    null
+  )
+    return "text-muted-foreground"
+  if (
+    score >=
+    70
+  )
+    return "text-green-400"
+  if (
+    score >=
+    50
+  )
+    return "text-amber-400"
+  return "text-red-400"
 }
 
 function gradeBadgeVariant(
-  grade: string | null
-): 'default' | 'secondary' | 'destructive' | 'outline' {
+  grade: string | null,
+): "default" | "secondary" | "destructive" | "outline" {
   switch (grade) {
-    case 'A':
-    case 'B':
-      return 'default'
-    case 'C':
-      return 'secondary'
-    case 'D':
-    case 'F':
-      return 'destructive'
+    case "A":
+    case "B":
+      return "default"
+    case "C":
+      return "secondary"
+    case "D":
+    case "F":
+      return "destructive"
     default:
-      return 'outline'
+      return "outline"
   }
 }
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface SeoScore {
   page_path: string
@@ -60,11 +85,10 @@ interface Alert {
   alert_type: string
   status: string
   created_at: string
-  tsa_products: { asin: string; title: string | null } | null
+  tsa_products: { asin: string title: string | null } | null
 }
 
 interface TabsProps {
-  // Overview
   site: {
     domain: string | null
     niche: string | null
@@ -79,24 +103,34 @@ interface TabsProps {
     customization: unknown
     focus_keyword: string | null
     homepage_seo_text: string | null
+    homepage_meta_description: string | null
+    homepage_intro: string | null
   }
-  // Content — TSA only
   categoriesSlot: React.ReactNode | null
-  // Deploy
   deploySlot: React.ReactNode
   generationSlot: React.ReactNode
   generationAction: React.ReactNode
   refreshSlot: React.ReactNode | null
   refreshAction: React.ReactNode | null
   deployAction: React.ReactNode
-  // SEO & Alerts
   seoScores: SeoScore[] | null
   alerts: Alert[]
   homepageSeoSlot?: React.ReactNode
   rescoreAction?: React.ReactNode
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+const VALID_TABS = ["overview", "deploy", "seo", "categories"] as const
+type TabValue = typeof VALID_TABS[number]
+
+function getInitialTab(): TabValue {
+  if (
+    typeof window ===
+    "undefined"
+  )
+    return "overview"
+  const hash = window.location.hash.replace("#", "") as TabValue
+  return VALID_TABS.includes(hash) ? hash : "overview"
+}
 
 export function SiteDetailTabs({
   site,
@@ -113,37 +147,59 @@ export function SiteDetailTabs({
   rescoreAction,
 }: TabsProps) {
   const customization = site.customization as SiteCustomization | null
-  const isTsa = site.site_type_slug === 'tsa'
+  const isTsa =
+    site.site_type_slug ===
+    "tsa"
+
+  const [activeTab, setActiveTab] = useState<TabValue>("overview")
+  useEffect(() => {
+    setActiveTab(getInitialTab())
+  }, [])
+
+  function handleTabChange(value: string) {
+    const tab = value as TabValue
+    setActiveTab(tab)
+    window.history.replaceState(null, "", `#${tab}`)
+  }
 
   return (
-    <Tabs defaultValue="overview" className="space-y-6">
-      <TabsList className={`grid w-full ${isTsa ? 'grid-cols-4' : 'grid-cols-3'}`}>
+    <Tabs
+      value={activeTab}
+      onValueChange={handleTabChange}
+      className="space-y-6"
+    >
+      <TabsList
+        className={`grid w-full ${isTsa ? "grid-cols-4" : "grid-cols-3"}`}
+      >
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="deploy">Deploy</TabsTrigger>
         <TabsTrigger value="seo">SEO &amp; Alerts</TabsTrigger>
         {isTsa && <TabsTrigger value="categories">Categories</TabsTrigger>}
       </TabsList>
 
-      {/* ── Overview ────────────────────────────────────────────────────────── */}
+      {}
       <TabsContent value="overview" className="space-y-0">
         <div className="rounded-xl border border-border bg-card divide-y divide-border">
           <Section title="Site Info">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-              {(
-                [
-                  ['Domain', site.domain],
-                  ['Niche', site.niche],
-                  ['Market', site.market],
-                  ['Language', site.language],
-                  ['Currency', site.currency],
-                  ['Affiliate Tag', site.affiliate_tag],
-                  ['Template', site.template_slug],
-                  ['Site Type', site.site_type_slug],
-                ] as [string, string | null][]
-              ).map(([label, value]) => (
+              {([
+                ["Domain", site.domain],
+                ["Niche", site.niche],
+                ["Market", site.market],
+                ["Language", site.language],
+                ["Currency", site.currency],
+                ["Affiliate Tag", site.affiliate_tag],
+                ["Template", site.template_slug],
+                ["Site Type", site.site_type_slug],
+              ] as [string, string | null][]).map(([label, value]) => (
                 <div key={label}>
-                  <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-                  <dd className="mt-1 text-sm text-foreground">{value ?? '—'}</dd>
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    {label}
+                  </dt>
+                  <dd className="mt-1 text-sm text-foreground">
+                    {value ??
+                      "—"}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -153,23 +209,29 @@ export function SiteDetailTabs({
             {customization ? (
               <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">Primary Color</dt>
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    Primary Color
+                  </dt>
                   <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
                     {customization.primaryColor ? (
                       <>
                         <span
                           className="inline-block w-4 h-4 rounded-sm border border-border"
-                          style={{ backgroundColor: customization.primaryColor }}
+                          style={{
+                            backgroundColor: customization.primaryColor,
+                          }}
                         />
                         {customization.primaryColor}
                       </>
                     ) : (
-                      '—'
+                      "—"
                     )}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">Accent Color</dt>
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    Accent Color
+                  </dt>
                   <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
                     {customization.accentColor ? (
                       <>
@@ -180,42 +242,52 @@ export function SiteDetailTabs({
                         {customization.accentColor}
                       </>
                     ) : (
-                      '—'
+                      "—"
                     )}
                   </dd>
                 </div>
-                {(
-                  [
-                    ['Font Family', customization.fontFamily],
-                  ] as [string, string | undefined][]
-                ).map(([label, value]) => (
+                {([
+                  ["Font Family", customization.fontFamily],
+                ] as [string, string | undefined][]).map(([label, value]) => (
                   <div key={label}>
-                    <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-                    <dd className="mt-1 text-sm text-foreground truncate">{value ?? '—'}</dd>
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      {label}
+                    </dt>
+                    <dd className="mt-1 text-sm text-foreground truncate">
+                      {value ??
+                        "—"}
+                    </dd>
                   </div>
                 ))}
 
-                {/* Logo */}
+                {}
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">Logo</dt>
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    Logo
+                  </dt>
                   <dd className="mt-1">
                     {customization.logoUrl ? (
                       <img
                         src={customization.logoUrl}
                         alt="Site logo"
-                        className="h-10 max-w-[160px] object-contain rounded border border-border bg-muted/30 p-1"
+                        className="h-24 max-w-[320px] object-contain rounded-lg border border-border p-3"
+                        style={{ backgroundColor: "#ffffff" }}
                       />
                     ) : (
                       <div className="h-10 w-20 rounded border border-dashed border-border bg-muted/20 flex items-center justify-center">
-                        <span className="text-xs text-muted-foreground">No logo</span>
+                        <span className="text-xs text-muted-foreground">
+                          No logo
+                        </span>
                       </div>
                     )}
                   </dd>
                 </div>
 
-                {/* Favicon */}
+                {}
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">Favicon</dt>
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    Favicon
+                  </dt>
                   <dd className="mt-1">
                     {customization.faviconUrl ? (
                       <img
@@ -225,29 +297,33 @@ export function SiteDetailTabs({
                       />
                     ) : (
                       <div className="h-8 w-8 rounded border border-dashed border-border bg-muted/20 flex items-center justify-center">
-                        <span className="text-[10px] text-muted-foreground">—</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          —
+                        </span>
                       </div>
                     )}
                   </dd>
                 </div>
               </dl>
             ) : (
-              <p className="text-sm text-muted-foreground">No customization set.</p>
+              <p className="text-sm text-muted-foreground">
+                No customization set.
+              </p>
             )}
           </Section>
 
           <Section title="Metadata">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-              {(
-                [
-                  ['Created', site.created_at],
-                  ['Updated', site.updated_at],
-                ] as [string, string | null][]
-              ).map(([label, value]) => (
+              {([
+                ["Created", site.created_at],
+                ["Updated", site.updated_at],
+              ] as [string, string | null][]).map(([label, value]) => (
                 <div key={label}>
-                  <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    {label}
+                  </dt>
                   <dd className="mt-1 text-sm text-foreground">
-                    {value ? new Date(value).toLocaleString() : '—'}
+                    {value ? new Date(value).toLocaleString() : "—"}
                   </dd>
                 </div>
               ))}
@@ -256,34 +332,65 @@ export function SiteDetailTabs({
         </div>
       </TabsContent>
 
-      {/* ── Categories — TSA only ────────────────────────────────────────────── */}
+      {}
       {isTsa && (
         <TabsContent value="categories" className="space-y-6">
           {categoriesSlot}
         </TabsContent>
       )}
 
-      {/* ── Deploy ──────────────────────────────────────────────────────────── */}
+      {}
       <TabsContent value="deploy" className="space-y-6">
-        <Card title="Site Generation" action={generationAction}>{generationSlot}</Card>
-        <Card title="Deployment" action={deployAction}>{deploySlot}</Card>
-        {isTsa && refreshSlot !== null && (
-          <Card title="Product Refresh" action={refreshAction}>{refreshSlot}</Card>
-        )}
+        <Card title="Site Generation">{generationAction}</Card>
+        <Card title="Deployment" action={deployAction}>
+          {deploySlot}
+        </Card>
+        {isTsa &&
+          refreshSlot !==
+            null && (
+            <Card title="Product Refresh" action={refreshAction}>
+              {refreshSlot}
+            </Card>
+          )}
       </TabsContent>
 
-      {/* ── SEO & Alerts ────────────────────────────────────────────────────── */}
+      {}
       <TabsContent value="seo" className="space-y-6">
         <Card title="Homepage SEO">
           <dl className="space-y-4">
             <div>
-              <dt className="text-xs font-medium text-muted-foreground">Focus Keyword</dt>
-              <dd className="mt-1 text-sm text-foreground">{site.focus_keyword ?? '—'}</dd>
+              <dt className="text-xs font-medium text-muted-foreground">
+                Focus Keyword
+              </dt>
+              <dd className="mt-1 text-sm text-foreground">
+                {site.focus_keyword ??
+                  "—"}
+              </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-muted-foreground">SEO Text</dt>
-              <dd className="mt-2 text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                {site.homepage_seo_text ?? '—'}
+              <dt className="text-xs font-medium text-muted-foreground">
+                Meta Description
+              </dt>
+              <dd className="mt-1 text-sm text-foreground">
+                {site.homepage_meta_description ??
+                  "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground">
+                Intro
+              </dt>
+              <dd className="mt-1 text-sm text-foreground">
+                {site.homepage_intro ??
+                  "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground">
+                SEO Text
+              </dt>
+              <dd className="mt-2">
+                <MarkdownPreview content={site.homepage_seo_text} />
               </dd>
             </div>
           </dl>
@@ -292,7 +399,8 @@ export function SiteDetailTabs({
 
         {isTsa && (
           <Card title="Product Alerts">
-            {alerts.length === 0 ? (
+            {alerts.length ===
+            0 ? (
               <p className="text-sm text-muted-foreground">No open alerts.</p>
             ) : (
               <div className="space-y-2">
@@ -304,7 +412,7 @@ export function SiteDetailTabs({
                     <span className="mt-0.5 text-amber-400">⚠</span>
                     <div className="flex-1 min-w-0">
                       <span className="font-medium text-foreground capitalize">
-                        {alert.alert_type.replace(/_/g, ' ')}
+                        {alert.alert_type.replace(/_/g, " ")}
                       </span>
                       {alert.tsa_products && (
                         <span className="ml-2 font-mono text-xs text-muted-foreground">
@@ -330,17 +438,28 @@ export function SiteDetailTabs({
         <Card title="SEO Score Dimensions">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
-              { name: 'Content', desc: 'Word count, keyword density, paragraph structure' },
-              { name: 'Meta', desc: 'Title tag, meta description presence and length' },
-              { name: 'Structure', desc: 'H1/H2 heading hierarchy and count' },
-              { name: 'Links', desc: 'Internal link count and anchor text quality' },
-              { name: 'Media', desc: 'Image presence, alt text coverage' },
-              { name: 'Schema', desc: 'JSON-LD / structured data blocks' },
-              { name: 'Technical', desc: 'Canonical tag, noindex, page size' },
-              { name: 'Social', desc: 'Open Graph and Twitter Card tags' },
+              {
+                name: "Content",
+                desc: "Word count, keyword density, paragraph structure",
+              },
+              {
+                name: "Meta",
+                desc: "Title tag, meta description presence and length",
+              },
+              { name: "Structure", desc: "H1/H2 heading hierarchy and count" },
+              {
+                name: "Links",
+                desc: "Internal link count and anchor text quality",
+              },
+              { name: "Media", desc: "Image presence, alt text coverage" },
+              { name: "Schema", desc: "JSON-LD / structured data blocks" },
+              { name: "Technical", desc: "Canonical tag, noindex, page size" },
+              { name: "Social", desc: "Open Graph and Twitter Card tags" },
             ].map(({ name, desc }) => (
               <div key={name} className="flex gap-2 text-sm">
-                <span className="font-medium text-foreground shrink-0">{name}:</span>
+                <span className="font-medium text-foreground shrink-0">
+                  {name}:
+                </span>
                 <span className="text-muted-foreground">{desc}</span>
               </div>
             ))}
@@ -349,61 +468,102 @@ export function SiteDetailTabs({
 
         <Card title="SEO Scores" action={rescoreAction}>
           {(() => {
-            const visibleScores = (seoScores ?? []).filter(
-              (r) => !r.page_path.startsWith('/go/') && r.page_type !== 'legal'
+            const visibleScores = (
+              seoScores ??
+              []
+            ).filter(
+              (r) =>
+                !r.page_path.startsWith("/go/") &&
+                r.page_type !==
+                  "legal",
             )
             return !visibleScores.length ? (
-            <p className="text-sm text-muted-foreground">
-              No SEO scores yet — generate the site first.
-            </p>
-          ) : (
-            <div className="overflow-x-auto -mx-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="sticky left-0 z-10 bg-card after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px]">Page</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead className="text-xs">Content</TableHead>
-                    <TableHead className="text-xs">Meta</TableHead>
-                    <TableHead className="text-xs">Structure</TableHead>
-                    <TableHead className="text-xs">Links</TableHead>
-                    <TableHead className="text-xs">Media</TableHead>
-                    <TableHead className="text-xs">Schema</TableHead>
-                    <TableHead className="text-xs">Technical</TableHead>
-                    <TableHead className="text-xs">Social</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibleScores.map((row) => (
-                    <TableRow key={row.page_path}>
-                      <TableCell className="sticky left-0 z-10 bg-card font-mono text-xs after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px] max-w-[280px] truncate">{row.page_path}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {row.page_type ?? '—'}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`font-semibold ${scoreColor(row.overall_score)}`}>
-                          {row.overall_score ?? '—'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={gradeBadgeVariant(row.grade)}>{row.grade ?? '—'}</Badge>
-                      </TableCell>
-                      <TableCell className="text-xs">{row.content_quality_score ?? '—'}</TableCell>
-                      <TableCell className="text-xs">{row.meta_elements_score ?? '—'}</TableCell>
-                      <TableCell className="text-xs">{row.structure_score ?? '—'}</TableCell>
-                      <TableCell className="text-xs">{row.links_score ?? '—'}</TableCell>
-                      <TableCell className="text-xs">{row.media_score ?? '—'}</TableCell>
-                      <TableCell className="text-xs">{row.schema_score ?? '—'}</TableCell>
-                      <TableCell className="text-xs">{row.technical_score ?? '—'}</TableCell>
-                      <TableCell className="text-xs">{row.social_score ?? '—'}</TableCell>
+              <p className="text-sm text-muted-foreground">
+                No SEO scores yet — generate the site first.
+              </p>
+            ) : (
+              <div className="overflow-x-auto -mx-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky left-0 z-10 bg-card after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px]">
+                        Page
+                      </TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Grade</TableHead>
+                      <TableHead className="text-xs">Content</TableHead>
+                      <TableHead className="text-xs">Meta</TableHead>
+                      <TableHead className="text-xs">Structure</TableHead>
+                      <TableHead className="text-xs">Links</TableHead>
+                      <TableHead className="text-xs">Media</TableHead>
+                      <TableHead className="text-xs">Schema</TableHead>
+                      <TableHead className="text-xs">Technical</TableHead>
+                      <TableHead className="text-xs">Social</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )
+                  </TableHeader>
+                  <TableBody>
+                    {visibleScores.map((row) => (
+                      <TableRow key={row.page_path}>
+                        <TableCell className="sticky left-0 z-10 bg-card font-mono text-xs after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px] max-w-[280px] truncate">
+                          {row.page_path}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {row.page_type ??
+                            "—"}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`font-semibold ${scoreColor(row.overall_score)}`}
+                          >
+                            {row.overall_score ??
+                              "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={gradeBadgeVariant(row.grade)}>
+                            {row.grade ??
+                              "—"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {row.content_quality_score ??
+                            "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {row.meta_elements_score ??
+                            "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {row.structure_score ??
+                            "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {row.links_score ??
+                            "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {row.media_score ??
+                            "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {row.schema_score ??
+                            "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {row.technical_score ??
+                            "—"}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {row.social_score ??
+                            "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )
           })()}
         </Card>
       </TabsContent>
@@ -411,9 +571,13 @@ export function SiteDetailTabs({
   )
 }
 
-// ── Local layout helpers ──────────────────────────────────────────────────────
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
   return (
     <div className="px-6 py-5">
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
@@ -424,7 +588,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
+function Card({
+  title,
+  children,
+  action,
+}: {
+  title: string
+  children: React.ReactNode
+  action?: React.ReactNode
+}) {
   return (
     <div className="rounded-xl border border-border bg-card px-6 py-5">
       <div className="flex items-center justify-between mb-4">

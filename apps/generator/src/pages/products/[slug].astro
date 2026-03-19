@@ -30,6 +30,45 @@ const cloakUrl = buildCloakUrl(product.slug);
 const prosCons = product.pros_cons as ProsCons | null;
 const metaDescription = product.meta_description ?? undefined;
 
+const siteUrl = `https://${site.domain}`;
+const canonicalUrl = `${siteUrl}/products/${product.slug}/`;
+
+const ogImage = product.images?.[0] ? `${siteUrl}${product.images[0]}` : undefined;
+const ogData = {
+  title,
+  description: metaDescription,
+  url: canonicalUrl,
+  type: "product",
+  ...(ogImage ? { image: ogImage } : {}),
+};
+
+const schemaData: Record<string, unknown>[] = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    url: canonicalUrl,
+    ...(ogImage ? { image: ogImage } : {}),
+    ...(metaDescription ? { description: metaDescription } : {}),
+    ...(product.rating > 0 ? {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: product.rating,
+        reviewCount: 1,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    } : {}),
+    offers: {
+      "@type": "Offer",
+      price: product.current_price,
+      priceCurrency: site.currency,
+      availability: "https://schema.org/InStock",
+      url: canonicalUrl,
+    },
+  },
+];
+
 // Discount logic
 const hasDiscount =
   product.original_price !== null && product.original_price > product.current_price;
@@ -43,7 +82,7 @@ const discountPct = hasDiscount
 const parentCategory = categories.find((c) => c.slug === product.category_slug) ?? null;
 ---
 
-<TsaLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
+<TsaLayout title={title} site={site} categories={categories} metaDescription={metaDescription} canonicalUrl={canonicalUrl} ogData={ogData} schemaData={schemaData}>
 
   <!-- ── Breadcrumb ────────────────────────────────────────────────────── -->
   <nav class="text-xs text-gray-400 mb-6 flex items-center gap-1">
@@ -51,13 +90,13 @@ const parentCategory = categories.find((c) => c.slug === product.category_slug) 
     {parentCategory && (
       <>
         <span>/</span>
-        <a href={`/categories/${parentCategory.slug}/`} class="hover:text-gray-600 transition-colors">
+        <a href={`/categories/${parentCategory.slug}/`} class="hover:text-[var(--color-primary)] transition-colors">
           {parentCategory.name}
         </a>
       </>
     )}
     <span>/</span>
-    <span class="text-gray-600 truncate max-w-[200px]">{product.title}</span>
+    <span class="font-medium truncate max-w-[200px]" style="color: var(--color-primary)">{product.title}</span>
   </nav>
 
   <div class="lg:grid lg:grid-cols-[1fr_400px] lg:gap-10">

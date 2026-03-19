@@ -1,11 +1,11 @@
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { createServiceClient } from '@/lib/supabase/service'
-import { CategoryForm } from '../../CategoryForm'
-import { updateCategory } from '../../actions'
+import { notFound } from "next/navigation"
+import Link from "next/link"
+import { createServiceClient } from "@/lib/supabase/service"
+import { CategoryForm } from "../../CategoryForm"
+import { updateCategory } from "../../actions"
 
 interface PageProps {
-  params: Promise<{ id: string; catId: string }>
+  params: Promise<{ id: string catId: string }>
 }
 
 export default async function EditCategoryPage({ params }: PageProps) {
@@ -13,8 +13,13 @@ export default async function EditCategoryPage({ params }: PageProps) {
   const supabase = createServiceClient()
 
   const [siteResult, catResult] = await Promise.all([
-    supabase.from('sites').select('id, name').eq('id', siteId).single(),
-    supabase.from('tsa_categories').select('*').eq('id', catId).eq('site_id', siteId).single(),
+    supabase.from("sites").select("id, name").eq("id", siteId).single(),
+    supabase
+      .from("tsa_categories")
+      .select("*")
+      .eq("id", catId)
+      .eq("site_id", siteId)
+      .single(),
   ])
 
   if (!siteResult.data || !catResult.data) notFound()
@@ -28,10 +33,10 @@ export default async function EditCategoryPage({ params }: PageProps) {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link
-          href={`/sites/${siteId}`}
+          href={`/sites/${siteId}/categories/${catId}`}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          ← {site.name}
+          ← {cat.name}
         </Link>
         <h1 className="text-2xl font-bold tracking-tight">Edit Category</h1>
       </div>

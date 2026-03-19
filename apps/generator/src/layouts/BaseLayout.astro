@@ -2,6 +2,16 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+interface OgData {
+  title: string;
+  description?: string;
+  /** Absolute URL to the OG image (e.g. a product or hero image). */
+  image?: string;
+  /** Page type — defaults to "website". */
+  type?: string;
+  url: string;
+}
+
 interface Props {
   title: string;
   lang?: string;
@@ -19,9 +29,15 @@ interface Props {
   supabaseUrl?: string;
   /** Analytics: Supabase anon key (INSERT-only RLS) written into the tracker at build time. */
   supabaseAnonKey?: string;
+  /** Canonical URL for this page (absolute). Emits <link rel="canonical">. */
+  canonicalUrl?: string;
+  /** Open Graph metadata. When provided, og: meta tags are emitted. */
+  ogData?: OgData;
+  /** JSON-LD structured data objects. Each is serialised as a separate <script type="application/ld+json"> tag. */
+  schemaData?: Record<string, unknown>[];
 }
 
-const { title, lang = "es", metaDescription, customization, faviconDir, siteId, supabaseUrl, supabaseAnonKey } = Astro.props;
+const { title, lang = "es", metaDescription, customization, faviconDir, siteId, supabaseUrl, supabaseAnonKey, canonicalUrl, ogData, schemaData } = Astro.props;
 const primary = customization?.primaryColor ?? "#4f46e5";
 const accent = customization?.accentColor ?? "#7c3aed";
 const font = customization?.fontFamily ?? "sans-serif";
@@ -49,6 +65,19 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     {metaDescription && <meta name="description" content={metaDescription} />}
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+    {ogData && (
+      <>
+        <meta property="og:title" content={ogData.title} />
+        <meta property="og:type" content={ogData.type ?? "website"} />
+        <meta property="og:url" content={ogData.url} />
+        {ogData.description && <meta property="og:description" content={ogData.description} />}
+        {ogData.image && <meta property="og:image" content={ogData.image} />}
+      </>
+    )}
+    {schemaData && schemaData.map((schema) => (
+      <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+    ))}
     {faviconDir && (
       <>
         <link rel="icon" href="/favicon.ico" sizes="any" />

@@ -36,20 +36,44 @@ const title = `${category.name} — ${site.name}`;
 const CURRENCY = site.currency;
 const metaDescription = category.meta_description ?? undefined;
 
+const siteUrl = `https://${site.domain}`;
+const canonicalUrl = `${siteUrl}/categories/${category.slug}/`;
+
+const ogImage = category.category_image ? `${siteUrl}${category.category_image}` : undefined;
+const ogData = {
+  title,
+  description: metaDescription,
+  url: canonicalUrl,
+  type: "website",
+  ...(ogImage ? { image: ogImage } : {}),
+};
+
+const schemaData: Record<string, unknown>[] = [
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: category.name,
+    url: canonicalUrl,
+    description: metaDescription,
+    inLanguage: site.language,
+    isPartOf: { "@type": "WebSite", name: site.name, url: siteUrl },
+  },
+];
+
 // Related categories: up to 3 others (excluding current)
 const relatedCategories = categories.filter((c) => c.slug !== category.slug).slice(0, 3);
 ---
 
-<TsaLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
+<TsaLayout title={title} site={site} categories={categories} metaDescription={metaDescription} canonicalUrl={canonicalUrl} ogData={ogData} schemaData={schemaData}>
 
   <!-- ── Category header ───────────────────────────────────────────────── -->
   <div class="mb-8">
     <nav class="text-xs text-gray-400 mb-3 flex items-center gap-1">
       <a href="/" class="hover:text-gray-600 transition-colors">Inicio</a>
       <span>/</span>
-      <span class="text-gray-600">{category.name}</span>
+      <span class="font-medium" style="color: var(--color-primary)">{category.name}</span>
     </nav>
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 text-center">
+    <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-center" style="color: var(--color-primary)">
       {toTitleCase(category.name)}
     </h1>
     {category.description && (
@@ -175,7 +199,7 @@ const relatedCategories = categories.filter((c) => c.slug !== category.slug).sli
               </div>
             )}
             <div class="p-5 flex flex-col gap-1.5 items-center text-center">
-              <h3 class="font-semibold text-gray-800 group-hover:text-[var(--color-primary)] transition-colors">
+              <h3 class="font-semibold transition-colors" style="color: var(--color-primary)">
                 {cat.name}
               </h3>
               {cat.description && (

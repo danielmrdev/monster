@@ -16,9 +16,12 @@ interface Props {
   site: SiteInfo;
   categories: CategoryData[];
   metaDescription?: string;
+  canonicalUrl?: string;
+  ogData?: { title: string; description?: string; image?: string; type?: string; url: string };
+  schemaData?: Record<string, unknown>[];
 }
 
-const { title, site, categories, metaDescription } = Astro.props;
+const { title, site, categories, metaDescription, canonicalUrl, ogData, schemaData } = Astro.props;
 const logoUrl = site.customization?.logoUrl ?? null;
 
 const LEGAL_LINKS = [
@@ -33,6 +36,9 @@ const LEGAL_LINKS = [
   title={title}
   lang={site.language}
   metaDescription={metaDescription}
+  canonicalUrl={canonicalUrl}
+  ogData={ogData}
+  schemaData={schemaData}
   customization={site.customization}
   faviconDir={site.customization.faviconDir}
   siteId={site.id}
@@ -46,7 +52,7 @@ const LEGAL_LINKS = [
       <div class="flex items-center justify-center py-4">
         {logoUrl ? (
           <a href="/" class="shrink-0">
-            <img src={logoUrl} alt={site.name} class="h-10" />
+            <img src={logoUrl} alt={site.name} class="h-20" />
           </a>
         ) : (
           <a href="/" class="text-2xl font-bold" style="color: var(--color-primary)">
@@ -73,7 +79,7 @@ const LEGAL_LINKS = [
           {categories.map((cat) => (
             <a
               href={`/categories/${cat.slug}/`}
-              class="text-sm text-gray-600 hover:text-[var(--color-primary)] transition-colors font-medium whitespace-nowrap"
+              class="nav-cat-link text-sm text-gray-600 font-medium whitespace-nowrap transition-colors"
             >
               {cat.name}
             </a>
@@ -89,7 +95,7 @@ const LEGAL_LINKS = [
         {categories.map((cat) => (
           <a
             href={`/categories/${cat.slug}/`}
-            class="text-sm text-gray-600 hover:text-[var(--color-primary)] transition-colors py-2 border-b border-gray-50 last:border-0"
+            class="mob-cat-link text-sm text-gray-600 transition-colors py-2 border-b border-gray-50 last:border-0"
           >
             {cat.name}
           </a>
@@ -135,4 +141,8 @@ const LEGAL_LINKS = [
       }
     })();
   </script>
+  <style is:global>
+    .nav-cat-link:hover { color: var(--color-primary); }
+    .mob-cat-link:hover  { color: var(--color-primary); }
+  </style>
 </BaseLayout>

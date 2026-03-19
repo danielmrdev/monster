@@ -12,24 +12,74 @@ const slug = import.meta.env.SITE_SLUG ?? process.env["SITE_SLUG"] ?? "default";
 const data = loadSiteData(slug);
 const { site, categories, products } = data;
 
-const title = `${site.name} — Inicio`;
-const metaDescription = site.focus_keyword
-  ? `Las mejores ${site.focus_keyword} al mejor precio. Compara, elige y ahorra en Amazon.`
-  : `${site.name} — productos seleccionados al mejor precio en Amazon.`;
+// Build homepage title: "{keyword} | {site.name}" — but omit the site name
+// suffix when it's redundant (same as keyword, or already contained within it).
+function normalize(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+const keywordTitle = site.focus_keyword ? toTitleCase(site.focus_keyword) : '';
+const siteNameNorm = normalize(site.name);
+const keywordNorm  = normalize(keywordTitle);
+const suffixRedundant =
+  keywordNorm === siteNameNorm ||
+  keywordNorm.includes(siteNameNorm) ||
+  siteNameNorm.includes(keywordNorm);
+const title = keywordTitle
+  ? suffixRedundant ? keywordTitle : `${keywordTitle} | ${site.name}`
+  : site.name;
+const metaDescription = site.homepage_meta_description
+  ?? (site.focus_keyword
+    ? `Las mejores ${site.focus_keyword} al mejor precio. Compara, elige y ahorra en Amazon.`
+    : `${site.name} — productos seleccionados al mejor precio en Amazon.`);
 
-const CURRENCY = site.currency;
+const siteUrl = `https://${site.domain}`;
+const canonicalUrl = `${siteUrl}/`;
+
+// OG image: first product image with a local path, or first category image
+const ogImagePath =
+  products.find((p) => p.images?.[0])?.images[0] ??
+  categories.find((c) => c.category_image)?.category_image ??
+  null;
+const ogImage = ogImagePath ? `${siteUrl}${ogImagePath}` : undefined;
+
+const ogData = {
+  title,
+  description: metaDescription,
+  url: canonicalUrl,
+  type: "website",
+  ...(ogImage ? { image: ogImage } : {}),
+};
+
+const schemaData: Record<string, unknown>[] = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: site.name,
+    url: siteUrl,
+    description: metaDescription,
+    inLanguage: site.language,
+    publisher: {
+      "@type": "Organization",
+      name: site.name,
+      url: siteUrl,
+      ...(site.customization?.logoUrl
+        ? { logo: { "@type": "ImageObject", url: `${siteUrl}${site.customization.logoUrl}` } }
+        : {}),
+    },
+  },
+];
 ---
 
-<TsaLayout title={title} site={site} categories={categories} metaDescription={metaDescription}>
+<TsaLayout title={title} site={site} categories={categories} metaDescription={metaDescription} canonicalUrl={canonicalUrl} ogData={ogData} schemaData={schemaData}>
 
   <!-- ── Page header ───────────────────────────────────────────────────── -->
   <div class="mb-10">
     <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight text-center">
       {toTitleCase(site.focus_keyword ?? site.name)}
     </h1>
-    {site.focus_keyword && (
-      <p class="mt-2 text-base text-gray-500 text-center">
-        Guía de compra y mejores precios en Amazon
+    {site.homepage_intro && (
+      <p class="mt-4 text-base text-gray-600 max-w-2xl mx-auto text-center leading-relaxed">
+        {site.homepage_intro}
       </p>
     )}
   </div>
@@ -57,7 +107,7 @@ const CURRENCY = site.currency;
           )}
           <!-- Card text: name + short description -->
           <div class="p-5 flex flex-col gap-1.5 items-center text-center">
-            <h2 class="font-semibold text-gray-800 group-hover:text-[var(--color-primary)] transition-colors">
+            <h2 class="font-semibold transition-colors" style="color: var(--color-primary)">
               {cat.name}
             </h2>
             {cat.description && (

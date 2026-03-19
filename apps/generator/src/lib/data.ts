@@ -1,87 +1,91 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import type { AmazonMarket, Language, SiteTemplate } from "@monster/shared";
-import { AMAZON_MARKETS } from "@monster/shared";
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+import type { AmazonMarket, Language, SiteTemplate } from "@monster/shared"
+import { AMAZON_MARKETS } from "@monster/shared"
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
 export interface SiteCustomization {
-  primaryColor: string;
-  accentColor: string;
-  fontFamily: string;
+  primaryColor: string
+  accentColor: string
+  fontFamily: string
   /** Optional logo image URL. If set, rendered in the layout header instead of the site name. */
-  logoUrl?: string;
+  logoUrl?: string
   /** Optional favicon directory path (relative to admin public root). When set, favicon files are copied into dist/ root during site generation. */
-  faviconDir?: string;
+  faviconDir?: string
 }
 
 export interface SiteInfo {
-  name: string;
-  domain: string;
-  market: AmazonMarket;
-  language: Language;
-  currency: string;
-  affiliate_tag: string;
-  template_slug: SiteTemplate;
-  customization: SiteCustomization;
-  focus_keyword: string | null;
+  name: string
+  domain: string
+  market: AmazonMarket
+  language: Language
+  currency: string
+  affiliate_tag: string
+  template_slug: SiteTemplate
+  customization: SiteCustomization
+  focus_keyword: string | null
   /** Homepage SEO prose text rendered at the bottom of the homepage. */
-  homepage_seo_text: string | null;
+  homepage_seo_text: string | null
+  /** Homepage intro text shown below H1, before the category grid. */
+  homepage_intro: string | null
+  /** Homepage meta description for <meta name="description">. Overrides the default generated one. */
+  homepage_meta_description: string | null
   /** Site UUID — used by the analytics tracker as the `site_id` POST field. */
-  id: string;
+  id: string
   /** Contact email address — shown on legal pages. Optional; defaults to empty string. */
-  contact_email?: string;
+  contact_email?: string
   /** Supabase project URL — baked into the tracker at Astro build time. */
-  supabase_url: string;
+  supabase_url: string
   /** Supabase anon key — INSERT-only RLS, safe to expose in static HTML. */
-  supabase_anon_key: string;
+  supabase_anon_key: string
 }
 
 export interface CategoryData {
-  id: string;
-  name: string;
-  slug: string;
-  seo_text: string;
-  category_image: string | null;
-  keywords: string[];
-  description: string | null;
-  focus_keyword: string | null;
-  meta_description: string | null;
+  id: string
+  name: string
+  slug: string
+  seo_text: string
+  category_image: string | null
+  keywords: string[]
+  description: string | null
+  focus_keyword: string | null
+  meta_description: string | null
 }
 
 export interface ProsCons {
-  pros: string[];
-  cons: string[];
+  pros: string[]
+  cons: string[]
 }
 
 export interface ProductData {
-  id: string;
-  asin: string;
-  title: string;
-  slug: string;
-  current_price: number;
-  original_price: number | null;
-  images: string[];
-  rating: number;
-  is_prime: boolean;
-  detailed_description: string | null;
-  pros_cons: ProsCons | null;
-  category_slug: string;
-  focus_keyword: string | null;
-  user_opinions_summary: string | null;
-  meta_description: string | null;
+  id: string
+  asin: string
+  title: string
+  slug: string
+  current_price: number
+  original_price: number | null
+  images: string[]
+  rating: number
+  is_prime: boolean
+  detailed_description: string | null
+  pros_cons: ProsCons | null
+  category_slug: string
+  focus_keyword: string | null
+  user_opinions_summary: string | null
+  meta_description: string | null
 }
 
 export interface SiteData {
-  site: SiteInfo;
-  categories: CategoryData[];
-  products: ProductData[];
+  site: SiteInfo
+  categories: CategoryData[]
+  products: ProductData[]
   legalTemplates?: {
-    privacy?: string | null;
-    terms?: string | null;
-    cookies?: string | null;
-    contact?: string | null;
-  };
+    privacy?: string | null
+    terms?: string | null
+    cookies?: string | null
+    contact?: string | null
+  }
 }
 
 // ── Loader ────────────────────────────────────────────────────────────────
@@ -95,25 +99,25 @@ export interface SiteData {
  * not from src/. process.cwd() is always the generator root during `astro build`.
  */
 export function loadSiteData(slug: string): SiteData {
-  const jsonPath = join(process.cwd(), "src", "data", slug, "site.json");
-  const raw = readFileSync(jsonPath, "utf-8");
-  return JSON.parse(raw) as SiteData;
+  const jsonPath = join(process.cwd(), "src", "data", slug, "site.json")
+  const raw = readFileSync(jsonPath, "utf-8")
+  return JSON.parse(raw) as SiteData
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 /** Derive the Amazon domain string (e.g. "amazon.es") for a given market code. */
 export function getAmazonDomain(market: AmazonMarket): string {
-  const found = AMAZON_MARKETS.find((m) => m.slug === market);
-  return found?.domain ?? "amazon.com";
+  const found = AMAZON_MARKETS.find((m) => m.slug === market)
+  return found?.domain ?? "amazon.com"
 }
 
 /** Build the affiliate URL for a product ASIN. */
 export function buildAffiliateUrl(
   asin: string,
   market: AmazonMarket,
-  affiliateTag: string
+  affiliateTag: string,
 ): string {
-  const domain = getAmazonDomain(market);
-  return `https://www.${domain}/dp/${asin}?tag=${affiliateTag}`;
+  const domain = getAmazonDomain(market)
+  return `https://www.${domain}/dp/${asin}?tag=${affiliateTag}`
 }

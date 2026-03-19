@@ -1,19 +1,11 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | {
+  [key: string]: Json | undefined
+} | Json[]
 
 export type Database = {
   graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
+    Tables: { [_ in never]: never }
+    Views: { [_ in never]: never }
     Functions: {
       graphql: {
         Args: {
@@ -25,12 +17,8 @@ export type Database = {
         Returns: Json
       }
     }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    Enums: { [_ in never]: never }
+    CompositeTypes: { [_ in never]: never }
   }
   public: {
     Tables: {
@@ -74,15 +62,13 @@ export type Database = {
           started_at?: string | null
           status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ai_jobs_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "ai_jobs_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       analytics_daily: {
         Row: {
@@ -118,15 +104,13 @@ export type Database = {
           top_referrers?: Json | null
           unique_visitors?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "analytics_daily_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "analytics_daily_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       analytics_events: {
         Row: {
@@ -162,15 +146,13 @@ export type Database = {
           site_id?: string
           visitor_hash?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "analytics_events_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "analytics_events_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       category_products: {
         Row: {
@@ -188,22 +170,19 @@ export type Database = {
           position?: number
           product_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "category_products_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "tsa_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "category_products_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "tsa_products"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "category_products_category_id_fkey"
+          columns: ["category_id"]
+          isOneToOne: false
+          referencedRelation: "tsa_categories"
+          referencedColumns: ["id"]
+        }, {
+          foreignKeyName: "category_products_product_id_fkey"
+          columns: ["product_id"]
+          isOneToOne: false
+          referencedRelation: "tsa_products"
+          referencedColumns: ["id"]
+        }]
       }
       chat_conversations: {
         Row: {
@@ -233,15 +212,13 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "chat_conversations_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "chat_conversations_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       chat_messages: {
         Row: {
@@ -265,15 +242,13 @@ export type Database = {
           id?: string
           role?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "chat_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "chat_conversations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "chat_messages_conversation_id_fkey"
+          columns: ["conversation_id"]
+          isOneToOne: false
+          referencedRelation: "chat_conversations"
+          referencedColumns: ["id"]
+        }]
       }
       cost_categories: {
         Row: {
@@ -324,22 +299,19 @@ export type Database = {
           period?: string | null
           site_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "costs_category_slug_fkey"
-            columns: ["category_slug"]
-            isOneToOne: false
-            referencedRelation: "cost_categories"
-            referencedColumns: ["slug"]
-          },
-          {
-            foreignKeyName: "costs_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "costs_category_slug_fkey"
+          columns: ["category_slug"]
+          isOneToOne: false
+          referencedRelation: "cost_categories"
+          referencedColumns: ["slug"]
+        }, {
+          foreignKeyName: "costs_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       deployments: {
         Row: {
@@ -375,15 +347,13 @@ export type Database = {
           site_id?: string
           status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "deployments_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "deployments_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       domains: {
         Row: {
@@ -428,15 +398,13 @@ export type Database = {
           spaceship_id?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "domains_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "domains_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       product_alerts: {
         Row: {
@@ -472,22 +440,19 @@ export type Database = {
           site_id?: string
           status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "product_alerts_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "tsa_products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_alerts_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "product_alerts_product_id_fkey"
+          columns: ["product_id"]
+          isOneToOne: false
+          referencedRelation: "tsa_products"
+          referencedColumns: ["id"]
+        }, {
+          foreignKeyName: "product_alerts_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       research_results: {
         Row: {
@@ -511,15 +476,13 @@ export type Database = {
           result_type?: string
           session_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "research_results_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "research_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "research_results_session_id_fkey"
+          columns: ["session_id"]
+          isOneToOne: false
+          referencedRelation: "research_sessions"
+          referencedColumns: ["id"]
+        }]
       }
       research_sessions: {
         Row: {
@@ -591,15 +554,13 @@ export type Database = {
           rpm?: number | null
           site_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "revenue_adsense_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "revenue_adsense_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       revenue_amazon: {
         Row: {
@@ -635,15 +596,13 @@ export type Database = {
           market?: string | null
           site_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "revenue_amazon_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "revenue_amazon_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       revenue_daily: {
         Row: {
@@ -670,15 +629,13 @@ export type Database = {
           site_id?: string
           total_revenue?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "revenue_daily_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "revenue_daily_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       revenue_manual: {
         Row: {
@@ -711,15 +668,13 @@ export type Database = {
           site_id?: string | null
           source?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "revenue_manual_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "revenue_manual_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       seo_scores: {
         Row: {
@@ -782,15 +737,13 @@ export type Database = {
           suggestions?: Json | null
           technical_score?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "seo_scores_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "seo_scores_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       settings: {
         Row: {
@@ -907,6 +860,8 @@ export type Database = {
           customization: Json | null
           domain: string | null
           focus_keyword: string | null
+          homepage_intro: string | null
+          homepage_meta_description: string | null
           homepage_seo_text: string | null
           id: string
           is_active: boolean
@@ -931,6 +886,8 @@ export type Database = {
           customization?: Json | null
           domain?: string | null
           focus_keyword?: string | null
+          homepage_intro?: string | null
+          homepage_meta_description?: string | null
           homepage_seo_text?: string | null
           id?: string
           is_active?: boolean
@@ -955,6 +912,8 @@ export type Database = {
           customization?: Json | null
           domain?: string | null
           focus_keyword?: string | null
+          homepage_intro?: string | null
+          homepage_meta_description?: string | null
           homepage_seo_text?: string | null
           id?: string
           is_active?: boolean
@@ -970,22 +929,19 @@ export type Database = {
           template_slug?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "sites_site_type_slug_fkey"
-            columns: ["site_type_slug"]
-            isOneToOne: false
-            referencedRelation: "site_types"
-            referencedColumns: ["slug"]
-          },
-          {
-            foreignKeyName: "sites_template_slug_fkey"
-            columns: ["template_slug"]
-            isOneToOne: false
-            referencedRelation: "site_templates"
-            referencedColumns: ["slug"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "sites_site_type_slug_fkey"
+          columns: ["site_type_slug"]
+          isOneToOne: false
+          referencedRelation: "site_types"
+          referencedColumns: ["slug"]
+        }, {
+          foreignKeyName: "sites_template_slug_fkey"
+          columns: ["template_slug"]
+          isOneToOne: false
+          referencedRelation: "site_templates"
+          referencedColumns: ["slug"]
+        }]
       }
       tsa_categories: {
         Row: {
@@ -1027,15 +983,13 @@ export type Database = {
           slug?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "tsa_categories_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "tsa_categories_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
       tsa_products: {
         Row: {
@@ -1113,29 +1067,19 @@ export type Database = {
           updated_at?: string
           user_opinions_summary?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tsa_products_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: [{
+          foreignKeyName: "tsa_products_site_id_fkey"
+          columns: ["site_id"]
+          isOneToOne: false
+          referencedRelation: "sites"
+          referencedColumns: ["id"]
+        }]
       }
     }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    Views: { [_ in never]: never }
+    Functions: { [_ in never]: never }
+    Enums: { [_ in never]: never }
+    CompositeTypes: { [_ in never]: never }
   }
 }
 
@@ -1143,95 +1087,83 @@ type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
+export type Tables<DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] & DefaultSchema["Views"] | {
+  schema: keyof DatabaseWithoutInternals
+},
+TableName extends DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"]
+  : never = never,> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"][TableName] extends {
+    Row: infer R
+  }
+  ? R
+  : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] & DefaultSchema["Views"]
+    ? DefaultSchema["Tables"] & DefaultSchema["Views"][DefaultSchemaTableNameOrOptions] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
     : never
 
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
+export type TablesInsert<DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | {
+  schema: keyof DatabaseWithoutInternals
+},
+TableName extends DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,> = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
     : never
 
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
+export type TablesUpdate<DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | {
+  schema: keyof DatabaseWithoutInternals
+},
+TableName extends DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,> = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
     : never
 
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
+export type Enums<DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"] | {
+  schema: keyof DatabaseWithoutInternals
+},
+EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,> = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
@@ -1239,16 +1171,14 @@ export type Enums<
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
+export type CompositeTypes<PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"] | {
+  schema: keyof DatabaseWithoutInternals
+},
+CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,> = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
@@ -1264,4 +1194,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

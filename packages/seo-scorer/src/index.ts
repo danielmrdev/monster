@@ -1,41 +1,41 @@
-import * as cheerio from 'cheerio';
-import readability from 'text-readability';
-import type { PageType, SeoScore } from './types.js';
+import * as cheerio from "cheerio"
+import readability from "text-readability"
+import type { PageType, SeoScore } from "./types.js"
 
-export type { PageType, SeoScore } from './types.js';
+export type { PageType, SeoScore } from "./types.js"
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 function clamp(n: number): number {
-  return Math.max(0, Math.min(100, Math.round(n)));
+  return Math.max(0, Math.min(100, Math.round(n)))
 }
 
 function containsKeyword(text: string, keyword: string): boolean {
-  if (!keyword) return false;
-  return text.toLowerCase().includes(keyword.toLowerCase());
+  if (!keyword) return false
+  return text.toLowerCase().includes(keyword.toLowerCase())
 }
 
 function keywordCount(text: string, keyword: string): number {
-  if (!keyword || !text) return 0;
-  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(escaped, 'gi');
-  return (text.match(re) ?? []).length;
+  if (!keyword || !text) return 0
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  const re = new RegExp(escaped, "gi")
+  return (text.match(re) ?? []).length
 }
 
 function wordCount(text: string): number {
-  const trimmed = text.trim();
-  if (!trimmed) return 0;
-  return trimmed.split(/\s+/).length;
+  const trimmed = text.trim()
+  if (!trimmed) return 0
+  return trimmed.split(/\s+/).length
 }
 
 // ─── word-count thresholds by page type ─────────────────────────────────────
 
-const WORD_COUNT_THRESHOLDS: Record<PageType, { min: number; good: number }> = {
+const WORD_COUNT_THRESHOLDS: Record<PageType, { min: number good: number }> = {
   homepage: { min: 200, good: 400 },
-  category: { min: 100, good: 200 },
+  category: { min: 150, good: 350 },
   product: { min: 200, good: 300 },
   legal: { min: 300, good: 500 },
-};
+}
 
 // ─── 1. Content Quality (30%) ────────────────────────────────────────────────
 
@@ -46,52 +46,64 @@ function scoreContentQuality(
   keyword: string,
   pageType: PageType,
   flesch: number,
+  fleschSupported: boolean,
 ): number {
-  const isLegal = pageType === 'legal';
-  const thresholds = WORD_COUNT_THRESHOLDS[pageType];
-  let score = 0;
+  const isLegal = pageType === "legal"
+  const thresholds = WORD_COUNT_THRESHOLDS[pageType]
+  let score = 0
 
   // Word count sub-score (0–30 pts)
   if (words >= thresholds.good) {
-    score += 30;
+    score += 30
   } else if (words >= thresholds.min) {
-    score += 15 + Math.round(((words - thresholds.min) / (thresholds.good - thresholds.min)) * 15);
+    score +=
+      15 +
+      Math.round(
+        ((words - thresholds.min) / (thresholds.good - thresholds.min)) * 15,
+      )
   } else if (words > 0) {
-    score += Math.round((words / thresholds.min) * 10);
+    score += Math.round((words / thresholds.min) * 10)
   }
 
   // Keyword density sub-score (0–30 pts) — skipped for legal
   if (!isLegal && keyword) {
-    const density = words > 0 ? (keywordCount(bodyText, keyword) / words) * 100 : 0;
+    const density =
+      words > 0 ? (keywordCount(bodyText, keyword) / words) * 100 : 0
     if (density >= 0.5 && density <= 3) {
-      score += 30;
+      score += 30
     } else if (density > 3) {
-      score += 10; // over-optimized, partial
+      score += 10 // over-optimized, partial
     } else if (density > 0) {
-      score += 15;
+      score += 15
     }
     // density === 0 → 0 pts
 
     // Keyword in first paragraph sub-score (0–20 pts) — skipped for legal
     if (firstParaText && containsKeyword(firstParaText, keyword)) {
-      score += 20;
+      score += 20
     }
   } else {
     // Legal page — allocate those sub-scores to word count bonus
-    score += 30; // keyword density exempted → full marks
-    if (!keyword || isLegal) score += 20; // first para exempted → full marks
+    score += 30 // keyword density exempted → full marks
+    if (!keyword || isLegal) score += 20 // first para exempted → full marks
   }
 
   // Flesch reading ease sub-score (0–20 pts)
-  if (flesch >= 60) {
-    score += 20;
+  // Only meaningful for English — for other languages grant full marks
+  // (the Flesch-Kincaid formula is calibrated for English syllable patterns;
+  //  Spanish/French/German text consistently scores -30 to +30 making the
+  //  sub-score a penalty on content quality rather than a signal of readability).
+  if (!fleschSupported) {
+    score += 20
+  } else if (flesch >= 60) {
+    score += 20
   } else if (flesch >= 30) {
-    score += 10;
+    score += 10
   } else {
-    score += 0;
+    score += 0
   }
 
-  return clamp(score);
+  return clamp(score)
 }
 
 // ─── 2. Meta Elements (20%) ──────────────────────────────────────────────────
@@ -101,44 +113,44 @@ function scoreMetaElements(
   keyword: string,
   pageType: PageType,
 ): number {
-  const isLegal = pageType === 'legal';
-  let score = 0;
+  const isLegal = pageType === "legal"
+  let score = 0
 
   // Title (0–40 pts)
-  const titleText = $('title').first().text().trim();
+  const titleText = $("title").first().text().trim()
   if (titleText) {
-    const len = titleText.length;
-    if (len >= 50 && len <= 60) {
-      score += 25; // optimal length
+    const len = titleText.length
+    if (len >= 30 && len <= 65) {
+      score += 25 // optimal: covers short-but-clean titles and standard "keyword | brand" patterns
     } else if (len > 0) {
-      score += 15; // present but not optimal
+      score += 15 // present but too short (<30) or too long (>65, may truncate in SERPs)
     }
     // keyword in title (skip for legal)
     if (!isLegal && keyword && containsKeyword(titleText, keyword)) {
-      score += 15;
+      score += 15
     } else if (isLegal) {
-      score += 15; // exempted → full
+      score += 15 // exempted → full
     }
   }
 
   // Meta description (0–40 pts)
-  const descContent = $('meta[name="description"]').attr('content') ?? '';
+  const descContent = $('meta[name="description"]').attr("content") ?? ""
   if (descContent) {
-    const len = descContent.length;
+    const len = descContent.length
     if (len >= 120 && len <= 157) {
-      score += 40;
+      score += 40
     } else if (len > 0) {
-      score += 20;
+      score += 20
     }
   }
 
   // Canonical (0–20 pts)
-  const canonical = $('link[rel="canonical"]').attr('href');
+  const canonical = $('link[rel="canonical"]').attr("href")
   if (canonical) {
-    score += 20;
+    score += 20
   }
 
-  return clamp(score);
+  return clamp(score)
 }
 
 // ─── 3. Structure (15%) ──────────────────────────────────────────────────────
@@ -149,307 +161,339 @@ function scoreStructure(
   keyword: string,
   pageType: PageType,
 ): number {
-  const isLegal = pageType === 'legal';
-  let score = 0;
+  const isLegal = pageType === "legal"
+  let score = 0
 
   // Single H1 (0–35 pts)
-  const h1s = $('h1');
-  const h1Count = h1s.length;
+  const h1s = $("h1")
+  const h1Count = h1s.length
   if (h1Count === 1) {
-    score += 20;
+    score += 20
     // H1 contains keyword (skip for legal)
-    const h1Text = h1s.first().text().trim();
+    const h1Text = h1s.first().text().trim()
     if (!isLegal && keyword && containsKeyword(h1Text, keyword)) {
-      score += 15;
+      score += 15
     } else if (isLegal) {
-      score += 15; // exempted
+      score += 15 // exempted
     }
   } else if (h1Count > 1) {
-    score += 0; // multiple H1s penalized
+    score += 0 // multiple H1s penalized
   }
 
   // Heading hierarchy (0–30 pts)
   // Check no skipped heading levels
-  const headings = $('h1, h2, h3, h4, h5, h6').toArray();
-  let hierarchyOk = true;
-  let lastLevel = 0;
+  const headings = $("h1, h2, h3, h4, h5, h6").toArray()
+  let hierarchyOk = true
+  let lastLevel = 0
   for (const el of headings) {
-    const tagName = ('name' in el ? (el as { name: string }).name : '') as string;
-    const level = parseInt(tagName.replace('h', ''), 10);
+    const tagName = (
+      "name" in el ? (el as { name: string }).name : ""
+    ) as string
+    const level = parseInt(tagName.replace("h", ""), 10)
     if (!isNaN(level) && lastLevel > 0 && level > lastLevel + 1) {
-      hierarchyOk = false;
-      break;
+      hierarchyOk = false
+      break
     }
-    if (!isNaN(level)) lastLevel = level;
+    if (!isNaN(level)) lastLevel = level
   }
-  if (hierarchyOk) score += 30;
+  if (hierarchyOk) score += 30
 
   // Subheadings every ≤300 words (0–35 pts)
-  const words = wordCount(bodyText);
+  const words = wordCount(bodyText)
   if (words <= 300) {
     // Short page — no subheading requirement
-    score += 35;
+    score += 35
   } else {
-    const h2s = $('h2, h3').length;
-    const expectedSubheadings = Math.floor(words / 300);
+    const h2s = $("h2, h3").length
+    const expectedSubheadings = Math.floor(words / 300)
     if (h2s >= expectedSubheadings) {
-      score += 35;
+      score += 35
     } else if (h2s > 0) {
-      score += Math.round((h2s / expectedSubheadings) * 35);
+      score += Math.round((h2s / expectedSubheadings) * 35)
     }
   }
 
-  return clamp(score);
+  return clamp(score)
 }
 
 // ─── 4. Links (12%) ──────────────────────────────────────────────────────────
 
-function scoreLinks(
-  $: cheerio.CheerioAPI,
-  pageType: PageType,
-): number {
-  let score = 0;
+function scoreLinks($: cheerio.CheerioAPI, pageType: PageType): number {
+  let score = 0
 
-  const allLinks = $('a[href]');
+  const allLinks = $("a[href]")
 
   // Internal links: relative hrefs or same-domain paths
-  let internalCount = 0;
-  let amazonLinksWithoutSponsored = 0;
-  let amazonLinkCount = 0;
+  let internalCount = 0
+  let amazonLinksWithoutSponsored = 0
+  let amazonLinkCount = 0
 
   allLinks.each((_, el) => {
-    const href = $(el).attr('href') ?? '';
-    const rel = $(el).attr('rel') ?? '';
+    const href = $(el).attr("href") ?? ""
+    const rel = $(el).attr("rel") ?? ""
     const isInternal =
-      href.startsWith('/') ||
-      href.startsWith('./') ||
-      href.startsWith('../') ||
-      (!href.startsWith('http') && !href.startsWith('//'));
-    if (isInternal) internalCount++;
+      href.startsWith("/") ||
+      href.startsWith("./") ||
+      href.startsWith("../") ||
+      (!href.startsWith("http") && !href.startsWith("//"))
+    if (isInternal) internalCount++
 
     // Affiliate link compliance for product pages
-    if (href.includes('amazon.')) {
-      amazonLinkCount++;
-      if (!rel.includes('sponsored') && !rel.includes('nofollow')) {
-        amazonLinksWithoutSponsored++;
+    if (href.includes("amazon.")) {
+      amazonLinkCount++
+      if (!rel.includes("sponsored") && !rel.includes("nofollow")) {
+        amazonLinksWithoutSponsored++
       }
     }
-  });
+  })
 
   // Internal links (0–70 pts)
   if (internalCount >= 3) {
-    score += 70;
+    score += 70
   } else if (internalCount >= 1) {
-    score += 50;
+    score += 50
   }
 
   // Affiliate link compliance (0–30 pts) — mainly for product pages
-  if (pageType === 'product') {
+  if (pageType === "product") {
     if (amazonLinkCount === 0) {
-      score += 15; // no amazon links present — neutral
+      score += 15 // no amazon links present — neutral
     } else if (amazonLinksWithoutSponsored === 0) {
-      score += 30; // all amazon links properly attributed
+      score += 30 // all amazon links properly attributed
     } else {
-      score += 0; // missing rel="sponsored"
+      score += 0 // missing rel="sponsored"
     }
   } else {
-    score += 30; // not applicable, full marks
+    score += 30 // not applicable, full marks
   }
 
-  return clamp(score);
+  return clamp(score)
 }
 
 // ─── 5. Media (8%) ───────────────────────────────────────────────────────────
 
-function scoreMedia(
-  $: cheerio.CheerioAPI,
-  keyword: string,
-): number {
-  let score = 0;
+function scoreMedia($: cheerio.CheerioAPI, keyword: string): number {
+  let score = 0
 
-  const imgs = $('img');
-  const imgCount = imgs.length;
+  const imgs = $("img")
+  const imgCount = imgs.length
 
-  if (imgCount === 0) return 0;
+  if (imgCount === 0) return 0
 
   // At least 1 image (0–40 pts)
-  score += 40;
+  score += 40
 
   // All imgs have alt (0–30 pts)
-  let withAlt = 0;
-  let withKeywordAlt = false;
+  let withAlt = 0
+  let withKeywordAlt = false
 
   imgs.each((_, el) => {
-    const alt = $(el).attr('alt') ?? '';
+    const alt = $(el).attr("alt") ?? ""
     if (alt.trim()) {
-      withAlt++;
+      withAlt++
       if (keyword && containsKeyword(alt, keyword)) {
-        withKeywordAlt = true;
+        withKeywordAlt = true
       }
     }
-  });
+  })
 
   if (withAlt === imgCount) {
-    score += 30;
+    score += 30
   } else if (withAlt > 0) {
-    score += Math.round((withAlt / imgCount) * 30);
+    score += Math.round((withAlt / imgCount) * 30)
   }
 
   // At least 1 alt contains keyword (0–30 pts)
   if (withKeywordAlt) {
-    score += 30;
+    score += 30
   } else if (!keyword) {
-    score += 30; // no keyword provided — exempted
+    score += 30 // no keyword provided — exempted
   }
 
-  return clamp(score);
+  return clamp(score)
 }
 
 // ─── 6. Schema (8%) ──────────────────────────────────────────────────────────
 
 const SCHEMA_TYPES: Record<PageType, string[]> = {
-  product: ['product'],
-  category: ['collectionpage', 'itemlist'],
-  homepage: ['organization', 'website'],
-  legal: ['webpage'],
-};
+  product: ["product"],
+  category: ["collectionpage", "itemlist"],
+  homepage: ["organization", "website"],
+  legal: ["webpage"],
+}
 
-function scoreSchema(
-  $: cheerio.CheerioAPI,
-  pageType: PageType,
-): number {
-  const scripts = $('script[type="application/ld+json"]');
-  if (scripts.length === 0) return 0;
+function scoreSchema($: cheerio.CheerioAPI, pageType: PageType): number {
+  const scripts = $('script[type="application/ld+json"]')
+  if (scripts.length === 0) return 0
 
-  let found = false;
-  let typeMatches = false;
+  let found = false
+  let typeMatches = false
 
   scripts.each((_, el) => {
     try {
-      const json = JSON.parse($(el).html() ?? '{}') as Record<string, unknown>;
-      found = true;
-      const rawType = (json['@type'] as string | undefined) ?? '';
-      const schemaType = rawType.toLowerCase();
-      const expected = SCHEMA_TYPES[pageType];
+      const json = JSON.parse($(el).html() ?? "{}") as Record<string, unknown>
+      found = true
+      const rawType = json["@type"] as string | undefined ?? ""
+      const schemaType = rawType.toLowerCase()
+      const expected = SCHEMA_TYPES[pageType]
       if (expected.some((t) => schemaType.includes(t))) {
-        typeMatches = true;
+        typeMatches = true
       }
     } catch {
       // malformed JSON — treat as missing
     }
-  });
+  })
 
-  if (!found) return 0;
-  if (typeMatches) return 100;
-  return 40; // JSON-LD present but wrong type
+  if (!found) return 0
+  if (typeMatches) return 100
+  return 40 // JSON-LD present but wrong type
 }
 
 // ─── 7. Technical (5%) ───────────────────────────────────────────────────────
 
 function scoreTechnical($: cheerio.CheerioAPI): number {
-  let score = 0;
+  let score = 0
 
   // Viewport meta (0–60 pts)
-  const viewport = $('meta[name="viewport"]').attr('content') ?? '';
-  if (viewport.includes('width=device-width')) {
-    score += 60;
+  const viewport = $('meta[name="viewport"]').attr("content") ?? ""
+  if (viewport.includes("width=device-width")) {
+    score += 60
   } else if (viewport) {
-    score += 30;
+    score += 30
   }
 
   // <html lang> attribute (0–40 pts)
-  const lang = $('html').attr('lang') ?? '';
+  const lang = $("html").attr("lang") ?? ""
   if (lang.trim()) {
-    score += 40;
+    score += 40
   }
 
-  return clamp(score);
+  return clamp(score)
 }
 
 // ─── 8. Social (2%) ──────────────────────────────────────────────────────────
 
 function scoreSocial($: cheerio.CheerioAPI): number {
-  const ogTitle = $('meta[property="og:title"]').attr('content');
-  const ogType = $('meta[property="og:type"]').attr('content');
-  const ogImage = $('meta[property="og:image"]').attr('content');
-  const ogUrl = $('meta[property="og:url"]').attr('content');
+  const ogTitle = $('meta[property="og:title"]').attr("content")
+  const ogType = $('meta[property="og:type"]').attr("content")
+  const ogImage = $('meta[property="og:image"]').attr("content")
+  const ogUrl = $('meta[property="og:url"]').attr("content")
 
-  const present = [ogTitle, ogType, ogImage, ogUrl].filter(Boolean).length;
-  return clamp(present * 25);
+  const present = [ogTitle, ogType, ogImage, ogUrl].filter(Boolean).length
+  return clamp(present * 25)
 }
 
 // ─── suggestions ─────────────────────────────────────────────────────────────
 
 function buildSuggestions(scores: {
-  content_quality: number;
-  meta_elements: number;
-  structure: number;
-  links: number;
-  media: number;
-  schema: number;
-  technical: number;
-  social: number;
+  content_quality: number
+  meta_elements: number
+  structure: number
+  links: number
+  media: number
+  schema: number
+  technical: number
+  social: number
 }): string[] {
-  const suggestions: string[] = [];
+  const suggestions: string[] = []
 
-  if (scores.content_quality < 50) suggestions.push('Increase body content length and ensure keyword is used naturally throughout.');
-  if (scores.meta_elements < 50) suggestions.push('Add or optimise the <title> tag (50–60 chars) and meta description (120–157 chars).');
-  if (scores.structure < 50) suggestions.push('Add a single H1 containing the focus keyword and use subheadings every 300 words.');
-  if (scores.links < 50) suggestions.push('Add at least one internal link to related pages.');
-  if (scores.media < 50) suggestions.push('Add images with descriptive alt text containing the focus keyword.');
-  if (scores.schema < 30) suggestions.push('Add JSON-LD structured data matching the page type (e.g. Product, CollectionPage).');
-  if (scores.technical < 60) suggestions.push('Add a viewport meta tag and set the <html lang> attribute.');
-  if (scores.social < 50) suggestions.push('Add Open Graph meta tags (og:title, og:type, og:image, og:url).');
+  if (scores.content_quality < 50)
+    suggestions.push(
+      "Increase body content length and ensure keyword is used naturally throughout.",
+    )
+  if (scores.meta_elements < 50)
+    suggestions.push(
+      "Add or optimise the <title> tag (50–60 chars) and meta description (120–157 chars).",
+    )
+  if (scores.structure < 50)
+    suggestions.push(
+      "Add a single H1 containing the focus keyword and use subheadings every 300 words.",
+    )
+  if (scores.links < 50)
+    suggestions.push("Add at least one internal link to related pages.")
+  if (scores.media < 50)
+    suggestions.push(
+      "Add images with descriptive alt text containing the focus keyword.",
+    )
+  if (scores.schema < 30)
+    suggestions.push(
+      "Add JSON-LD structured data matching the page type (e.g. Product, CollectionPage).",
+    )
+  if (scores.technical < 60)
+    suggestions.push(
+      "Add a viewport meta tag and set the <html lang> attribute.",
+    )
+  if (scores.social < 50)
+    suggestions.push(
+      "Add Open Graph meta tags (og:title, og:type, og:image, og:url).",
+    )
 
-  return suggestions;
+  return suggestions
 }
 
 // ─── grade ───────────────────────────────────────────────────────────────────
 
-function toGrade(overall: number): SeoScore['grade'] {
-  if (overall >= 90) return 'A';
-  if (overall >= 70) return 'B';
-  if (overall >= 50) return 'C';
-  if (overall >= 30) return 'D';
-  return 'F';
+function toGrade(overall: number): SeoScore["grade"] {
+  if (overall >= 90) return "A"
+  if (overall >= 70) return "B"
+  if (overall >= 50) return "C"
+  if (overall >= 30) return "D"
+  return "F"
 }
 
 // ─── main export ─────────────────────────────────────────────────────────────
+
+/**
+ * Languages where Flesch-Kincaid reading ease is calibrated and produces
+ * meaningful scores. Spanish (and other Romance languages) have longer average
+ * syllable counts per word — the English formula consistently returns negative
+ * values even for clearly readable text, making the sub-score useless.
+ * For non-English languages we bypass Flesch and grant full marks instead,
+ * redistributing those 20 pts to content length where they belong.
+ */
+const FLESCH_SUPPORTED_LANGUAGES = new Set(["en", "en-US", "en-GB", "en-AU"])
+
+function isFleschSupported(language: string): boolean {
+  const base = language.toLowerCase().split("-")[0]
+  return FLESCH_SUPPORTED_LANGUAGES.has(language) || base === "en"
+}
 
 export function scorePage(
   html: string,
   focusKeyword: string,
   pageType: PageType,
+  language = "en",
 ): SeoScore {
-  const $ = cheerio.load(html || '', { xmlMode: false });
+  const $ = cheerio.load(html || "", { xmlMode: false })
 
   // Extract body text excluding nav/header/footer
-  const bodyText = $('body')
+  const bodyText = $("body")
     .clone()
-    .find('nav, header, footer')
+    .find("nav, header, footer")
     .remove()
     .end()
     .text()
-    .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/\s+/g, " ")
+    .trim()
 
-  const words = wordCount(bodyText);
+  const words = wordCount(bodyText)
 
   // First paragraph text
-  const firstParaText = $('p').first().text().trim();
+  const firstParaText = $("p").first().text().trim()
 
   // Flesch reading ease — guard null/undefined
-  let flesch = 60;
+  let flesch = 60
   try {
-    const raw = readability.fleschReadingEase(bodyText);
-    if (typeof raw === 'number' && !isNaN(raw)) {
-      flesch = raw;
+    const raw = readability.fleschReadingEase(bodyText)
+    if (typeof raw === "number" && !isNaN(raw)) {
+      flesch = raw
     }
   } catch {
-    flesch = 60;
+    flesch = 60
   }
 
   // Score all 8 categories
+  const fleschSupported = isFleschSupported(language)
   const content_quality = scoreContentQuality(
     bodyText,
     firstParaText,
@@ -457,37 +501,47 @@ export function scorePage(
     focusKeyword,
     pageType,
     flesch,
-  );
+    fleschSupported,
+  )
 
-  const meta_elements = scoreMetaElements($, focusKeyword, pageType);
-  const structure = scoreStructure($, bodyText, focusKeyword, pageType);
-  const links = scoreLinks($, pageType);
-  const media = scoreMedia($, focusKeyword);
-  const schema = scoreSchema($, pageType);
-  const technical = scoreTechnical($);
-  const social = scoreSocial($);
+  const meta_elements = scoreMetaElements($, focusKeyword, pageType)
+  const structure = scoreStructure($, bodyText, focusKeyword, pageType)
+  const links = scoreLinks($, pageType)
+  const media = scoreMedia($, focusKeyword)
+  const schema = scoreSchema($, pageType)
+  const technical = scoreTechnical($)
+  const social = scoreSocial($)
 
   // Weighted overall
   const overall = clamp(
-    content_quality * 0.30 +
-    meta_elements * 0.20 +
-    structure * 0.15 +
-    links * 0.12 +
-    media * 0.08 +
-    schema * 0.08 +
-    technical * 0.05 +
-    social * 0.02,
-  );
+    content_quality * 0.3 +
+      meta_elements * 0.2 +
+      structure * 0.15 +
+      links * 0.12 +
+      media * 0.08 +
+      schema * 0.08 +
+      technical * 0.05 +
+      social * 0.02,
+  )
 
-  const grade = toGrade(overall);
+  const grade = toGrade(overall)
 
-  const scores = { content_quality, meta_elements, structure, links, media, schema, technical, social };
-  const suggestions = buildSuggestions(scores);
+  const scores = {
+    content_quality,
+    meta_elements,
+    structure,
+    links,
+    media,
+    schema,
+    technical,
+    social,
+  }
+  const suggestions = buildSuggestions(scores)
 
   return {
     overall,
     grade,
     ...scores,
     suggestions,
-  };
+  }
 }

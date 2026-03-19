@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/service'
+import { NextRequest, NextResponse } from "next/server"
+import { createServiceClient } from "@/lib/supabase/service"
 
 const PAGE_SIZE = 25
 
 interface Params {
-  params: Promise<{ id: string; catId: string }>
+  params: Promise<{ id: string catId: string }>
 }
 
 /**
@@ -24,23 +24,26 @@ export async function GET(request: NextRequest, { params }: Params) {
   const { id: siteId, catId } = await params
   const { searchParams } = request.nextUrl
 
-  const q = searchParams.get('q')?.trim() ?? ''
-  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? String(PAGE_SIZE), 10)))
+  const q = searchParams.get("q")?.trim() ?? ""
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
+  const limit = Math.min(
+    100,
+    Math.max(1, parseInt(searchParams.get("limit") ?? String(PAGE_SIZE), 10)),
+  )
   const from = (page - 1) * limit
   const to = from + limit - 1
 
   const supabase = createServiceClient()
 
   let query = supabase
-    .from('tsa_products')
+    .from("tsa_products")
     .select(
-      'id, asin, title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id)',
-      { count: 'exact' }
+      "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id)",
+      { count: "exact" },
     )
-    .eq('site_id', siteId)
-    .eq('category_products.category_id', catId)
-    .order('created_at', { ascending: false })
+    .eq("site_id", siteId)
+    .eq("category_products.category_id", catId)
+    .order("created_at", { ascending: false })
     .range(from, to)
 
   if (q) {
@@ -50,7 +53,11 @@ export async function GET(request: NextRequest, { params }: Params) {
   const { data, error, count } = await query
 
   if (error) {
-    console.error('[API /categories/[catId]/products] Supabase error:', error.message, { siteId, catId })
+    console.error(
+      "[API /categories/[catId]/products] Supabase error:",
+      error.message,
+      { siteId, catId },
+    )
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

@@ -1,48 +1,53 @@
-'use client'
+"use client" // kept for type reference; actual data comes from DB via props
 
-import { useActionState, useRef, useState } from 'react'
-import Link from 'next/link'
-import { updateSite, type UpdateSiteState } from '../../actions'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import type { SiteCustomization } from '@monster/shared'
+// Logo upload state — initialized from current customization value
+
+// Favicon upload state — initialized from current customization value
+/* Basic Info */ /* Active toggle */ /* Name */ /* Domain */ /* Niche */ /* Market */ /* Language */ /* Currency */ /* Affiliate Tag */ /* Template */ /* Refresh Interval */ /* Customization */ /* Primary Color */ /* Accent Color */ /* Font Family */ /* Logo upload */ /* Favicon upload */ /* Homepage SEO */ /* Focus Keyword */ /* Meta Description */ /* Homepage Intro */ /* Homepage SEO Text */ /* Form-level error */ /* Actions */
+
+import { useActionState, useState } from "react"
+import Link from "next/link"
+import { updateSite, type UpdateSiteState } from "../../actions"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import type { SiteCustomization } from "@monster/shared"
 
 const AMAZON_MARKETS = [
-  { value: 'ES', label: 'Spain (ES)' },
-  { value: 'US', label: 'United States (US)' },
-  { value: 'UK', label: 'United Kingdom (UK)' },
-  { value: 'DE', label: 'Germany (DE)' },
-  { value: 'FR', label: 'France (FR)' },
-  { value: 'IT', label: 'Italy (IT)' },
-  { value: 'MX', label: 'Mexico (MX)' },
-  { value: 'CA', label: 'Canada (CA)' },
-  { value: 'JP', label: 'Japan (JP)' },
-  { value: 'AU', label: 'Australia (AU)' },
+  { value: "ES", label: "Spain (ES)" },
+  { value: "US", label: "United States (US)" },
+  { value: "UK", label: "United Kingdom (UK)" },
+  { value: "DE", label: "Germany (DE)" },
+  { value: "FR", label: "France (FR)" },
+  { value: "IT", label: "Italy (IT)" },
+  { value: "MX", label: "Mexico (MX)" },
+  { value: "CA", label: "Canada (CA)" },
+  { value: "JP", label: "Japan (JP)" },
+  { value: "AU", label: "Australia (AU)" },
 ]
 
 const LANGUAGES = [
-  { value: 'es', label: 'Spanish (es)' },
-  { value: 'en', label: 'English (en)' },
-  { value: 'de', label: 'German (de)' },
-  { value: 'fr', label: 'French (fr)' },
-  { value: 'it', label: 'Italian (it)' },
-  { value: 'ja', label: 'Japanese (ja)' },
+  { value: "es", label: "Spanish (es)" },
+  { value: "en", label: "English (en)" },
+  { value: "de", label: "German (de)" },
+  { value: "fr", label: "French (fr)" },
+  { value: "it", label: "Italian (it)" },
+  { value: "ja", label: "Japanese (ja)" },
 ]
 
 const CURRENCIES = [
-  { value: 'EUR', label: 'Euro (EUR)' },
-  { value: 'USD', label: 'US Dollar (USD)' },
-  { value: 'GBP', label: 'British Pound (GBP)' },
-  { value: 'MXN', label: 'Mexican Peso (MXN)' },
-  { value: 'CAD', label: 'Canadian Dollar (CAD)' },
-  { value: 'JPY', label: 'Japanese Yen (JPY)' },
-  { value: 'AUD', label: 'Australian Dollar (AUD)' },
+  { value: "EUR", label: "Euro (EUR)" },
+  { value: "USD", label: "US Dollar (USD)" },
+  { value: "GBP", label: "British Pound (GBP)" },
+  { value: "MXN", label: "Mexican Peso (MXN)" },
+  { value: "CAD", label: "Canadian Dollar (CAD)" },
+  { value: "JPY", label: "Japanese Yen (JPY)" },
+  { value: "AUD", label: "Australian Dollar (AUD)" },
 ]
 
-const TEMPLATES: { value: string; label: string }[] = [] // kept for type reference; actual data comes from DB via props
+const TEMPLATES: { value: string label: string }[] = []
 
 function FieldError({ messages }: { messages?: string[] }) {
   if (!messages?.length) return null
@@ -83,103 +88,69 @@ interface EditFormProps {
     customization: SiteCustomization | null
     focus_keyword: string | null
     homepage_seo_text: string | null
+    homepage_meta_description: string | null
+    homepage_intro: string | null
     is_active: boolean
     refresh_interval_hours: number
   }
-  templates: { value: string; label: string }[]
+  templates: { value: string label: string }[]
 }
 
 export function EditForm({ site, templates }: EditFormProps) {
   const updateSiteWithId = updateSite.bind(null, site.id)
-  const [state, formAction, isPending] = useActionState<UpdateSiteState, FormData>(
-    updateSiteWithId,
-    null
-  )
+  const [state, formAction, isPending] =
+    useActionState<UpdateSiteState, FormData>(updateSiteWithId, null)
 
   const errors = state?.errors
   const c = site.customization
-
-  // Logo upload state — initialized from current customization value
   const [logoUploadState, setLogoUploadState] = useState<{
-    uploading: boolean; path: string | null; error: string | null
-  }>({ uploading: false, path: c?.logoUrl ?? null, error: null })
-
-  // Favicon upload state — initialized from current customization value
+    uploading: boolean
+    path: string | null
+    error: string | null
+  }>({
+    uploading: false,
+    path:
+      c?.logoUrl ??
+      null,
+    error: null,
+  })
   const [faviconUploadState, setFaviconUploadState] = useState<{
-    uploading: boolean; path: string | null; error: string | null
+    uploading: boolean
+    path: string | null
+    error: string | null
   }>({ uploading: false, path: c?.faviconDir ?? null, error: null })
-
-  // Homepage SEO — AI generation state
-  const homepageSeoTextRef = useRef<HTMLTextAreaElement>(null)
-  const [isGeneratingHomepageSeo, setIsGeneratingHomepageSeo] = useState(false)
-  const [homepageSeoError, setHomepageSeoError] = useState<string | null>(null)
-  const [homepageSeoText, setHomepageSeoText] = useState(site.homepage_seo_text ?? '')
-
-  async function handleGenerateHomepageSeo() {
-    setIsGeneratingHomepageSeo(true)
-    setHomepageSeoError(null)
-    setHomepageSeoText('')
-
-    try {
-      const res = await fetch(`/api/sites/${site.id}/generate-seo-text`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ field: 'homepage_seo_text', contextId: site.id }),
-      })
-
-      if (!res.ok || !res.body) {
-        const errJson = await res.json().catch(() => ({ error: 'Unknown error' }))
-        setHomepageSeoError(errJson.error ?? 'Generation failed')
-        return
-      }
-
-      const reader = res.body.getReader()
-      const dec = new TextDecoder()
-      let buf = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buf += dec.decode(value, { stream: true })
-        const lines = buf.split('\n')
-        buf = lines.pop() ?? ''
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          try {
-            const ev = JSON.parse(line.slice(6))
-            if (ev.type === 'text') {
-              setHomepageSeoText((prev) => prev + ev.text)
-            } else if (ev.type === 'error') {
-              setHomepageSeoError(ev.error ?? 'Generation failed')
-            }
-          } catch {
-            // ignore malformed SSE lines
-          }
-        }
-      }
-    } catch (e) {
-      setHomepageSeoError(e instanceof Error ? e.message : 'Generation failed')
-    } finally {
-      setIsGeneratingHomepageSeo(false)
-    }
-  }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setLogoUploadState({ uploading: true, path: null, error: null })
     const fd = new FormData()
-    fd.append('file', file)
+    fd.append("file", file)
     try {
-      const res = await fetch(`/api/sites/${site.id}/upload-logo`, { method: 'POST', body: fd })
+      const res = await fetch(`/api/sites/${site.id}/upload-logo`, {
+        method: "POST",
+        body: fd,
+      })
       const json = await res.json()
       if (!res.ok) {
-        setLogoUploadState({ uploading: false, path: null, error: json.error ?? 'Upload failed' })
+        setLogoUploadState({
+          uploading: false,
+          path: null,
+          error: json.error ?? "Upload failed",
+        })
       } else {
-        setLogoUploadState({ uploading: false, path: json.logoUrl, error: null })
+        setLogoUploadState({
+          uploading: false,
+          path: json.logoUrl,
+          error: null,
+        })
       }
     } catch {
-      setLogoUploadState({ uploading: false, path: null, error: 'Upload failed' })
+      setLogoUploadState({
+        uploading: false,
+        path: null,
+        error: "Upload failed",
+      })
     }
   }
 
@@ -188,34 +159,50 @@ export function EditForm({ site, templates }: EditFormProps) {
     if (!file) return
     setFaviconUploadState({ uploading: true, path: null, error: null })
     const fd = new FormData()
-    fd.append('file', file)
+    fd.append("file", file)
     try {
-      const res = await fetch(`/api/sites/${site.id}/upload-favicon`, { method: 'POST', body: fd })
+      const res = await fetch(`/api/sites/${site.id}/upload-favicon`, {
+        method: "POST",
+        body: fd,
+      })
       const json = await res.json()
       if (!res.ok) {
-        setFaviconUploadState({ uploading: false, path: null, error: json.error ?? 'Upload failed' })
+        setFaviconUploadState({
+          uploading: false,
+          path: null,
+          error: json.error ?? "Upload failed",
+        })
       } else {
-        setFaviconUploadState({ uploading: false, path: json.faviconDir, error: null })
+        setFaviconUploadState({
+          uploading: false,
+          path: json.faviconDir,
+          error: null,
+        })
       }
     } catch {
-      setFaviconUploadState({ uploading: false, path: null, error: 'Upload failed' })
+      setFaviconUploadState({
+        uploading: false,
+        path: null,
+        error: "Upload failed",
+      })
     }
   }
 
   return (
     <form action={formAction} className="space-y-6">
-      {/* Basic Info */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle>Basic Info</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Active toggle */}
+          {}
           <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
             <div>
               <p className="text-sm font-medium">Site active</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Inactive sites are excluded from all automated jobs (product refresh, generate, deploy)
+                Inactive sites are excluded from all automated jobs (product
+                refresh, generate, deploy)
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -232,7 +219,7 @@ export function EditForm({ site, templates }: EditFormProps) {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Name */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="name">
                 Site Name <span className="text-destructive">*</span>
@@ -248,13 +235,13 @@ export function EditForm({ site, templates }: EditFormProps) {
               <FieldError messages={errors?.name} />
             </div>
 
-            {/* Domain */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="domain">Domain</Label>
               <Input
                 id="domain"
                 name="domain"
-                defaultValue={site.domain ?? ''}
+                defaultValue={site.domain ?? ""}
                 placeholder="mysite.com"
                 aria-invalid={!!errors?.domain}
               />
@@ -262,13 +249,13 @@ export function EditForm({ site, templates }: EditFormProps) {
             </div>
           </div>
 
-          {/* Niche */}
+          {}
           <div className="space-y-1.5">
             <Label htmlFor="niche">Niche</Label>
             <Textarea
               id="niche"
               name="niche"
-              defaultValue={site.niche ?? ''}
+              defaultValue={site.niche ?? ""}
               placeholder="Describe the site niche (e.g. camping gear for families)"
               rows={2}
               aria-invalid={!!errors?.niche}
@@ -277,10 +264,10 @@ export function EditForm({ site, templates }: EditFormProps) {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {/* Market */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="market">Amazon Market</Label>
-              <NativeSelect name="market" defaultValue={site.market ?? ''}>
+              <NativeSelect name="market" defaultValue={site.market ?? ""}>
                 <option value="">— Select market —</option>
                 {AMAZON_MARKETS.map(({ value, label }) => (
                   <option key={value} value={value}>
@@ -291,10 +278,10 @@ export function EditForm({ site, templates }: EditFormProps) {
               <FieldError messages={errors?.market} />
             </div>
 
-            {/* Language */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="language">Language</Label>
-              <NativeSelect name="language" defaultValue={site.language ?? ''}>
+              <NativeSelect name="language" defaultValue={site.language ?? ""}>
                 <option value="">— Select language —</option>
                 {LANGUAGES.map(({ value, label }) => (
                   <option key={value} value={value}>
@@ -305,10 +292,10 @@ export function EditForm({ site, templates }: EditFormProps) {
               <FieldError messages={errors?.language} />
             </div>
 
-            {/* Currency */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="currency">Currency</Label>
-              <NativeSelect name="currency" defaultValue={site.currency ?? ''}>
+              <NativeSelect name="currency" defaultValue={site.currency ?? ""}>
                 <option value="">— Select currency —</option>
                 {CURRENCIES.map(({ value, label }) => (
                   <option key={value} value={value}>
@@ -321,25 +308,28 @@ export function EditForm({ site, templates }: EditFormProps) {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Affiliate Tag */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="affiliate_tag">Affiliate Tag</Label>
               <Input
                 id="affiliate_tag"
                 name="affiliate_tag"
-                defaultValue={site.affiliate_tag ?? ''}
+                defaultValue={site.affiliate_tag ?? ""}
                 placeholder="yourtag-21"
                 aria-invalid={!!errors?.affiliate_tag}
               />
               <FieldError messages={errors?.affiliate_tag} />
             </div>
 
-            {/* Template */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="template_slug">
                 Template <span className="text-destructive">*</span>
               </Label>
-              <NativeSelect name="template_slug" defaultValue={site.template_slug ?? 'tsa/classic'}>
+              <NativeSelect
+                name="template_slug"
+                defaultValue={site.template_slug ?? "tsa/classic"}
+              >
                 {templates.map(({ value, label }) => (
                   <option key={value} value={value}>
                     {label}
@@ -350,10 +340,12 @@ export function EditForm({ site, templates }: EditFormProps) {
             </div>
           </div>
 
-          {/* Refresh Interval */}
+          {}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
             <div className="space-y-1.5">
-              <Label htmlFor="refresh_interval_days">Refresh Interval (days)</Label>
+              <Label htmlFor="refresh_interval_days">
+                Refresh Interval (days)
+              </Label>
               <Input
                 id="refresh_interval_days"
                 name="refresh_interval_days"
@@ -371,25 +363,25 @@ export function EditForm({ site, templates }: EditFormProps) {
         </CardContent>
       </Card>
 
-      {/* Customization */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle>Customization</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Primary Color */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="primaryColor">Primary Color</Label>
               <div className="flex gap-2 items-center">
                 <input
                   type="color"
                   id="primaryColorPicker"
-                  defaultValue={c?.primaryColor ?? '#2563eb'}
+                  defaultValue={c?.primaryColor ?? "#2563eb"}
                   className="h-8 w-10 cursor-pointer rounded border border-input bg-transparent p-0.5"
                   onChange={(e) => {
                     const textInput = document.getElementById(
-                      'primaryColor'
+                      "primaryColor",
                     ) as HTMLInputElement | null
                     if (textInput) textInput.value = e.target.value
                   }}
@@ -397,7 +389,7 @@ export function EditForm({ site, templates }: EditFormProps) {
                 <Input
                   id="primaryColor"
                   name="primaryColor"
-                  defaultValue={c?.primaryColor ?? '#2563eb'}
+                  defaultValue={c?.primaryColor ?? "#2563eb"}
                   placeholder="#2563eb"
                   aria-invalid={!!errors?.primaryColor}
                   className="flex-1"
@@ -406,18 +398,18 @@ export function EditForm({ site, templates }: EditFormProps) {
               <FieldError messages={errors?.primaryColor} />
             </div>
 
-            {/* Accent Color */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="accentColor">Accent Color</Label>
               <div className="flex gap-2 items-center">
                 <input
                   type="color"
                   id="accentColorPicker"
-                  defaultValue={c?.accentColor ?? '#f59e0b'}
+                  defaultValue={c?.accentColor ?? "#f59e0b"}
                   className="h-8 w-10 cursor-pointer rounded border border-input bg-transparent p-0.5"
                   onChange={(e) => {
                     const textInput = document.getElementById(
-                      'accentColor'
+                      "accentColor",
                     ) as HTMLInputElement | null
                     if (textInput) textInput.value = e.target.value
                   }}
@@ -425,7 +417,7 @@ export function EditForm({ site, templates }: EditFormProps) {
                 <Input
                   id="accentColor"
                   name="accentColor"
-                  defaultValue={c?.accentColor ?? '#f59e0b'}
+                  defaultValue={c?.accentColor ?? "#f59e0b"}
                   placeholder="#f59e0b"
                   aria-invalid={!!errors?.accentColor}
                   className="flex-1"
@@ -436,20 +428,20 @@ export function EditForm({ site, templates }: EditFormProps) {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {/* Font Family */}
+            {}
             <div className="space-y-1.5">
               <Label htmlFor="fontFamily">Font Family</Label>
               <Input
                 id="fontFamily"
                 name="fontFamily"
-                defaultValue={c?.fontFamily ?? ''}
+                defaultValue={c?.fontFamily ?? ""}
                 placeholder="Inter"
                 aria-invalid={!!errors?.fontFamily}
               />
               <FieldError messages={errors?.fontFamily} />
             </div>
 
-            {/* Logo upload */}
+            {}
             <div className="space-y-1.5">
               <Label>Logo (PNG or JPEG)</Label>
               <input
@@ -463,15 +455,23 @@ export function EditForm({ site, templates }: EditFormProps) {
                 <p className="text-sm text-muted-foreground">Uploading…</p>
               )}
               {logoUploadState.path && !logoUploadState.uploading && (
-                <p className="text-sm text-green-600 truncate">✓ {logoUploadState.path}</p>
+                <p className="text-sm text-green-600 truncate">
+                  ✓ {logoUploadState.path}
+                </p>
               )}
               {logoUploadState.error && (
-                <p className="text-sm text-destructive">{logoUploadState.error}</p>
+                <p className="text-sm text-destructive">
+                  {logoUploadState.error}
+                </p>
               )}
-              <input type="hidden" name="logoUrl" value={logoUploadState.path ?? ''} />
+              <input
+                type="hidden"
+                name="logoUrl"
+                value={logoUploadState.path ?? ""}
+              />
             </div>
 
-            {/* Favicon upload */}
+            {}
             <div className="space-y-1.5">
               <Label>Favicon (favicon.io ZIP)</Label>
               <input
@@ -485,79 +485,97 @@ export function EditForm({ site, templates }: EditFormProps) {
                 <p className="text-sm text-muted-foreground">Uploading…</p>
               )}
               {faviconUploadState.path && !faviconUploadState.uploading && (
-                <p className="text-sm text-green-600 truncate">✓ {faviconUploadState.path}</p>
+                <p className="text-sm text-green-600 truncate">
+                  ✓ {faviconUploadState.path}
+                </p>
               )}
               {faviconUploadState.error && (
-                <p className="text-sm text-destructive">{faviconUploadState.error}</p>
+                <p className="text-sm text-destructive">
+                  {faviconUploadState.error}
+                </p>
               )}
-              <input type="hidden" name="faviconDir" value={faviconUploadState.path ?? ''} />
+              <input
+                type="hidden"
+                name="faviconDir"
+                value={faviconUploadState.path ?? ""}
+              />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Homepage SEO */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle>Homepage SEO</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Focus Keyword */}
+          {}
           <div className="space-y-1.5">
             <Label htmlFor="focus_keyword">Focus Keyword</Label>
             <Input
               id="focus_keyword"
               name="focus_keyword"
-              defaultValue={site.focus_keyword ?? ''}
+              defaultValue={site.focus_keyword ?? ""}
               placeholder="e.g. camping gear for families"
               aria-invalid={!!errors?.focus_keyword}
             />
             <FieldError messages={errors?.focus_keyword} />
           </div>
 
-          {/* Homepage SEO Text */}
+          {}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="homepage_seo_text">Homepage SEO Text</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isGeneratingHomepageSeo}
-                onClick={handleGenerateHomepageSeo}
-              >
-                {isGeneratingHomepageSeo ? 'Generating…' : '✦ Generate with AI'}
-              </Button>
-            </div>
+            <Label htmlFor="homepage_meta_description">Meta Description</Label>
             <Textarea
-              ref={homepageSeoTextRef}
+              id="homepage_meta_description"
+              name="homepage_meta_description"
+              defaultValue={site.homepage_meta_description ?? ""}
+              placeholder="Under 155 characters — shown in Google search results."
+              rows={2}
+            />
+          </div>
+
+          {}
+          <div className="space-y-1.5">
+            <Label htmlFor="homepage_intro">
+              Intro (below H1, above categories)
+            </Label>
+            <Textarea
+              id="homepage_intro"
+              name="homepage_intro"
+              defaultValue={site.homepage_intro ?? ""}
+              placeholder="1 sentence shown below the title and above the category grid. ~120-160 characters."
+              rows={2}
+            />
+          </div>
+
+          {}
+          <div className="space-y-1.5">
+            <Label htmlFor="homepage_seo_text">SEO Text (bottom of page)</Label>
+            <Textarea
               id="homepage_seo_text"
               name="homepage_seo_text"
-              value={homepageSeoText}
-              onChange={(e) => setHomepageSeoText(e.target.value)}
-              placeholder="~400-word SEO text for your homepage. Click 'Generate with AI' to create one automatically."
+              defaultValue={site.homepage_seo_text ?? ""}
+              placeholder="~400-word SEO text rendered at the bottom of the homepage."
               rows={10}
               aria-invalid={!!errors?.homepage_seo_text}
             />
-            {homepageSeoError && (
-              <p className="text-xs text-destructive mt-1">{homepageSeoError}</p>
-            )}
             <FieldError messages={errors?.homepage_seo_text} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Form-level error */}
+      {}
       {errors?._form && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errors._form[0]}
         </div>
       )}
 
-      {/* Actions */}
+      {}
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={isPending}>
-          {isPending ? 'Saving…' : 'Save Changes'}
+          {isPending ? "Saving…" : "Save Changes"}
         </Button>
         <Link
           href={`/sites/${site.id}`}

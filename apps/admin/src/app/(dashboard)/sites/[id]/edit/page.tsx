@@ -1,11 +1,11 @@
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { createServiceClient } from '@/lib/supabase/service'
-import type { SiteCustomization } from '@monster/shared'
-import { EditForm } from './edit-form'
-import { LegalTemplateAssignment } from './LegalTemplateAssignment'
+import { notFound } from "next/navigation"
+import Link from "next/link"
+import { createServiceClient } from "@/lib/supabase/service"
+import type { SiteCustomization } from "@monster/shared"
+import { EditForm } from "./edit-form"
+import { LegalTemplateAssignment } from "./LegalTemplateAssignment"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -18,9 +18,9 @@ export default async function EditSitePage({ params }: PageProps) {
   const anySupabase = supabase as any
 
   const { data: site, error } = await supabase
-    .from('sites')
-    .select('*')
-    .eq('id', id)
+    .from("sites")
+    .select("*")
+    .eq("id", id)
     .single()
 
   if (error || !site) {
@@ -28,26 +28,30 @@ export default async function EditSitePage({ params }: PageProps) {
   }
 
   // Fetch legal templates and existing assignments for this site
-  const [templatesResult, legalTemplatesResult, assignmentsResult] = await Promise.all([
-    anySupabase
-      .from('site_templates')
-      .select('slug, name')
-      .order('slug'),
-    anySupabase
-      .from('legal_templates')
-      .select('id, title, type, language')
-      .order('type', { ascending: true })
-      .order('language', { ascending: true }),
-    anySupabase
-      .from('legal_template_assignments')
-      .select('template_type, template_id')
-      .eq('site_id', id),
-  ])
+  const [templatesResult, legalTemplatesResult, assignmentsResult] =
+    await Promise.all([
+      anySupabase.from("site_templates").select("slug, name").order("slug"),
+      anySupabase
+        .from("legal_templates")
+        .select("id, title, type, language")
+        .order("type", { ascending: true })
+        .order("language", { ascending: true }),
+      anySupabase
+        .from("legal_template_assignments")
+        .select("template_type, template_id")
+        .eq("site_id", id),
+    ])
 
-  const siteTemplates = (templatesResult.data ?? []).map((t: { slug: string; name: string }) => ({ value: t.slug, label: t.name }))
-  const templates: Array<{ id: string; title: string; type: string; language: string }> =
-    legalTemplatesResult.data ?? []
-  const assignments: Array<{ template_type: string; template_id: string }> =
+  const siteTemplates = (templatesResult.data ?? []).map(
+    (t: { slug: string name: string }) => ({ value: t.slug, label: t.name }),
+  )
+  const templates: Array<{
+    id: string
+    title: string
+    type: string
+    language: string
+  }> = legalTemplatesResult.data ?? []
+  const assignments: Array<{ template_type: string template_id: string }> =
     assignmentsResult.data ?? []
 
   const assignmentMap: Record<string, string> = {}
@@ -65,9 +69,14 @@ export default async function EditSitePage({ params }: PageProps) {
     currency: site.currency,
     affiliate_tag: site.affiliate_tag,
     template_slug: site.template_slug,
-    customization: (site.customization as SiteCustomization | null),
+    customization: site.customization as SiteCustomization | null,
     focus_keyword: site.focus_keyword,
     homepage_seo_text: site.homepage_seo_text,
+    homepage_meta_description:
+      (site as Record<string, unknown>)
+        .homepage_meta_description as string | null ?? null,
+    homepage_intro:
+      (site as Record<string, unknown>).homepage_intro as string | null ?? null,
     is_active: site.is_active ?? true,
     refresh_interval_hours: site.refresh_interval_hours ?? 48,
   }

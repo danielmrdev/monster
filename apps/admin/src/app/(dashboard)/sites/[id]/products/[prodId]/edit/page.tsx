@@ -1,29 +1,50 @@
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { createServiceClient } from '@/lib/supabase/service'
-import { ProductForm } from '../../ProductForm'
-import { updateProduct } from '../../actions'
+import { notFound } from "next/navigation"
+import Link from "next/link"
+import { createServiceClient } from "@/lib/supabase/service"
+import { ProductForm } from "../../ProductForm"
+import { ProductSeoPanel } from "../../ProductSeoPanel"
+import { updateProduct } from "../../actions"
 
 interface PageProps {
-  params: Promise<{ id: string; prodId: string }>
+  params: Promise<{ id: string prodId: string }>
 }
 
 export default async function EditProductPage({ params }: PageProps) {
   const { id: siteId, prodId } = await params
   const supabase = createServiceClient()
 
-  const [siteResult, productResult, categoriesResult, linkResult] = await Promise.all([
-    supabase.from('sites').select('id, name').eq('id', siteId).single(),
-    supabase.from('tsa_products').select('*, detailed_description, pros_cons, user_opinions_summary, meta_description').eq('id', prodId).eq('site_id', siteId).single(),
+  const [
+    siteResult,
+    productResult,
+    categoriesResult,
+    linkResult,
+    seoScoreResult,
+  ] = await Promise.all([
+    supabase.from("sites").select("id, name").eq("id", siteId).single(),
     supabase
-      .from('tsa_categories')
-      .select('id, name, slug')
-      .eq('site_id', siteId)
-      .order('name', { ascending: true }),
+      .from("tsa_products")
+      .select(
+        "*, detailed_description, pros_cons, user_opinions_summary, meta_description",
+      )
+      .eq("id", prodId)
+      .eq("site_id", siteId)
+      .single(),
     supabase
-      .from('category_products')
-      .select('category_id')
-      .eq('product_id', prodId),
+      .from("tsa_categories")
+      .select("id, name, slug")
+      .eq("site_id", siteId)
+      .order("name", { ascending: true }),
+    supabase
+      .from("category_products")
+      .select("category_id")
+      .eq("product_id", prodId),
+    // Fetch the product SEO score from seo_scores using the product's slug
+    supabase
+      .from("tsa_products")
+      .select("slug")
+      .eq("id", prodId)
+      .eq("site_id", siteId)
+      .single(),
   ])
 
   if (!siteResult.data || !productResult.data) notFound()
@@ -32,10 +53,29 @@ export default async function EditProductPage({ params }: PageProps) {
   const product = productResult.data
   const categoryIds = (linkResult.data ?? []).map((r) => r.category_id)
 
+  // Fetch seo_scores for this product page path
+  const productSlug = seoScoreResult.data?.slug ?? product.slug
+  let seoScore: {
+    content_quality_score: number | null
+    overall_score: number | null
+  } | null = null
+  if (productSlug) {
+    const { data: scoreRow } = await supabase
+      .from("seo_scores")
+      .select("content_quality_score, overall_score")
+      .eq("site_id", siteId)
+      .eq("page_path", `/products/${productSlug}/`)
+      .maybeSingle()
+    seoScore = scoreRow ?? null
+  }
+
   // Deserialize pros_cons JSONB → newline-joined strings for textarea defaultValues
-  const prosCons = product.pros_cons as { pros?: string[]; cons?: string[] } | null
-  const prosText = (prosCons?.pros ?? []).join('\n')
-  const consText = (prosCons?.cons ?? []).join('\n')
+  const prosCons = product.pros_cons as {
+    pros?: string[]
+    cons?: string[]
+  } | null
+  const prosText = (prosCons?.pros ?? []).join("\n")
+  const consText = (prosCons?.cons ?? []).join("\n")
 
   const action = updateProduct.bind(null, siteId, prodId)
 
@@ -49,7 +89,36 @@ export default async function EditProductPage({ params }: PageProps) {
           ← {site.name}
         </Link>
         <h1 className="text-2xl font-bold tracking-tight">Edit Product</h1>
-        <span className="font-mono text-sm text-muted-foreground">{product.asin}</span>
+        <span className="font-mono text-sm text-muted-foreground">
+          {product.asin}
+        </span>
+        {seoScore?.overall_score != null && (
+          <span className="text-xs text-muted-foreground bg-muted/40 rounded px-2 py-0.5 border border-border">
+            SEO {seoScore.overall_score}/100
+          </span>
+        )}
+      </div>
+
+      {/* SEO Generation panel — above the form, always visible in edit mode */}
+      <div className="rounded-xl border border-border bg-card px-6 py-5">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+          SEO Content
+          {seoScore?.content_quality_score != null && (
+            <span className="ml-2 font-normal normal-case text-foreground/60">
+              content quality: {seoScore.content_quality_score}/100
+            </span>
+          )}
+        </h2>
+        <ProductSeoPanel
+          siteId={siteId}
+          productId={prodId}
+          currentScore={seoScore?.content_quality_score ?? null}
+          currentContent={{
+            focus_keyword: product.focus_keyword,
+            meta_description: product.meta_description,
+            detailed_description: product.detailed_description,
+          }}
+        />
       </div>
 
       <div className="rounded-xl border border-border bg-card px-6 py-5">

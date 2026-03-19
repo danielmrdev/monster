@@ -1,38 +1,70 @@
-'use client';
-
-import { useTransition, useState } from 'react';
-import { enqueueCategorySeo } from '../../seo/actions';
-
-interface GenerateCategorySeoButtonProps {
-  siteId: string;
-  categoryId: string;
-}
+"use client"
 
 /**
  * Client component wrapping "Generate Category SEO" server action.
  *
- * Uses useTransition to show a loading state immediately on click
- * while the server action enqueues the BullMQ job. Once the action
- * resolves, the ai_jobs row is visible in Supabase and the worker
- * will pick it up to generate category SEO text, focus keyword, and
- * description.
+ * Passes currentContent and currentScore to the worker so it can:
+ * - Reuse the existing focus_keyword for consistency
+ * - Show the existing content as reference in the prompt
+ * - Set a score floor (output must beat currentScore)
  */
-export function GenerateCategorySeoButton({ siteId, categoryId }: GenerateCategorySeoButtonProps) {
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+
+import { useTransition, useState } from "react"
+import { enqueueCategorySeo } from "../../seo/actions"
+
+interface GenerateCategorySeoButtonProps {
+  siteId: string
+  categoryId: string
+  currentContent?: {
+    focus_keyword?: string | null
+    seo_text?: string | null
+    description?: string | null
+  }
+  currentScore?: number | null
+}
+export function GenerateCategorySeoButton({
+  siteId,
+  categoryId,
+  currentContent,
+  currentScore,
+}: GenerateCategorySeoButtonProps) {
+  const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
 
   function handleClick() {
-    setError(null);
+    setError(null)
     startTransition(async () => {
-      const result = await enqueueCategorySeo(siteId, categoryId);
+      const result = await enqueueCategorySeo(siteId, categoryId, {
+        currentContent,
+        currentScore,
+      })
       if (result.error) {
-        setError(result.error);
+        setError(result.error)
       }
-    });
+    })
   }
+
+  const hasExistingContent =
+    currentContent?.seo_text || currentContent?.description
 
   return (
     <div className="flex flex-col items-start gap-1">
+      {currentScore != null && (
+        <p className="text-xs text-muted-foreground">
+          Current quality: <span className="font-mono">{currentScore}/100</span>
+          {currentScore < 70
+            ? " — AI will try to improve"
+            : currentScore >= 80
+              ? " — good"
+              : " — acceptable"}
+        </p>
+      )}
+      {hasExistingContent && currentContent?.description && (
+        <p className="text-xs text-muted-foreground truncate max-w-xs">
+          <span className="font-medium text-foreground/60">Desc: </span>
+          {currentContent.description}
+        </p>
+      )}
       <button
         type="button"
         onClick={handleClick}
@@ -61,15 +93,13 @@ export function GenerateCategorySeoButton({ siteId, categoryId }: GenerateCatego
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
               />
             </svg>
-            Generating…
+            Queuing…
           </>
         ) : (
-          'Generate Category SEO'
+          `✦ ${hasExistingContent ? "Regenerate" : "Generate"} Category SEO`
         )}
       </button>
-      {error && (
-        <p className="text-xs text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
-  );
+  )
 }
