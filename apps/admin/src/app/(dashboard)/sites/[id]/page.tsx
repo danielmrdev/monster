@@ -148,7 +148,6 @@ export default async function SiteDetailPage({ params }: PageProps) {
       )}
 
       <div className="flex items-center gap-2">
-        <GenerateSiteButton siteId={site.id} />
         {site.domain ? (
           <form
             action={async () => {
@@ -268,7 +267,12 @@ export default async function SiteDetailPage({ params }: PageProps) {
           homepage_seo_text: site.homepage_seo_text,
         }}
         categoriesSlot={<CategoriesSection siteId={id} categories={categories} />}
-        generationSlot={<JobStatus siteId={site.id} />}
+        generationSlot={
+          <>
+            <GenerateSiteButton siteId={site.id} />
+            <JobStatus siteId={site.id} />
+          </>
+        }
         deploySlot={deploySlot}
         refreshSlot={
           <RefreshCard siteId={site.id} lastRefreshedAt={site.last_refreshed_at ?? null} />
