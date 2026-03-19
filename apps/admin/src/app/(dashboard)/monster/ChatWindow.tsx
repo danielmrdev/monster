@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { useEffect, useRef, useState, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 interface MessageRow {
   id: string;
@@ -15,7 +15,7 @@ interface MessageRow {
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   isStreaming?: boolean;
   isError?: boolean;
@@ -29,7 +29,7 @@ interface ChatWindowProps {
 function toMessages(rows: MessageRow[]): Message[] {
   return rows.map((r) => ({
     id: r.id,
-    role: r.role === 'user' ? 'user' : 'assistant',
+    role: r.role === "user" ? "user" : "assistant",
     content: r.content,
   }));
 }
@@ -48,10 +48,13 @@ function toMessages(rows: MessageRow[]): Message[] {
  *  - Stream fetch/network errors: rendered as red error bubble in message list
  *  - X-Conversation-Id: visible in browser Network tab > Response Headers
  */
-export function ChatWindow({ initialMessages, conversationId: initialConversationId }: ChatWindowProps) {
+export function ChatWindow({
+  initialMessages,
+  conversationId: initialConversationId,
+}: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>(toMessages(initialMessages));
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,7 +63,7 @@ export function ChatWindow({ initialMessages, conversationId: initialConversatio
 
   // Auto-scroll to bottom when messages update
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Auto-focus input on mount
@@ -78,40 +81,37 @@ export function ChatWindow({ initialMessages, conversationId: initialConversatio
     const text = inputValue.trim();
     if (!text || isStreaming) return;
 
-    setInputValue('');
+    setInputValue("");
     setIsStreaming(true);
 
     // Optimistically add user message
     const userMsgId = `user-${Date.now()}`;
-    setMessages((prev) => [
-      ...prev,
-      { id: userMsgId, role: 'user', content: text },
-    ]);
+    setMessages((prev) => [...prev, { id: userMsgId, role: "user", content: text }]);
 
     // Placeholder for streaming assistant message
     const assistantMsgId = `assistant-${Date.now()}`;
     setMessages((prev) => [
       ...prev,
-      { id: assistantMsgId, role: 'assistant', content: '', isStreaming: true },
+      { id: assistantMsgId, role: "assistant", content: "", isStreaming: true },
     ]);
 
     const abort = new AbortController();
     abortRef.current = abort;
 
     try {
-      const res = await fetch('/api/monster/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/monster/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, conversationId }),
         signal: abort.signal,
       });
 
       // Capture new conversation ID from header
-      const newConvId = res.headers.get('X-Conversation-Id');
+      const newConvId = res.headers.get("X-Conversation-Id");
       if (newConvId && !conversationId) {
         setConversationId(newConvId);
         // Update URL without navigation to preserve state
-        window.history.replaceState(null, '', `/monster?c=${newConvId}`);
+        window.history.replaceState(null, "", `/monster?c=${newConvId}`);
       }
 
       if (!res.ok || !res.body) {
@@ -128,7 +128,7 @@ export function ChatWindow({ initialMessages, conversationId: initialConversatio
 
       // Read SSE stream from response.body
       const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-      let buffer = '';
+      let buffer = "";
 
       while (true) {
         const { value, done } = await reader.read();
@@ -136,37 +136,33 @@ export function ChatWindow({ initialMessages, conversationId: initialConversatio
 
         buffer += value;
         // SSE events are separated by double newline
-        const parts = buffer.split('\n\n');
-        buffer = parts.pop() ?? '';
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? "";
 
         for (const part of parts) {
           const line = part.trim();
-          if (!line.startsWith('data: ')) continue;
+          if (!line.startsWith("data: ")) continue;
 
           const raw = line.slice(6); // strip "data: "
           let event: { type: string; text?: string; error?: string; sessionId?: string };
           try {
             event = JSON.parse(raw);
           } catch (e) {
-            console.error('[monster/chat] SSE parse error, raw:', raw, e);
+            console.error("[monster/chat] SSE parse error, raw:", raw, e);
             continue;
           }
 
-          if (event.type === 'text' && event.text) {
+          if (event.type === "text" && event.text) {
             setMessages((prev) =>
               prev.map((m) =>
-                m.id === assistantMsgId
-                  ? { ...m, content: m.content + event.text }
-                  : m,
+                m.id === assistantMsgId ? { ...m, content: m.content + event.text } : m,
               ),
             );
-          } else if (event.type === 'done') {
+          } else if (event.type === "done") {
             setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMsgId ? { ...m, isStreaming: false } : m,
-              ),
+              prev.map((m) => (m.id === assistantMsgId ? { ...m, isStreaming: false } : m)),
             );
-          } else if (event.type === 'error') {
+          } else if (event.type === "error") {
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMsgId
@@ -174,7 +170,7 @@ export function ChatWindow({ initialMessages, conversationId: initialConversatio
                       ...m,
                       content: m.content
                         ? `${m.content}\n\n⚠️ ${event.error}`
-                        : `⚠️ ${event.error ?? 'Unknown error'}`,
+                        : `⚠️ ${event.error ?? "Unknown error"}`,
                       isStreaming: false,
                       isError: true,
                     }
@@ -185,7 +181,7 @@ export function ChatWindow({ initialMessages, conversationId: initialConversatio
         }
       }
     } catch (e) {
-      if ((e as Error).name === 'AbortError') return;
+      if ((e as Error).name === "AbortError") return;
       const msg = e instanceof Error ? e.message : String(e);
       setMessages((prev) =>
         prev.map((m) =>
@@ -203,7 +199,7 @@ export function ChatWindow({ initialMessages, conversationId: initialConversatio
   }, [inputValue, isStreaming, conversationId]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -240,9 +236,7 @@ export function ChatWindow({ initialMessages, conversationId: initialConversatio
             </div>
           </div>
         ) : (
-          messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))
+          messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -316,10 +310,10 @@ export function ChatWindow({ initialMessages, conversationId: initialConversatio
 }
 
 function MessageBubble({ message }: { message: Message }) {
-  const isUser = message.role === 'user';
+  const isUser = message.role === "user";
 
   return (
-    <div className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
+    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5 mr-2">
           <svg
@@ -342,12 +336,12 @@ function MessageBubble({ message }: { message: Message }) {
       )}
       <div
         className={cn(
-          'max-w-[75%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed break-words',
+          "max-w-[75%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed break-words",
           isUser
-            ? 'bg-primary text-primary-foreground rounded-tr-sm whitespace-pre-wrap'
+            ? "bg-primary text-primary-foreground rounded-tr-sm whitespace-pre-wrap"
             : message.isError
-              ? 'bg-destructive/10 text-destructive border border-destructive/20 rounded-tl-sm whitespace-pre-wrap'
-              : 'bg-muted text-foreground rounded-tl-sm',
+              ? "bg-destructive/10 text-destructive border border-destructive/20 rounded-tl-sm whitespace-pre-wrap"
+              : "bg-muted text-foreground rounded-tl-sm",
         )}
       >
         {isUser || message.isError ? (
@@ -363,28 +357,49 @@ function MessageBubble({ message }: { message: Message }) {
               <ReactMarkdown
                 components={{
                   p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                  ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-0.5">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-0.5">{children}</ol>,
+                  ul: ({ children }) => (
+                    <ul className="list-disc list-inside mb-2 space-y-0.5">{children}</ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="list-decimal list-inside mb-2 space-y-0.5">{children}</ol>
+                  ),
                   li: ({ children }) => <li className="text-sm">{children}</li>,
-                  h1: ({ children }) => <h1 className="text-base font-bold mb-1 mt-2">{children}</h1>,
+                  h1: ({ children }) => (
+                    <h1 className="text-base font-bold mb-1 mt-2">{children}</h1>
+                  ),
                   h2: ({ children }) => <h2 className="text-sm font-bold mb-1 mt-2">{children}</h2>,
-                  h3: ({ children }) => <h3 className="text-sm font-semibold mb-1 mt-1">{children}</h3>,
+                  h3: ({ children }) => (
+                    <h3 className="text-sm font-semibold mb-1 mt-1">{children}</h3>
+                  ),
                   code: ({ children, className }) => {
-                    const isBlock = className?.includes('language-');
+                    const isBlock = className?.includes("language-");
                     return isBlock ? (
-                      <code className="block bg-black/30 rounded px-2 py-1.5 text-xs font-mono whitespace-pre-wrap my-1">{children}</code>
+                      <code className="block bg-black/30 rounded px-2 py-1.5 text-xs font-mono whitespace-pre-wrap my-1">
+                        {children}
+                      </code>
                     ) : (
-                      <code className="bg-black/30 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
+                      <code className="bg-black/30 rounded px-1 py-0.5 text-xs font-mono">
+                        {children}
+                      </code>
                     );
                   },
                   pre: ({ children }) => <pre className="my-1 overflow-x-auto">{children}</pre>,
                   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                   em: ({ children }) => <em className="italic">{children}</em>,
                   a: ({ href, children }) => (
-                    <a href={href} target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">{children}</a>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-primary hover:text-primary/80"
+                    >
+                      {children}
+                    </a>
                   ),
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-2 border-muted-foreground/40 pl-2 italic text-muted-foreground my-1">{children}</blockquote>
+                    <blockquote className="border-l-2 border-muted-foreground/40 pl-2 italic text-muted-foreground my-1">
+                      {children}
+                    </blockquote>
                   ),
                   hr: () => <hr className="border-muted-foreground/20 my-2" />,
                 }}

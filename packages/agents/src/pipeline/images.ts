@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync } from 'node:fs';
-import { basename, join } from 'node:path';
-import sharp from 'sharp';
-import pLimit from 'p-limit';
+import { existsSync, mkdirSync } from "node:fs";
+import { basename, join } from "node:path";
+import sharp from "sharp";
+import pLimit from "p-limit";
 
 // ---------------------------------------------------------------------------
 // downloadAndConvertImage
@@ -26,14 +26,12 @@ export async function downloadAndConvertImage(
   try {
     const response = await fetch(imageUrl, {
       headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
     });
     if (!response.ok) {
-      console.log(
-        `[ImagePipeline] fetch failed (${response.status}): ${imageUrl}`,
-      );
+      console.log(`[ImagePipeline] fetch failed (${response.status}): ${imageUrl}`);
       return false;
     }
 
@@ -42,7 +40,7 @@ export async function downloadAndConvertImage(
       return false;
     }
 
-    const { Readable } = await import('node:stream');
+    const { Readable } = await import("node:stream");
     const readable = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]);
 
     await new Promise<void>((resolve, reject) => {
@@ -52,7 +50,7 @@ export async function downloadAndConvertImage(
         else resolve();
       });
       readable.pipe(transformer);
-      readable.on('error', reject);
+      readable.on("error", reject);
     });
 
     console.log(`[ImagePipeline] downloaded: ${basename(destPath)}`);
@@ -80,7 +78,7 @@ export async function processImages(
   products: Array<{ asin: string; imageUrl: string | null }>,
   publicDir: string,
 ): Promise<Map<string, string[]>> {
-  const imagesDir = join(publicDir, 'images', 'products');
+  const imagesDir = join(publicDir, "images", "products");
   mkdirSync(imagesDir, { recursive: true });
 
   const limit = pLimit(5);

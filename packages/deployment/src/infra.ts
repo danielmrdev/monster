@@ -1,6 +1,6 @@
-import { execSync } from 'node:child_process';
-import { NodeSSH } from 'node-ssh';
-import { createServiceClient } from '@monster/db';
+import { execSync } from "node:child_process";
+import { NodeSSH } from "node-ssh";
+import { createServiceClient } from "@monster/db";
 
 // ---------------------------------------------------------------------------
 // InfraService
@@ -47,10 +47,10 @@ export class InfraService {
     const supabase = createServiceClient();
 
     const { data: servers, error } = await supabase
-      .from('servers')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: true });
+      .from("servers")
+      .select("*")
+      .eq("status", "active")
+      .order("created_at", { ascending: true });
 
     if (error) {
       console.error(`[InfraService] failed to query servers table: ${error.message}`);
@@ -58,7 +58,7 @@ export class InfraService {
     }
 
     if (!servers || servers.length === 0) {
-      console.log('[InfraService] fleet health: 0 active servers — returning empty fleet');
+      console.log("[InfraService] fleet health: 0 active servers — returning empty fleet");
       return { servers: [], fetchedAt: now };
     }
 
@@ -94,13 +94,13 @@ export class InfraService {
 
     let serverQuery;
     if (serverId) {
-      serverQuery = supabase.from('servers').select('*').eq('id', serverId).single();
+      serverQuery = supabase.from("servers").select("*").eq("id", serverId).single();
     } else {
       serverQuery = supabase
-        .from('servers')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: true })
+        .from("servers")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: true })
         .limit(1)
         .single();
     }
@@ -108,7 +108,7 @@ export class InfraService {
     const { data: server, error } = await serverQuery;
 
     if (error || !server) {
-      const message = error?.message ?? 'No active server found';
+      const message = error?.message ?? "No active server found";
       console.error(`[InfraService] testDeployConnection: failed to resolve server — ${message}`);
       return { ok: false, error: message };
     }
@@ -125,7 +125,9 @@ export class InfraService {
     const conn = new NodeSSH();
 
     try {
-      console.log(`[InfraService] testing deploy connection to ${user}@${host} for server "${server.name}"`);
+      console.log(
+        `[InfraService] testing deploy connection to ${user}@${host} for server "${server.name}"`,
+      );
 
       await conn.connect({
         host,
@@ -133,11 +135,11 @@ export class InfraService {
         agent: process.env.SSH_AUTH_SOCK,
       });
 
-      const result = await conn.execCommand('echo ok');
-      const success = result.stdout.trim() === 'ok';
+      const result = await conn.execCommand("echo ok");
+      const success = result.stdout.trim() === "ok";
 
       if (success) {
-        console.log('[InfraService] deploy connection test: OK');
+        console.log("[InfraService] deploy connection test: OK");
         return { ok: true };
       } else {
         const detail = `unexpected response: stdout="${result.stdout}" stderr="${result.stderr}"`;
@@ -181,7 +183,7 @@ export class InfraService {
     };
 
     if (!host) {
-      return { ...base, error: 'No IP address available' };
+      return { ...base, error: "No IP address available" };
     }
 
     const conn = new NodeSSH();
@@ -199,17 +201,16 @@ export class InfraService {
       console.log(`[InfraService] connected to "${server.name}" — collecting health metrics`);
 
       // ── Caddy status ──────────────────────────────────────────────────
-      const caddyResult = await conn.execCommand('systemctl is-active caddy');
-      const caddyActive = caddyResult.stdout.trim() === 'active';
+      const caddyResult = await conn.execCommand("systemctl is-active caddy");
+      const caddyActive = caddyResult.stdout.trim() === "active";
       console.log(`[InfraService] "${server.name}" caddy: ${caddyResult.stdout.trim()}`);
 
       // ── Disk usage ────────────────────────────────────────────────────
       const dfResult = await conn.execCommand("df -h / | tail -1 | awk '{print $5}'");
-      const diskRaw = dfResult.stdout.trim().replace('%', '');
+      const diskRaw = dfResult.stdout.trim().replace("%", "");
       const diskUsedPctParsed = diskRaw ? parseInt(diskRaw, 10) : null;
-      const diskUsedPct = diskUsedPctParsed !== null && Number.isNaN(diskUsedPctParsed)
-        ? null
-        : diskUsedPctParsed;
+      const diskUsedPct =
+        diskUsedPctParsed !== null && Number.isNaN(diskUsedPctParsed) ? null : diskUsedPctParsed;
       console.log(`[InfraService] "${server.name}" disk: ${dfResult.stdout.trim()}`);
 
       // ── Memory usage ──────────────────────────────────────────────────
@@ -217,12 +218,10 @@ export class InfraService {
       const memParts = freeResult.stdout.trim().split(/\s+/);
       const memUsedMbParsed = memParts[0] ? parseInt(memParts[0], 10) : null;
       const memTotalMbParsed = memParts[1] ? parseInt(memParts[1], 10) : null;
-      const memUsedMb = memUsedMbParsed !== null && Number.isNaN(memUsedMbParsed)
-        ? null
-        : memUsedMbParsed;
-      const memTotalMb = memTotalMbParsed !== null && Number.isNaN(memTotalMbParsed)
-        ? null
-        : memTotalMbParsed;
+      const memUsedMb =
+        memUsedMbParsed !== null && Number.isNaN(memUsedMbParsed) ? null : memUsedMbParsed;
+      const memTotalMb =
+        memTotalMbParsed !== null && Number.isNaN(memTotalMbParsed) ? null : memTotalMbParsed;
       console.log(`[InfraService] "${server.name}" memory: ${freeResult.stdout.trim()}`);
 
       return {
@@ -251,10 +250,7 @@ export class InfraService {
    * `systemctl is-active caddy` exits non-zero (exit code 3) when Caddy is
    * inactive, which causes execSync to throw even though stdout is valid.
    */
-  private checkServerHealthLocal(server: {
-    id: string;
-    name: string;
-  }): ServerHealth {
+  private checkServerHealthLocal(server: { id: string; name: string }): ServerHealth {
     const base: ServerHealth = {
       serverId: server.id,
       serverName: server.name,
@@ -267,26 +263,26 @@ export class InfraService {
 
     try {
       // ── Caddy status ──────────────────────────────────────────────────
-      let caddyRaw = '';
+      let caddyRaw = "";
       try {
-        caddyRaw = execSync('systemctl is-active caddy', { encoding: 'utf8' }).trim();
+        caddyRaw = execSync("systemctl is-active caddy", { encoding: "utf8" }).trim();
       } catch (err) {
         // execSync throws on non-zero exit; stdout is in err.stdout
         const e = err as { stdout?: string };
-        caddyRaw = (e.stdout ?? '').trim();
+        caddyRaw = (e.stdout ?? "").trim();
       }
-      const caddyActive = caddyRaw === 'active';
+      const caddyActive = caddyRaw === "active";
       console.log(`[InfraService] "${server.name}" caddy (local): ${caddyRaw}`);
 
       // ── Disk usage ────────────────────────────────────────────────────
-      let diskRaw = '';
+      let diskRaw = "";
       try {
-        diskRaw = execSync("df -h / | tail -1 | awk '{print $5}'", { encoding: 'utf8' })
+        diskRaw = execSync("df -h / | tail -1 | awk '{print $5}'", { encoding: "utf8" })
           .trim()
-          .replace('%', '');
+          .replace("%", "");
       } catch (err) {
         const e = err as { stdout?: string };
-        diskRaw = (e.stdout ?? '').trim().replace('%', '');
+        diskRaw = (e.stdout ?? "").trim().replace("%", "");
       }
       const diskUsedPctParsed = diskRaw ? parseInt(diskRaw, 10) : null;
       const diskUsedPct =
@@ -294,12 +290,12 @@ export class InfraService {
       console.log(`[InfraService] "${server.name}" disk (local): ${diskRaw}`);
 
       // ── Memory usage ──────────────────────────────────────────────────
-      let memRaw = '';
+      let memRaw = "";
       try {
-        memRaw = execSync("free -m | awk '/^Mem:/{print $3, $2}'", { encoding: 'utf8' }).trim();
+        memRaw = execSync("free -m | awk '/^Mem:/{print $3, $2}'", { encoding: "utf8" }).trim();
       } catch (err) {
         const e = err as { stdout?: string };
-        memRaw = (e.stdout ?? '').trim();
+        memRaw = (e.stdout ?? "").trim();
       }
       const memParts = memRaw.split(/\s+/);
       const memUsedMbParsed = memParts[0] ? parseInt(memParts[0], 10) : null;

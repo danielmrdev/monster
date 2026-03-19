@@ -1,14 +1,14 @@
 export const SETTINGS_KEYS = [
-  'anthropic_api_key',
-  'spaceship_api_key',
-  'spaceship_api_secret',
-  'spaceship_contact_id',
-  'dataforseo_api_key',
-  'hetzner_api_token',
-  'cloudflare_api_token',
-] as const
+  "anthropic_api_key",
+  "spaceship_api_key",
+  "spaceship_api_secret",
+  "spaceship_contact_id",
+  "dataforseo_api_key",
+  "hetzner_api_token",
+  "cloudflare_api_token",
+] as const;
 
-export type SettingsKey = (typeof SETTINGS_KEYS)[number]
+export type SettingsKey = (typeof SETTINGS_KEYS)[number];
 
 // ---------------------------------------------------------------------------
 // DEFAULT_PROMPTS
@@ -62,4 +62,4 @@ You help with:
 
 Be concise, data-driven, and actionable. When you have access to real portfolio data,
 use it. Proactively surface insights and opportunities the user might have missed.`,
-}
+};

@@ -1,92 +1,77 @@
-import { notFound } from "next/navigation"
-import Link from "next/link"
-import { existsSync } from "node:fs"
-import { join } from "node:path"
-import { createServiceClient } from "@/lib/supabase/service"
-import { enqueueSiteDeploy, getDeploymentCard } from "./actions"
-import { RefreshButton, RefreshInfo } from "./RefreshCard"
-import { GenerateSitePanel } from "./GenerateSitePanel"
-import { HomepageSeoPanel } from "./HomepageSeoPanel"
-import DeployStatus from "./DeployStatus"
-import { CategoriesSection } from "./CategoriesSection"
-import { SiteDetailTabs } from "./SiteDetailTabs"
-import { RescoreSiteButton } from "./RescoreSiteButton"
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { createServiceClient } from "@/lib/supabase/service";
+import { enqueueSiteDeploy, getDeploymentCard } from "./actions";
+import { RefreshButton, RefreshInfo } from "./RefreshCard";
+import { GenerateSitePanel } from "./GenerateSitePanel";
+import { HomepageSeoPanel } from "./HomepageSeoPanel";
+import DeployStatus from "./DeployStatus";
+import { CategoriesSection } from "./CategoriesSection";
+import { SiteDetailTabs } from "./SiteDetailTabs";
+import { RescoreSiteButton } from "./RescoreSiteButton";
 
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }
 
 export default async function SiteDetailPage({ params }: PageProps) {
-  const { id } = await params
-  const supabase = createServiceClient()
+  const { id } = await params;
+  const supabase = createServiceClient();
 
-  const { data: site, error } = await supabase
-    .from("sites")
-    .select("*")
-    .eq("id", id)
-    .single()
+  const { data: site, error } = await supabase.from("sites").select("*").eq("id", id).single();
 
-  if (error || !site) notFound()
+  if (error || !site) notFound();
 
   // Check if a generated dist/ exists for the Preview button
-  const GENERATOR_ROOT = join(process.cwd(), "..", "generator")
-  const siteSlug = site.domain ? site.domain.replace(/\./g, "-") : null
+  const GENERATOR_ROOT = join(process.cwd(), "..", "generator");
+  const siteSlug = site.domain ? site.domain.replace(/\./g, "-") : null;
   const hasPreview = siteSlug
-    ? existsSync(
-        join(
-          GENERATOR_ROOT,
-          ".generated-sites",
-          siteSlug,
-          "dist",
-          "index.html",
-        ),
+    ? existsSync(join(GENERATOR_ROOT, ".generated-sites", siteSlug, "dist", "index.html"))
+    : false;
+
+  const isTsa = site.site_type_slug === "tsa";
+
+  const [seoScoresResult, deployCard, siteAlertsResult, categoriesResult] = await Promise.all([
+    supabase
+      .from("seo_scores")
+      .select(
+        "page_path, page_type, overall_score, grade, content_quality_score, meta_elements_score, structure_score, links_score, media_score, schema_score, technical_score, social_score",
       )
-    : false
+      .eq("site_id", id)
+      .order("page_path", { ascending: true }),
+    getDeploymentCard(id),
+    isTsa
+      ? supabase
+          .from("product_alerts")
+          .select("*, tsa_products(asin, title)")
+          .eq("site_id", id)
+          .eq("status", "open")
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+    isTsa
+      ? supabase
+          .from("tsa_categories")
+          .select(
+            "id, name, slug, focus_keyword, keywords, seo_text, description, category_products(count)",
+          )
+          .eq("site_id", id)
+          .order("name", { ascending: true })
+      : Promise.resolve({ data: [], error: null }),
+  ]);
 
-  const isTsa = site.site_type_slug === "tsa"
-
-  const [seoScoresResult, deployCard, siteAlertsResult, categoriesResult] =
-    await Promise.all([
-      supabase
-        .from("seo_scores")
-        .select(
-          "page_path, page_type, overall_score, grade, content_quality_score, meta_elements_score, structure_score, links_score, media_score, schema_score, technical_score, social_score",
-        )
-        .eq("site_id", id)
-        .order("page_path", { ascending: true }),
-      getDeploymentCard(id),
-      isTsa
-        ? supabase
-            .from("product_alerts")
-            .select("*, tsa_products(asin, title)")
-            .eq("site_id", id)
-            .eq("status", "open")
-            .order("created_at", { ascending: false })
-        : Promise.resolve({ data: [], error: null }),
-      isTsa
-        ? supabase
-            .from("tsa_categories")
-            .select(
-              "id, name, slug, focus_keyword, keywords, seo_text, description, category_products(count)",
-            )
-            .eq("site_id", id)
-            .order("name", { ascending: true })
-        : Promise.resolve({ data: [], error: null }),
-    ])
-
-  if (siteAlertsResult.error) throw siteAlertsResult.error
+  if (siteAlertsResult.error) throw siteAlertsResult.error;
 
   const categories = (categoriesResult.data ?? []).map((cat) => ({
     ...cat,
-    productCount:
-      (cat.category_products as unknown as { count: number }[] | null)?.[0]
-        ?.count ?? 0,
-  }))
+    productCount: (cat.category_products as unknown as { count: number }[] | null)?.[0]?.count ?? 0,
+  }));
 
   const statusBadge = (status: string | null) => {
-    const s = status ?? "draft"
+    const s = status ?? "draft";
     const map: Record<string, string> = {
       active: "bg-green-500/15 text-green-400 ring-1 ring-green-500/30",
       live: "bg-green-500/15 text-green-400 ring-1 ring-green-500/30",
@@ -99,16 +84,16 @@ export default async function SiteDetailPage({ params }: PageProps) {
       paused: "bg-white/8 text-muted-foreground ring-1 ring-white/10",
       succeeded: "bg-green-500/15 text-green-400 ring-1 ring-green-500/30",
       failed: "bg-red-500/15 text-red-400 ring-1 ring-red-500/30",
-    }
-    return `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${map[s] ?? map.draft}`
-  }
+    };
+    return `inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${map[s] ?? map.draft}`;
+  };
 
   // ── Deploy tab content (server-rendered) ────────────────────────────────────
   const deployAction = site.domain ? (
     <form
       action={async () => {
-        "use server"
-        await enqueueSiteDeploy(site.id)
+        "use server";
+        await enqueueSiteDeploy(site.id);
       }}
     >
       <button
@@ -127,34 +112,26 @@ export default async function SiteDetailPage({ params }: PageProps) {
     >
       Deploy
     </button>
-  )
+  );
 
   const deploySlot = (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground">
-          Pipeline status:
-        </span>
+        <span className="text-xs font-medium text-muted-foreground">Pipeline status:</span>
         <span className={statusBadge(deployCard.siteStatus)}>
           {deployCard.siteStatus ?? "draft"}
         </span>
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground">
-          Refresh interval:
-        </span>
-        <span className="text-sm">
-          {Math.round(site.refresh_interval_hours / 24)} days
-        </span>
+        <span className="text-xs font-medium text-muted-foreground">Refresh interval:</span>
+        <span className="text-sm">{Math.round(site.refresh_interval_hours / 24)} days</span>
       </div>
 
       {deployCard.latestDeployment ? (
         <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm space-y-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-muted-foreground">
-              Last deployment:
-            </span>
+            <span className="font-medium text-muted-foreground">Last deployment:</span>
             <span className={statusBadge(deployCard.latestDeployment.status)}>
               {deployCard.latestDeployment.status}
             </span>
@@ -162,9 +139,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
           {deployCard.latestDeployment.deployed_at && (
             <div className="text-muted-foreground">
               <span className="font-medium">Deployed:</span>{" "}
-              {new Date(
-                deployCard.latestDeployment.deployed_at,
-              ).toLocaleString()}
+              {new Date(deployCard.latestDeployment.deployed_at).toLocaleString()}
             </div>
           )}
           {deployCard.latestDeployment.duration_ms != null && (
@@ -183,28 +158,27 @@ export default async function SiteDetailPage({ params }: PageProps) {
         <p className="text-sm text-muted-foreground">No deployments yet.</p>
       )}
 
-      {deployCard.domain?.cf_nameservers &&
-        deployCard.domain.cf_nameservers.length > 0 && (
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Point your domain to these nameservers:
-            </p>
-            <ul className="space-y-0.5">
-              {deployCard.domain.cf_nameservers.map((ns) => (
-                <li
-                  key={ns}
-                  className="font-mono text-xs text-foreground bg-muted/40 rounded px-2 py-1 border border-border"
-                >
-                  {ns}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+      {deployCard.domain?.cf_nameservers && deployCard.domain.cf_nameservers.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-muted-foreground mb-1">
+            Point your domain to these nameservers:
+          </p>
+          <ul className="space-y-0.5">
+            {deployCard.domain.cf_nameservers.map((ns) => (
+              <li
+                key={ns}
+                className="font-mono text-xs text-foreground bg-muted/40 rounded px-2 py-1 border border-border"
+              >
+                {ns}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <DeployStatus siteId={site.id} />
     </div>
-  )
+  );
 
   return (
     <div className="space-y-6">
@@ -218,9 +192,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
             ← Sites
           </Link>
           <h1 className="text-2xl font-bold tracking-tight">{site.name}</h1>
-          <span className={statusBadge(site.status)}>
-            {site.status ?? "draft"}
-          </span>
+          <span className={statusBadge(site.status)}>{site.status ?? "draft"}</span>
           {!site.is_active && (
             <span className="inline-flex items-center rounded-full border border-muted-foreground/40 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
               inactive
@@ -295,28 +267,18 @@ export default async function SiteDetailPage({ params }: PageProps) {
           focus_keyword: site.focus_keyword,
           homepage_seo_text: site.homepage_seo_text,
           homepage_meta_description:
-            (site as Record<string, unknown>)
-              .homepage_meta_description as string | null ?? null,
+            ((site as Record<string, unknown>).homepage_meta_description as string | null) ?? null,
           homepage_intro:
-            (site as Record<string, unknown>).homepage_intro as string | null ??
-            null,
+            ((site as Record<string, unknown>).homepage_intro as string | null) ?? null,
         }}
-        categoriesSlot={
-          isTsa ? (
-            <CategoriesSection siteId={id} categories={categories} />
-          ) : null
-        }
-        generationAction={
-          <GenerateSitePanel siteId={site.id} domain={site.domain} />
-        }
+        categoriesSlot={isTsa ? <CategoriesSection siteId={id} categories={categories} /> : null}
+        generationAction={<GenerateSitePanel siteId={site.id} domain={site.domain} />}
         generationSlot={null}
         deployAction={deployAction}
         deploySlot={deploySlot}
         refreshAction={isTsa ? <RefreshButton siteId={site.id} /> : null}
         refreshSlot={
-          isTsa ? (
-            <RefreshInfo lastRefreshedAt={site.last_refreshed_at ?? null} />
-          ) : null
+          isTsa ? <RefreshInfo lastRefreshedAt={site.last_refreshed_at ?? null} /> : null
         }
         seoScores={seoScoresResult.data ?? null}
         alerts={siteAlertsResult.data ?? []}
@@ -327,11 +289,9 @@ export default async function SiteDetailPage({ params }: PageProps) {
             currentContent={{
               focus_keyword: site.focus_keyword ?? null,
               meta_description:
-                (site as Record<string, unknown>)
-                  .homepage_meta_description as string | null ?? null,
-              intro:
-                (site as Record<string, unknown>)
-                  .homepage_intro as string | null ?? null,
+                ((site as Record<string, unknown>).homepage_meta_description as string | null) ??
+                null,
+              intro: ((site as Record<string, unknown>).homepage_intro as string | null) ?? null,
               seo_text: site.homepage_seo_text ?? null,
             }}
             currentScore={
@@ -342,5 +302,5 @@ export default async function SiteDetailPage({ params }: PageProps) {
         }
       />
     </div>
-  )
+  );
 }

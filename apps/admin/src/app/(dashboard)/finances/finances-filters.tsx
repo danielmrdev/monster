@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
 interface FinancesFiltersProps {
-  defaultFrom: string
-  defaultTo: string
+  defaultFrom: string;
+  defaultTo: string;
 }
 
 export function FinancesFilters({ defaultFrom, defaultTo }: FinancesFiltersProps) {
@@ -44,5 +44,5 @@ export function FinancesFilters({ defaultFrom, defaultTo }: FinancesFiltersProps
         Apply
       </button>
     </form>
-  )
+  );
 }

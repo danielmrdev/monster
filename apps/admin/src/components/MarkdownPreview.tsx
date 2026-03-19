@@ -1,8 +1,8 @@
-import { marked } from "marked"
+import { marked } from "marked";
 
 interface MarkdownPreviewProps {
-  content: string | null
-  className?: string
+  content: string | null;
+  className?: string;
 }
 
 /**
@@ -11,9 +11,9 @@ interface MarkdownPreviewProps {
  * Styles headings, paragraphs, and lists inline — no Tailwind Typography plugin needed.
  */
 export function MarkdownPreview({ content, className }: MarkdownPreviewProps) {
-  if (!content) return <span className="text-muted-foreground">—</span>
+  if (!content) return <span className="text-muted-foreground">—</span>;
 
-  const html = marked(content) as string
+  const html = marked(content) as string;
 
   return (
     <div
@@ -30,5 +30,5 @@ export function MarkdownPreview({ content, className }: MarkdownPreviewProps) {
       ].join(" ")}
       dangerouslySetInnerHTML={{ __html: html }}
     />
-  )
+  );
 }

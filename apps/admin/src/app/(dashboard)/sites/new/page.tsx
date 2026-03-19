@@ -1,25 +1,28 @@
-import Link from 'next/link'
-import { createServiceClient } from '@/lib/supabase/service'
-import { SiteForm } from './site-form'
+import Link from "next/link";
+import { createServiceClient } from "@/lib/supabase/service";
+import { SiteForm } from "./site-form";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 interface PageProps {
-  searchParams: Promise<{ niche?: string; market?: string }>
+  searchParams: Promise<{ niche?: string; market?: string }>;
 }
 
 export default async function NewSitePage({ searchParams }: PageProps) {
-  const { niche, market } = await searchParams
-  const supabase = createServiceClient()
+  const { niche, market } = await searchParams;
+  const supabase = createServiceClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const anySupabase = supabase as any
+  const anySupabase = supabase as any;
   const { data: rawTemplates } = await anySupabase
-    .from('site_templates')
-    .select('slug, name')
-    .order('slug')
+    .from("site_templates")
+    .select("slug, name")
+    .order("slug");
 
-  const siteTemplates = (rawTemplates ?? []).map((t: { slug: string; name: string }) => ({ value: t.slug, label: t.name }))
+  const siteTemplates = (rawTemplates ?? []).map((t: { slug: string; name: string }) => ({
+    value: t.slug,
+    label: t.name,
+  }));
 
   return (
     <div className="space-y-6">
@@ -35,5 +38,5 @@ export default async function NewSitePage({ searchParams }: PageProps) {
       </div>
       <SiteForm defaultValues={{ niche, market }} templates={siteTemplates} />
     </div>
-  )
+  );
 }

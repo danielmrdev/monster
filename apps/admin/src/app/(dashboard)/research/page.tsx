@@ -1,30 +1,30 @@
-import Link from 'next/link';
-import { getResearchSessions, getResearchSessionStatus } from './actions';
-import ResearchForm from './ResearchForm';
-import ResearchSessionStatus from './ResearchSessionStatus';
-import ResearchReportViewer from './ResearchReportViewer';
-import { ResearchReportSchema } from '@monster/shared';
-import { SpaceshipClient } from '@monster/domains';
-import DomainManagement from '@/app/(dashboard)/sites/[id]/DomainManagement';
+import Link from "next/link";
+import { getResearchSessions, getResearchSessionStatus } from "./actions";
+import ResearchForm from "./ResearchForm";
+import ResearchSessionStatus from "./ResearchSessionStatus";
+import ResearchReportViewer from "./ResearchReportViewer";
+import { ResearchReportSchema } from "@monster/shared";
+import { SpaceshipClient } from "@monster/domains";
+import DomainManagement from "@/app/(dashboard)/sites/[id]/DomainManagement";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 interface ResearchPageProps {
   searchParams: Promise<{ session?: string }>;
 }
 
-type SessionStatus = 'pending' | 'running' | 'completed' | 'failed';
+type SessionStatus = "pending" | "running" | "completed" | "failed";
 
 const BADGE: Record<SessionStatus, { label: string; className: string }> = {
-  pending:   { label: 'Pending',   className: 'bg-yellow-100 text-yellow-800' },
-  running:   { label: 'Running…',  className: 'bg-blue-100 text-blue-700'    },
-  completed: { label: 'Completed', className: 'bg-green-100 text-green-800'  },
-  failed:    { label: 'Failed',    className: 'bg-red-100 text-red-800'      },
+  pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800" },
+  running: { label: "Running…", className: "bg-blue-100 text-blue-700" },
+  completed: { label: "Completed", className: "bg-green-100 text-green-800" },
+  failed: { label: "Failed", className: "bg-red-100 text-red-800" },
 };
 
 function formatRelativeTime(isoString: string): string {
   const diffSeconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
-  if (diffSeconds < 60) return 'Just now';
+  if (diffSeconds < 60) return "Just now";
   const diffMinutes = Math.floor(diffSeconds / 60);
   if (diffMinutes < 60) return `${diffMinutes}m ago`;
   const diffHours = Math.floor(diffMinutes / 60);
@@ -47,7 +47,7 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
   // Domain checks use Promise.allSettled — a single Spaceship error never crashes the page.
   let resolvedReport: Awaited<ReturnType<typeof renderCompletedSession>> | null = null;
 
-  if (activeSession?.status === 'completed') {
+  if (activeSession?.status === "completed") {
     resolvedReport = await renderCompletedSession(activeSession.report);
   }
 
@@ -78,10 +78,10 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
           {/* Active session: completed → full report; running/pending/failed → polling UI */}
           {activeSessionId && (
             <div className="rounded-lg border bg-card p-6 shadow-sm">
-              {activeSession?.status === 'completed' && resolvedReport ? (
+              {activeSession?.status === "completed" && resolvedReport ? (
                 <>
                   <h2 className="text-base font-semibold mb-4">Research Report</h2>
-                  {resolvedReport.type === 'ok' ? (
+                  {resolvedReport.type === "ok" ? (
                     <ResearchReportViewer
                       report={resolvedReport.report}
                       domains={resolvedReport.domains}
@@ -90,12 +90,10 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
                     /* Parse-failure graceful fallback */
                     <div className="space-y-3">
                       <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
-                        <span className="font-semibold">Report parse error:</span>{' '}
-                        The stored report could not be validated.{' '}
+                        <span className="font-semibold">Report parse error:</span> The stored report
+                        could not be validated.{" "}
                         {resolvedReport.zodIssues && (
-                          <span className="font-mono text-xs">
-                            {resolvedReport.zodIssues}
-                          </span>
+                          <span className="font-mono text-xs">{resolvedReport.zodIssues}</span>
                         )}
                       </div>
                       <details>
@@ -141,9 +139,8 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
             <ul className="divide-y">
               {sessions.map((s) => {
                 const isActive = s.id === activeSessionId;
-                const statusKey = (s.status as SessionStatus) in BADGE
-                  ? (s.status as SessionStatus)
-                  : 'pending';
+                const statusKey =
+                  (s.status as SessionStatus) in BADGE ? (s.status as SessionStatus) : "pending";
                 const badge = BADGE[statusKey];
 
                 return (
@@ -151,16 +148,16 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
                     <Link
                       href={`/research?session=${s.id}`}
                       className={`block px-6 py-4 hover:bg-muted/50 transition-colors ${
-                        isActive ? 'bg-muted/70' : ''
+                        isActive ? "bg-muted/70" : ""
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">
-                            {s.niche_idea ?? '—'}
+                            {s.niche_idea ?? "—"}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {s.market ?? '—'} · {formatRelativeTime(s.created_at)}
+                            {s.market ?? "—"} · {formatRelativeTime(s.created_at)}
                           </p>
                         </div>
                         <span
@@ -199,17 +196,21 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
 // Observability: SpaceshipClient logs "[SpaceshipClient] checkAvailability: domain=..." per call.
 // ---------------------------------------------------------------------------
 type CompletedResult =
-  | { type: 'ok'; report: import('@monster/shared').ResearchReport; domains: { domain: string; available: boolean | null; price?: string }[] }
-  | { type: 'parse_error'; raw: unknown; zodIssues: string | null };
+  | {
+      type: "ok";
+      report: import("@monster/shared").ResearchReport;
+      domains: { domain: string; available: boolean | null; price?: string }[];
+    }
+  | { type: "parse_error"; raw: unknown; zodIssues: string | null };
 
 async function renderCompletedSession(rawReport: unknown): Promise<CompletedResult> {
   const parsed = ResearchReportSchema.safeParse(rawReport);
 
   if (!parsed.success) {
     const zodIssues = parsed.error.issues
-      .map((i) => `${i.path.join('.')}: ${i.message}`)
-      .join('; ');
-    return { type: 'parse_error', raw: rawReport, zodIssues: zodIssues || null };
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    return { type: "parse_error", raw: rawReport, zodIssues: zodIssues || null };
   }
 
   const report = parsed.data;
@@ -222,12 +223,12 @@ async function renderCompletedSession(rawReport: unknown): Promise<CompletedResu
 
   const domains = report.domain_suggestions.map((s, i) => {
     const result = domainResults[i];
-    if (result.status === 'fulfilled') {
+    if (result.status === "fulfilled") {
       return { domain: s.domain, available: result.value.available, price: result.value.price };
     }
     // Rejected: Spaceship error — render as "Unknown"
     return { domain: s.domain, available: null as null };
   });
 
-  return { type: 'ok', report, domains };
+  return { type: "ok", report, domains };
 }

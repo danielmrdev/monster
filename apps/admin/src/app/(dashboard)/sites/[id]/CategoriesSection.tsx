@@ -1,22 +1,22 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { DeleteCategoryButton } from './categories/DeleteCategoryButton'
+import Link from "next/link";
+import { DeleteCategoryButton } from "./categories/DeleteCategoryButton";
 
 interface Category {
-  id: string
-  name: string
-  slug: string
-  focus_keyword: string | null
-  keywords: string[] | null
-  seo_text: string | null
-  description: string | null
-  productCount: number
+  id: string;
+  name: string;
+  slug: string;
+  focus_keyword: string | null;
+  keywords: string[] | null;
+  seo_text: string | null;
+  description: string | null;
+  productCount: number;
 }
 
 interface Props {
-  siteId: string
-  categories: Category[]
+  siteId: string;
+  categories: Category[];
 }
 
 export function CategoriesSection({ siteId, categories }: Props) {
@@ -41,13 +41,13 @@ export function CategoriesSection({ siteId, categories }: Props) {
 
       {categories.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No categories yet.{' '}
+          No categories yet.{" "}
           <Link
             href={`/sites/${siteId}/categories/new`}
             className="text-foreground underline underline-offset-2 hover:no-underline"
           >
             Add your first category
-          </Link>{' '}
+          </Link>{" "}
           to organize products.
         </p>
       ) : (
@@ -87,16 +87,12 @@ export function CategoriesSection({ siteId, categories }: Props) {
                 >
                   Edit
                 </Link>
-                <DeleteCategoryButton
-                  siteId={siteId}
-                  categoryId={cat.id}
-                  categoryName={cat.name}
-                />
+                <DeleteCategoryButton siteId={siteId} categoryId={cat.id} categoryName={cat.name} />
               </div>
             </Link>
           ))}
         </div>
       )}
     </div>
-  )
+  );
 }

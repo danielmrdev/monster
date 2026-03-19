@@ -1,27 +1,27 @@
-'use client'
+"use client";
 
-import { useState, useTransition } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useState, useTransition } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const LEGAL_TYPES = [
-  { key: 'privacy', label: 'Privacy Policy' },
-  { key: 'terms', label: 'Terms of Use' },
-  { key: 'cookies', label: 'Cookie Policy' },
-  { key: 'contact', label: 'Contact Page' },
-]
+  { key: "privacy", label: "Privacy Policy" },
+  { key: "terms", label: "Terms of Use" },
+  { key: "cookies", label: "Cookie Policy" },
+  { key: "contact", label: "Contact Page" },
+];
 
 interface Template {
-  id: string
-  title: string
-  type: string
-  language: string
+  id: string;
+  title: string;
+  type: string;
+  language: string;
 }
 
 interface LegalTemplateAssignmentProps {
-  siteId: string
-  templates: Template[]
-  currentAssignments: Record<string, string> // templateType → templateId
+  siteId: string;
+  templates: Template[];
+  currentAssignments: Record<string, string>; // templateType → templateId
 }
 
 /**
@@ -33,36 +33,36 @@ export function LegalTemplateAssignment({
   templates,
   currentAssignments,
 }: LegalTemplateAssignmentProps) {
-  const [selections, setSelections] = useState<Record<string, string>>(currentAssignments)
-  const [isPending, startTransition] = useTransition()
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [selections, setSelections] = useState<Record<string, string>>(currentAssignments);
+  const [isPending, startTransition] = useTransition();
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function handleChange(type: string, value: string) {
-    setSelections((prev) => ({ ...prev, [type]: value }))
-    setSaved(false)
+    setSelections((prev) => ({ ...prev, [type]: value }));
+    setSaved(false);
   }
 
   function handleSave() {
-    setSaved(false)
-    setError(null)
+    setSaved(false);
+    setError(null);
     startTransition(async () => {
       try {
         const res = await fetch(`/api/sites/${siteId}/legal-assignments`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ assignments: selections }),
-        })
+        });
         if (!res.ok) {
-          const data = await res.json().catch(() => ({}))
-          setError(data.error ?? 'Failed to save assignments')
-          return
+          const data = await res.json().catch(() => ({}));
+          setError(data.error ?? "Failed to save assignments");
+          return;
         }
-        setSaved(true)
+        setSaved(true);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to save assignments')
+        setError(e instanceof Error ? e.message : "Failed to save assignments");
       }
-    })
+    });
   }
 
   return (
@@ -77,7 +77,7 @@ export function LegalTemplateAssignment({
         </p>
 
         {LEGAL_TYPES.map(({ key, label }) => {
-          const options = templates.filter((t) => t.type === key)
+          const options = templates.filter((t) => t.type === key);
           return (
             <div key={key} className="space-y-1.5">
               <label htmlFor={`legal-${key}`} className="text-sm font-medium text-foreground">
@@ -85,7 +85,7 @@ export function LegalTemplateAssignment({
               </label>
               <select
                 id={`legal-${key}`}
-                value={selections[key] ?? ''}
+                value={selections[key] ?? ""}
                 onChange={(e) => handleChange(key, e.target.value)}
                 className="flex h-9 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
@@ -98,27 +98,23 @@ export function LegalTemplateAssignment({
               </select>
               {options.length === 0 && (
                 <p className="text-xs text-muted-foreground">
-                  No {label} templates yet.{' '}
+                  No {label} templates yet.{" "}
                   <a href="/templates/new" className="text-primary hover:underline">
                     Create one →
                   </a>
                 </p>
               )}
             </div>
-          )
+          );
         })}
 
-        {saved && (
-          <p className="text-sm text-green-400">✓ Legal template assignments saved.</p>
-        )}
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
+        {saved && <p className="text-sm text-green-400">✓ Legal template assignments saved.</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button onClick={handleSave} disabled={isPending}>
-          {isPending ? 'Saving…' : 'Save Template Assignments'}
+          {isPending ? "Saving…" : "Save Template Assignments"}
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }

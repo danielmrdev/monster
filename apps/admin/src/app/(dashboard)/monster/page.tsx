@@ -1,9 +1,9 @@
-import { Suspense } from 'react';
-import { getConversations, getMessages } from './actions';
-import { ConversationList } from './ConversationList';
-import { ChatWindow } from './ChatWindow';
+import { Suspense } from "react";
+import { getConversations, getMessages } from "./actions";
+import { ConversationList } from "./ConversationList";
+import { ChatWindow } from "./ChatWindow";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 interface MonsterPageProps {
   searchParams: Promise<{ c?: string }>;
@@ -20,7 +20,7 @@ interface MonsterPageProps {
  */
 export default async function MonsterPage({ searchParams }: MonsterPageProps) {
   const params = await searchParams;
-  const activeId = typeof params.c === 'string' && params.c ? params.c : undefined;
+  const activeId = typeof params.c === "string" && params.c ? params.c : undefined;
 
   // Parallel fetch: conversation list + messages (if conversation active)
   const [conversations, messages] = await Promise.all([
@@ -42,10 +42,7 @@ export default async function MonsterPage({ searchParams }: MonsterPageProps) {
             </div>
           }
         >
-          <ChatWindow
-            initialMessages={messages}
-            conversationId={activeId ?? null}
-          />
+          <ChatWindow initialMessages={messages} conversationId={activeId ?? null} />
         </Suspense>
       </div>
     </div>

@@ -1,33 +1,33 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Loader2, Plug } from 'lucide-react'
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Plug } from "lucide-react";
 
 interface ConnectionResult {
-  ok: boolean
-  error?: string
+  ok: boolean;
+  error?: string;
 }
 
 export default function TestConnectionButton() {
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<ConnectionResult | null>(null)
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<ConnectionResult | null>(null);
 
   async function handleTest() {
-    setLoading(true)
-    setResult(null)
+    setLoading(true);
+    setResult(null);
     try {
-      const res = await fetch('/api/infra/test-connection', { method: 'POST' })
-      const json: ConnectionResult = await res.json()
-      setResult(json)
+      const res = await fetch("/api/infra/test-connection", { method: "POST" });
+      const json: ConnectionResult = await res.json();
+      setResult(json);
     } catch (err) {
       setResult({
         ok: false,
-        error: err instanceof Error ? err.message : 'Network error',
-      })
+        error: err instanceof Error ? err.message : "Network error",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -39,7 +39,7 @@ export default function TestConnectionButton() {
         ) : (
           <Plug className="size-4" data-icon="inline-start" />
         )}
-        {loading ? 'Testing…' : 'Test Deploy Connection'}
+        {loading ? "Testing…" : "Test Deploy Connection"}
       </Button>
 
       {result && (
@@ -52,14 +52,12 @@ export default function TestConnectionButton() {
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="destructive">✗ Failed</Badge>
               {result.error && (
-                <span className="text-sm text-destructive font-mono">
-                  {result.error}
-                </span>
+                <span className="text-sm text-destructive font-mono">{result.error}</span>
               )}
             </div>
           )}
         </div>
       )}
     </div>
-  )
+  );
 }

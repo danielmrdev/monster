@@ -1,52 +1,62 @@
-'use client'
+"use client";
 
-import { useActionState } from 'react'
-import { saveSettings, saveAgentPrompts, type SaveSettingsState, type SaveAgentPromptsState } from './actions'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { useActionState } from "react";
+import {
+  saveSettings,
+  saveAgentPrompts,
+  type SaveSettingsState,
+  type SaveAgentPromptsState,
+} from "./actions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface AgentKeyConfig {
-  key: string
-  label: string
-  hint: string
+  key: string;
+  label: string;
+  hint: string;
 }
 
 interface SettingsFormProps {
-  maskedDisplay: Record<string, string>
-  agentPrompts: Record<string, string>
-  agentKeys: AgentKeyConfig[]
-  defaultPrompts: Record<string, string>
+  maskedDisplay: Record<string, string>;
+  agentPrompts: Record<string, string>;
+  agentKeys: AgentKeyConfig[];
+  defaultPrompts: Record<string, string>;
 }
 
 function MaskedIndicator({ last4 }: { last4?: string }) {
-  if (!last4) return null
+  if (!last4) return null;
   return (
     <p className="text-xs text-muted-foreground mt-1">
       Currently set <span className="font-mono">••••••{last4}</span>
     </p>
-  )
+  );
 }
 
 function FieldError({ messages }: { messages?: string[] }) {
-  if (!messages?.length) return null
-  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>
+  if (!messages?.length) return null;
+  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>;
 }
 
-export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPrompts }: SettingsFormProps) {
+export function SettingsForm({
+  maskedDisplay,
+  agentPrompts,
+  agentKeys,
+  defaultPrompts,
+}: SettingsFormProps) {
   const [state, formAction, isPending] = useActionState<SaveSettingsState, FormData>(
     saveSettings,
-    null
-  )
-  const [promptState, promptFormAction, promptPending] = useActionState<SaveAgentPromptsState, FormData>(
-    saveAgentPrompts,
-    null
-  )
+    null,
+  );
+  const [promptState, promptFormAction, promptPending] = useActionState<
+    SaveAgentPromptsState,
+    FormData
+  >(saveAgentPrompts, null);
 
-  const errors = state?.errors
+  const errors = state?.errors;
 
   return (
     <Tabs defaultValue="api-keys" className="space-y-6">
@@ -79,7 +89,9 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground">
-                Used for direct Claude API calls (ContentGenerator batch jobs). Monster Chat and NicheResearcher use the system claude CLI token — this key is only needed for BullMQ content generation jobs.
+                Used for direct Claude API calls (ContentGenerator batch jobs). Monster Chat and
+                NicheResearcher use the system claude CLI token — this key is only needed for BullMQ
+                content generation jobs.
               </p>
               <div className="space-y-1.5">
                 <Label htmlFor="anthropic_api_key">Anthropic API Key</Label>
@@ -92,7 +104,7 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                   defaultValue=""
                   aria-invalid={!!errors?.anthropic_api_key}
                 />
-                <MaskedIndicator last4={maskedDisplay['anthropic_api_key']} />
+                <MaskedIndicator last4={maskedDisplay["anthropic_api_key"]} />
                 <FieldError messages={errors?.anthropic_api_key} />
               </div>
             </CardContent>
@@ -105,7 +117,8 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground">
-                Domain registration and DNS management. Required for domain availability checks and registration from the site detail page.
+                Domain registration and DNS management. Required for domain availability checks and
+                registration from the site detail page.
               </p>
               <div className="space-y-1.5">
                 <Label htmlFor="spaceship_api_key">API Key</Label>
@@ -118,7 +131,7 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                   defaultValue=""
                   aria-invalid={!!errors?.spaceship_api_key}
                 />
-                <MaskedIndicator last4={maskedDisplay['spaceship_api_key']} />
+                <MaskedIndicator last4={maskedDisplay["spaceship_api_key"]} />
                 <FieldError messages={errors?.spaceship_api_key} />
               </div>
               <div className="space-y-1.5">
@@ -132,7 +145,7 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                   defaultValue=""
                   aria-invalid={!!errors?.spaceship_api_secret}
                 />
-                <MaskedIndicator last4={maskedDisplay['spaceship_api_secret']} />
+                <MaskedIndicator last4={maskedDisplay["spaceship_api_secret"]} />
                 <FieldError messages={errors?.spaceship_api_secret} />
               </div>
               <div className="space-y-1.5">
@@ -146,8 +159,10 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                   defaultValue=""
                   aria-invalid={!!errors?.spaceship_contact_id}
                 />
-                <MaskedIndicator last4={maskedDisplay['spaceship_contact_id']} />
-                <p className="text-xs text-muted-foreground">Find it in Spaceship account → Contacts.</p>
+                <MaskedIndicator last4={maskedDisplay["spaceship_contact_id"]} />
+                <p className="text-xs text-muted-foreground">
+                  Find it in Spaceship account → Contacts.
+                </p>
                 <FieldError messages={errors?.spaceship_contact_id} />
               </div>
             </CardContent>
@@ -160,7 +175,8 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground">
-                Keyword research, SERP analysis, and Amazon product data. Used by NicheResearcher and the product refresh pipeline.
+                Keyword research, SERP analysis, and Amazon product data. Used by NicheResearcher
+                and the product refresh pipeline.
               </p>
               <div className="space-y-1.5">
                 <Label htmlFor="dataforseo_api_key">API Credentials</Label>
@@ -173,7 +189,7 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                   defaultValue=""
                   aria-invalid={!!errors?.dataforseo_api_key}
                 />
-                <MaskedIndicator last4={maskedDisplay['dataforseo_api_key']} />
+                <MaskedIndicator last4={maskedDisplay["dataforseo_api_key"]} />
                 <FieldError messages={errors?.dataforseo_api_key} />
               </div>
             </CardContent>
@@ -186,7 +202,8 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground">
-                Cloud server provisioning. Used by the Infrastructure page to provision new VPS servers via the Hetzner Cloud API.
+                Cloud server provisioning. Used by the Infrastructure page to provision new VPS
+                servers via the Hetzner Cloud API.
               </p>
               <div className="space-y-1.5">
                 <Label htmlFor="hetzner_api_token">API Token</Label>
@@ -199,7 +216,7 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                   defaultValue=""
                   aria-invalid={!!errors?.hetzner_api_token}
                 />
-                <MaskedIndicator last4={maskedDisplay['hetzner_api_token']} />
+                <MaskedIndicator last4={maskedDisplay["hetzner_api_token"]} />
                 <FieldError messages={errors?.hetzner_api_token} />
               </div>
             </CardContent>
@@ -226,7 +243,7 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                   defaultValue=""
                   aria-invalid={!!errors?.cloudflare_api_token}
                 />
-                <MaskedIndicator last4={maskedDisplay['cloudflare_api_token']} />
+                <MaskedIndicator last4={maskedDisplay["cloudflare_api_token"]} />
                 <FieldError messages={errors?.cloudflare_api_token} />
               </div>
             </CardContent>
@@ -234,7 +251,7 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
 
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={isPending}>
-              {isPending ? 'Saving…' : 'Save Settings'}
+              {isPending ? "Saving…" : "Save Settings"}
             </Button>
             <p className="text-xs text-muted-foreground">
               Leave a field empty to keep the current value.
@@ -263,8 +280,8 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
             </CardHeader>
             <CardContent className="space-y-6">
               <p className="text-xs text-muted-foreground">
-                Override the default system prompts for each agent. Leave a field empty to restore the built-in default.
-                Changes take effect on the next job run or chat session.
+                Override the default system prompts for each agent. Leave a field empty to restore
+                the built-in default. Changes take effect on the next job run or chat session.
               </p>
               {agentKeys.map(({ key, label, hint }) => (
                 <div key={key} className="space-y-1.5">
@@ -272,7 +289,7 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
                   <Textarea
                     id={`agent_prompt_${key}`}
                     name={`agent_prompt_${key}`}
-                    defaultValue={agentPrompts[key] ?? defaultPrompts[key] ?? ''}
+                    defaultValue={agentPrompts[key] ?? defaultPrompts[key] ?? ""}
                     placeholder={`Leave empty to use the built-in default prompt for ${label}.`}
                     rows={8}
                   />
@@ -284,7 +301,7 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
 
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={promptPending}>
-              {promptPending ? 'Saving…' : 'Save Agent Prompts'}
+              {promptPending ? "Saving…" : "Save Agent Prompts"}
             </Button>
             <p className="text-xs text-muted-foreground">
               Empty = use built-in default. Changes take effect on the next job run.
@@ -292,7 +309,6 @@ export function SettingsForm({ maskedDisplay, agentPrompts, agentKeys, defaultPr
           </div>
         </form>
       </TabsContent>
-
     </Tabs>
-  )
+  );
 }

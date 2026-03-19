@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback, useTransition } from 'react';
-import { getLatestDeployStatus } from './actions';
+import { useEffect, useState, useCallback, useTransition } from "react";
+import { getLatestDeployStatus } from "./actions";
 
 type DeployRow = Awaited<ReturnType<typeof getLatestDeployStatus>>;
-type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
+type JobStatus = "pending" | "running" | "completed" | "failed";
 
 interface Props {
   siteId: string;
 }
 
 const BADGE: Record<JobStatus, { label: string; className: string }> = {
-  pending:   { label: 'Pending',   className: 'bg-yellow-100 text-yellow-800' },
-  running:   { label: 'Running…',  className: 'bg-blue-100 text-blue-700'    },
-  completed: { label: 'Completed', className: 'bg-green-100 text-green-800'  },
-  failed:    { label: 'Failed',    className: 'bg-red-100 text-red-800'      },
+  pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800" },
+  running: { label: "Running…", className: "bg-blue-100 text-blue-700" },
+  completed: { label: "Completed", className: "bg-green-100 text-green-800" },
+  failed: { label: "Failed", className: "bg-red-100 text-red-800" },
 };
 
 function fmt(ts: string | null | undefined): string {
-  if (!ts) return '—';
+  if (!ts) return "—";
   return new Date(ts).toLocaleString();
 }
 
@@ -39,7 +39,7 @@ export default function DeployStatus({ siteId }: Props) {
 
   useEffect(() => {
     const status = job?.status as JobStatus | undefined;
-    if (!status || status === 'completed' || status === 'failed') return;
+    if (!status || status === "completed" || status === "failed") return;
 
     // Poll every 5 seconds while pending or running
     const id = setInterval(poll, 5000);
@@ -47,13 +47,11 @@ export default function DeployStatus({ siteId }: Props) {
   }, [job?.status, poll]);
 
   if (!job) {
-    return (
-      <p className="text-sm text-muted-foreground/70 mt-2">No deploy jobs yet.</p>
-    );
+    return <p className="text-sm text-muted-foreground/70 mt-2">No deploy jobs yet.</p>;
   }
 
   const status = job.status as JobStatus;
-  const badge = BADGE[status] ?? { label: status, className: 'bg-muted/50 text-foreground/80' };
+  const badge = BADGE[status] ?? { label: status, className: "bg-muted/50 text-foreground/80" };
 
   // payload.phase and progress tracking for running jobs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,12 +71,14 @@ export default function DeployStatus({ siteId }: Props) {
         </span>
       </div>
       {/* Phase progress — visible while job is running, surfaces rsync/caddy/cloudflare steps */}
-      {status === 'running' && phase && (
+      {status === "running" && phase && (
         <div className="space-y-1">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-medium text-blue-700">{phase}</span>
             {done !== undefined && total !== undefined && total > 0 && (
-              <span>{done}/{total} ({Math.round((done / total) * 100)}%)</span>
+              <span>
+                {done}/{total} ({Math.round((done / total) * 100)}%)
+              </span>
             )}
           </div>
           {done !== undefined && total !== undefined && total > 0 && (
@@ -97,7 +97,7 @@ export default function DeployStatus({ siteId }: Props) {
       <div className="text-muted-foreground">
         <span className="font-medium">Completed:</span> {fmt(job.completed_at)}
       </div>
-      {status === 'failed' && job.error && (
+      {status === "failed" && job.error && (
         <div className="text-red-600 text-xs font-mono break-all">{job.error}</div>
       )}
     </div>

@@ -1,96 +1,99 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import { DeleteProductButton } from './products/DeleteProductButton'
-import { Input } from '@/components/ui/input'
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { DeleteProductButton } from "./products/DeleteProductButton";
+import { Input } from "@/components/ui/input";
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 25;
 
 interface Product {
-  id: string
-  asin: string
-  title: string | null
-  current_price: number | null
-  rating: number | null
-  review_count: number | null
-  is_prime: boolean
-  source_image_url: string | null
-  images: string[] | null
+  id: string;
+  asin: string;
+  title: string | null;
+  current_price: number | null;
+  rating: number | null;
+  review_count: number | null;
+  is_prime: boolean;
+  source_image_url: string | null;
+  images: string[] | null;
 }
 
 interface ApiResponse {
-  products: Product[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
+  products: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 interface Props {
-  siteId: string
-  initialProducts: Product[]
-  initialTotal: number
+  siteId: string;
+  initialProducts: Product[];
+  initialTotal: number;
 }
 
 function StarRating({ rating }: { rating: number }) {
-  const stars = Math.round(rating * 2) / 2
+  const stars = Math.round(rating * 2) / 2;
   return (
     <span className="text-amber-400 text-xs">
-      {'★'.repeat(Math.floor(stars))}
-      {stars % 1 !== 0 ? '½' : ''}
-      {'☆'.repeat(5 - Math.ceil(stars))}
+      {"★".repeat(Math.floor(stars))}
+      {stars % 1 !== 0 ? "½" : ""}
+      {"☆".repeat(5 - Math.ceil(stars))}
     </span>
-  )
+  );
 }
 
 export function ProductsSection({ siteId, initialProducts, initialTotal }: Props) {
-  const [products, setProducts] = useState<Product[]>(initialProducts)
-  const [total, setTotal] = useState(initialTotal)
-  const [totalPages, setTotalPages] = useState(Math.ceil(initialTotal / PAGE_SIZE))
-  const [page, setPage] = useState(1)
-  const [query, setQuery] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [total, setTotal] = useState(initialTotal);
+  const [totalPages, setTotalPages] = useState(Math.ceil(initialTotal / PAGE_SIZE));
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const queryRef = useRef(query)
-  queryRef.current = query
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryRef = useRef(query);
+  queryRef.current = query;
 
-  const fetchProducts = useCallback(async (q: string, p: number) => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) })
-      if (q) params.set('q', q)
-      const res = await fetch(`/api/sites/${siteId}/products?${params}`)
-      if (!res.ok) return
-      const data: ApiResponse = await res.json()
-      setProducts(data.products)
-      setTotal(data.total)
-      setTotalPages(data.totalPages)
-      setPage(data.page)
-    } finally {
-      setLoading(false)
-    }
-  }, [siteId])
+  const fetchProducts = useCallback(
+    async (q: string, p: number) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ page: String(p), limit: String(PAGE_SIZE) });
+        if (q) params.set("q", q);
+        const res = await fetch(`/api/sites/${siteId}/products?${params}`);
+        if (!res.ok) return;
+        const data: ApiResponse = await res.json();
+        setProducts(data.products);
+        setTotal(data.total);
+        setTotalPages(data.totalPages);
+        setPage(data.page);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [siteId],
+  );
 
   // Debounce search
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      fetchProducts(query, 1)
-    }, 300)
+      fetchProducts(query, 1);
+    }, 300);
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [query, fetchProducts])
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query, fetchProducts]);
 
   function handlePageChange(newPage: number) {
-    fetchProducts(queryRef.current, newPage)
+    fetchProducts(queryRef.current, newPage);
   }
 
-  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
-  const to = Math.min(page * PAGE_SIZE, total)
+  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, total);
 
   return (
     <div id="products" className="rounded-xl border border-border bg-card px-6 py-5">
@@ -126,13 +129,13 @@ export function ProductsSection({ siteId, initialProducts, initialTotal }: Props
       {/* Empty states */}
       {!loading && products.length === 0 && !query && (
         <p className="text-sm text-muted-foreground">
-          No products yet.{' '}
+          No products yet.{" "}
           <Link
             href={`/sites/${siteId}/products/new`}
             className="text-foreground underline underline-offset-2 hover:no-underline"
           >
             Add your first product
-          </Link>{' '}
+          </Link>{" "}
           by pasting an ASIN.
         </p>
       )}
@@ -145,11 +148,13 @@ export function ProductsSection({ siteId, initialProducts, initialTotal }: Props
 
       {/* Product list */}
       {products.length > 0 && (
-        <div className={`divide-y divide-border -mx-6 transition-opacity duration-150 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+        <div
+          className={`divide-y divide-border -mx-6 transition-opacity duration-150 ${loading ? "opacity-50" : "opacity-100"}`}
+        >
           {products.map((product) => {
             const imageUrl =
               product.source_image_url ??
-              (product.images && product.images.length > 0 ? product.images[0] : null)
+              (product.images && product.images.length > 0 ? product.images[0] : null);
 
             return (
               <div
@@ -211,14 +216,10 @@ export function ProductsSection({ siteId, initialProducts, initialTotal }: Props
                   >
                     Edit
                   </Link>
-                  <DeleteProductButton
-                    siteId={siteId}
-                    productId={product.id}
-                    asin={product.asin}
-                  />
+                  <DeleteProductButton siteId={siteId} productId={product.id} asin={product.asin} />
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       )}
@@ -251,5 +252,5 @@ export function ProductsSection({ siteId, initialProducts, initialTotal }: Props
         </div>
       )}
     </div>
-  )
+  );
 }

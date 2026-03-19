@@ -1,7 +1,7 @@
-'use server'
+"use server";
 
-import { revalidatePath } from 'next/cache'
-import { createServiceClient } from '@/lib/supabase/service'
+import { revalidatePath } from "next/cache";
+import { createServiceClient } from "@/lib/supabase/service";
 
 /**
  * Mark a product alert as acknowledged.
@@ -12,26 +12,24 @@ import { createServiceClient } from '@/lib/supabase/service'
  *  - Returns { ok: false, error } on DB failure — caller should surface the message.
  *  - Confirm in DB: SELECT status FROM product_alerts WHERE id = '<alertId>'
  */
-export async function acknowledgeAlert(
-  alertId: string,
-): Promise<{ ok: boolean; error?: string }> {
+export async function acknowledgeAlert(alertId: string): Promise<{ ok: boolean; error?: string }> {
   try {
-    const supabase = createServiceClient()
+    const supabase = createServiceClient();
     const { error } = await supabase
-      .from('product_alerts')
-      .update({ status: 'acknowledged' })
-      .eq('id', alertId)
+      .from("product_alerts")
+      .update({ status: "acknowledged" })
+      .eq("id", alertId);
 
     if (error) {
-      return { ok: false, error: error.message }
+      return { ok: false, error: error.message };
     }
 
-    revalidatePath('/alerts')
-    revalidatePath('/dashboard')
-    return { ok: true }
+    revalidatePath("/alerts");
+    revalidatePath("/dashboard");
+    return { ok: true };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    return { ok: false, error: message }
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: message };
   }
 }
 
@@ -44,25 +42,23 @@ export async function acknowledgeAlert(
  *  - Returns { ok: false, error } on DB failure — caller should surface the message.
  *  - Confirm in DB: SELECT status, resolved_at FROM product_alerts WHERE id = '<alertId>'
  */
-export async function resolveAlert(
-  alertId: string,
-): Promise<{ ok: boolean; error?: string }> {
+export async function resolveAlert(alertId: string): Promise<{ ok: boolean; error?: string }> {
   try {
-    const supabase = createServiceClient()
+    const supabase = createServiceClient();
     const { error } = await supabase
-      .from('product_alerts')
-      .update({ status: 'resolved', resolved_at: new Date().toISOString() })
-      .eq('id', alertId)
+      .from("product_alerts")
+      .update({ status: "resolved", resolved_at: new Date().toISOString() })
+      .eq("id", alertId);
 
     if (error) {
-      return { ok: false, error: error.message }
+      return { ok: false, error: error.message };
     }
 
-    revalidatePath('/alerts')
-    revalidatePath('/dashboard')
-    return { ok: true }
+    revalidatePath("/alerts");
+    revalidatePath("/dashboard");
+    return { ok: true };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    return { ok: false, error: message }
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: message };
   }
 }

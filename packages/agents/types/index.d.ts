@@ -4,20 +4,20 @@
 // Update this file when new exports are added to src/index.ts.
 
 // Queue factories
-export declare function generateQueue(): import('bullmq').Queue;
-export declare function createGenerateQueue(): import('bullmq').Queue;
-export declare function deployQueue(): import('bullmq').Queue;
-export declare function createDeployQueue(): import('bullmq').Queue;
-export declare function analyticsAggregationQueue(): import('bullmq').Queue;
-export declare function createAnalyticsAggregationQueue(): import('bullmq').Queue;
-export declare function productRefreshQueue(): import('bullmq').Queue;
-export declare function createProductRefreshQueue(): import('bullmq').Queue;
-export declare function nicheResearchQueue(): import('bullmq').Queue;
-export declare function createNicheResearchQueue(): import('bullmq').Queue;
-export declare function seoContentQueue(): import('bullmq').Queue;
-export declare function createSeoContentQueue(): import('bullmq').Queue;
+export declare function generateQueue(): import("bullmq").Queue;
+export declare function createGenerateQueue(): import("bullmq").Queue;
+export declare function deployQueue(): import("bullmq").Queue;
+export declare function createDeployQueue(): import("bullmq").Queue;
+export declare function analyticsAggregationQueue(): import("bullmq").Queue;
+export declare function createAnalyticsAggregationQueue(): import("bullmq").Queue;
+export declare function productRefreshQueue(): import("bullmq").Queue;
+export declare function createProductRefreshQueue(): import("bullmq").Queue;
+export declare function nicheResearchQueue(): import("bullmq").Queue;
+export declare function createNicheResearchQueue(): import("bullmq").Queue;
+export declare function seoContentQueue(): import("bullmq").Queue;
+export declare function createSeoContentQueue(): import("bullmq").Queue;
 export declare function createRedisOptions(): object;
-export declare function createRedisConnection(): import('ioredis').Redis;
+export declare function createRedisConnection(): import("ioredis").Redis;
 
 // NicheResearcher
 export interface NicheResearchPayload {
@@ -41,7 +41,7 @@ export interface DataForSEOProduct {
   imageUrl: string;
   isPrime: boolean;
   isBestSeller: boolean;
-  availability: 'available' | 'limited' | 'unavailable';
+  availability: "available" | "limited" | "unavailable";
 }
 export declare class DataForSEOClient {
   searchProducts(keyword: string, market: string, depth?: number): Promise<DataForSEOProduct[]>;
@@ -50,7 +50,7 @@ export declare class DataForSEOClient {
 
 // Monster Chat
 export interface StreamEvent {
-  type: 'text' | 'done' | 'error';
+  type: "text" | "done" | "error";
   text?: string;
   sessionId?: string;
   error?: string;
@@ -73,11 +73,11 @@ export declare function getAgentPrompt(
   fallback: string,
 ): Promise<string>;
 export declare const AGENT_KEYS: {
-  readonly CONTENT_GENERATOR: 'content_generator';
-  readonly NICHE_RESEARCHER: 'niche_researcher';
-  readonly MONSTER: 'monster';
+  readonly CONTENT_GENERATOR: "content_generator";
+  readonly NICHE_RESEARCHER: "niche_researcher";
+  readonly MONSTER: "monster";
 };
-export type AgentKey = 'content_generator' | 'niche_researcher' | 'monster';
+export type AgentKey = "content_generator" | "niche_researcher" | "monster";
 
 // Amazon scraper
 export interface ScrapedProduct {
@@ -90,7 +90,7 @@ export interface ScrapedProduct {
   isPrime: boolean;
 }
 export declare class AmazonBlockedError extends Error {
-  name: 'AmazonBlockedError';
+  name: "AmazonBlockedError";
 }
 export declare class AmazonScraper {
   search(keyword: string, market?: string, page?: number): Promise<ScrapedProduct[]>;
@@ -99,13 +99,13 @@ export declare class AmazonScraper {
 // SEO Content Job
 export interface SeoContentPayload {
   siteId: string;
-  jobType: 'seo_homepage' | 'seo_category' | 'seo_product' | 'seo_products_batch';
+  jobType: "seo_homepage" | "seo_category" | "seo_product" | "seo_products_batch";
   categoryId?: string;
   productId?: string;
 }
 export declare function enqueueSeoContent(
   siteId: string,
-  jobType: SeoContentPayload['jobType'],
+  jobType: SeoContentPayload["jobType"],
   opts?: { categoryId?: string; productId?: string },
 ): Promise<string | undefined>;
 

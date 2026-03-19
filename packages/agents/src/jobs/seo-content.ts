@@ -1,42 +1,42 @@
-import { query } from "@anthropic-ai/claude-agent-sdk"
-import { Worker } from "bullmq"
-import { createServiceClient } from "@monster/db"
-import { createRedisConnection } from "../queue.js"
-import { scoreMarkdown } from "../seo-scorer-wrapper.js"
+import { query } from "@anthropic-ai/claude-agent-sdk";
+import { Worker } from "bullmq";
+import { createServiceClient } from "@monster/db";
+import { createRedisConnection } from "../queue.js";
+import { scoreMarkdown } from "../seo-scorer-wrapper.js";
 
 // ---------------------------------------------------------------------------
 // SeoContentPayload
 // ---------------------------------------------------------------------------
 
-export type HomepageField = "meta_description" | "intro" | "seo_text"
-export type CategoryField = "focus_keyword" | "description" | "seo_text"
+export type HomepageField = "meta_description" | "intro" | "seo_text";
+export type CategoryField = "focus_keyword" | "description" | "seo_text";
 
 export interface HomepageCurrentContent {
-  focus_keyword?: string | null
-  meta_description?: string | null
-  intro?: string | null
-  seo_text?: string | null
+  focus_keyword?: string | null;
+  meta_description?: string | null;
+  intro?: string | null;
+  seo_text?: string | null;
 }
 
 export interface CategoryCurrentContent {
-  focus_keyword?: string | null
-  seo_text?: string | null
-  description?: string | null
+  focus_keyword?: string | null;
+  seo_text?: string | null;
+  description?: string | null;
 }
 
 export interface SeoContentPayload {
-  siteId: string
-  jobType: "seo_homepage" | "seo_category" | "seo_product" | "seo_products_batch"
-  categoryId?: string // for category/product/batch jobs
-  productId?: string // for single product job
+  siteId: string;
+  jobType: "seo_homepage" | "seo_category" | "seo_product" | "seo_products_batch";
+  categoryId?: string; // for category/product/batch jobs
+  productId?: string; // for single product job
   // homepage-only extras:
-  homepageFields?: HomepageField[] // undefined = all three
-  currentContent?: HomepageCurrentContent // existing content for reference
-  currentScore?: number | null // content_quality_score from seo_scores
+  homepageFields?: HomepageField[]; // undefined = all three
+  currentContent?: HomepageCurrentContent; // existing content for reference
+  currentScore?: number | null; // content_quality_score from seo_scores
   // category-only extras:
-  categoryFields?: CategoryField[] // undefined = all three
-  currentCategoryContent?: CategoryCurrentContent // existing category content for reference
-  currentCategoryScore?: number | null // content_quality_score from seo_scores
+  categoryFields?: CategoryField[]; // undefined = all three
+  currentCategoryContent?: CategoryCurrentContent; // existing category content for reference
+  currentCategoryScore?: number | null; // content_quality_score from seo_scores
 }
 
 // ---------------------------------------------------------------------------
@@ -53,20 +53,20 @@ export class SeoContentJob {
    * Returns the Worker so the caller can add it to the shutdown array.
    */
   register(): Worker {
-    const connection = createRedisConnection()
+    const connection = createRedisConnection();
 
     const worker = new Worker<SeoContentPayload>("seo-content", handler, {
       connection,
       lockDuration: 120000, // 2 min — maxTurns:3 scoring loop
-    })
+    });
 
     worker.on("failed", (job, err) => {
       console.error(
         `[SeoContentJob] Job ${job?.id} type=${job?.data?.jobType} siteId=${job?.data?.siteId} failed: ${err.message}`,
-      )
-    })
+      );
+    });
 
-    return worker
+    return worker;
   }
 }
 
@@ -74,21 +74,19 @@ export class SeoContentJob {
 // Top-level dispatcher
 // ---------------------------------------------------------------------------
 
-async function handler(
-  job: import("bullmq").Job<SeoContentPayload>,
-): Promise<void> {
-  const { jobType } = job.data
+async function handler(job: import("bullmq").Job<SeoContentPayload>): Promise<void> {
+  const { jobType } = job.data;
   switch (jobType) {
     case "seo_homepage":
-      return handleHomepage(job)
+      return handleHomepage(job);
     case "seo_category":
-      return handleCategory(job)
+      return handleCategory(job);
     case "seo_product":
-      return handleProduct(job)
+      return handleProduct(job);
     case "seo_products_batch":
-      return handleProductsBatch(job)
+      return handleProductsBatch(job);
     default:
-      console.warn(`[seo-content] Unknown jobType: ${jobType}`)
+      console.warn(`[seo-content] Unknown jobType: ${jobType}`);
   }
 }
 
@@ -96,34 +94,30 @@ async function handler(
 // handleHomepage — generates homepage SEO text with 3-attempt scoring loop
 // ---------------------------------------------------------------------------
 
-async function handleHomepage(
-  job: import("bullmq").Job<SeoContentPayload>,
-): Promise<void> {
-  const { siteId, homepageFields, currentContent, currentScore } = job.data
-  const supabase = createServiceClient()
+async function handleHomepage(job: import("bullmq").Job<SeoContentPayload>): Promise<void> {
+  const { siteId, homepageFields, currentContent, currentScore } = job.data;
+  const supabase = createServiceClient();
 
   // Which fields to regenerate — undefined means all three
-  const ALL_FIELDS: HomepageField[] = ["meta_description", "intro", "seo_text"]
+  const ALL_FIELDS: HomepageField[] = ["meta_description", "intro", "seo_text"];
   const fieldsToGenerate: HomepageField[] =
-    homepageFields && homepageFields.length > 0 ? homepageFields : ALL_FIELDS
+    homepageFields && homepageFields.length > 0 ? homepageFields : ALL_FIELDS;
 
   // Step A: mark running
   await supabase
     .from("ai_jobs")
     .update({ status: "running", started_at: new Date().toISOString() })
-    .eq("id", job.id!)
+    .eq("id", job.id!);
 
   // Step B: fetch site context
   const { data: site, error: siteErr } = await supabase
     .from("sites")
-    .select(
-      "name, niche, market, language, currency, affiliate_tag, focus_keyword",
-    )
+    .select("name, niche, market, language, currency, affiliate_tag, focus_keyword")
     .eq("id", siteId)
-    .single()
+    .single();
 
   if (siteErr || !site) {
-    const msg = siteErr?.message ?? "Site not found"
+    const msg = siteErr?.message ?? "Site not found";
     await supabase
       .from("ai_jobs")
       .update({
@@ -131,8 +125,8 @@ async function handleHomepage(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Step B (cont): fetch category names for richer prompt context
@@ -140,30 +134,28 @@ async function handleHomepage(
     .from("tsa_categories")
     .select("name")
     .eq("site_id", siteId)
-    .order("name")
-  const categoryNames = (categoryRows ?? [])
-    .map((c) => c.name)
-    .filter(Boolean) as string[]
+    .order("name");
+  const categoryNames = (categoryRows ?? []).map((c) => c.name).filter(Boolean) as string[];
 
   // Step C: scoring loop (max 3 attempts)
-  const MAX_ATTEMPTS = 3
-  const lang = site.language ?? "es"
+  const MAX_ATTEMPTS = 3;
+  const lang = site.language ?? "es";
   // Threshold 70: Flesch is bypassed for non-English (Spanish scores -30 to +30 on the
   // English formula, permanently losing 20 pts). With language-aware scoring, 80 is
   // achievable but tight; 70 is the practical ceiling for a well-written 400-word text.
-  const THRESHOLD = 70
+  const THRESHOLD = 70;
   let bestResult: {
-    keyword: string
-    text: string
-    metaDescription: string
-    intro: string
-    score: number
-  } | null = null
-  let attempts = 0
-  let scoreFeedback = ""
+    keyword: string;
+    text: string;
+    metaDescription: string;
+    intro: string;
+    score: number;
+  } | null = null;
+  let attempts = 0;
+  let scoreFeedback = "";
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    attempts = attempt
+    attempts = attempt;
     const prompt = buildPrompt(
       site,
       categoryNames,
@@ -171,7 +163,7 @@ async function handleHomepage(
       currentContent ?? null,
       currentScore ?? null,
       scoreFeedback,
-    )
+    );
 
     const sdkQuery = query({
       prompt,
@@ -182,35 +174,35 @@ async function handleHomepage(
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
       },
-    })
+    });
 
-    let resultStr = ""
+    let resultStr = "";
     for await (const msg of sdkQuery) {
       if (msg.type === "result" && !msg.is_error) {
-        resultStr = "result" in msg ? msg.result as string : ""
+        resultStr = "result" in msg ? (msg.result as string) : "";
       }
     }
 
     // Parse JSON response: { focus_keyword, seo_text, meta_description, intro }
-    let keyword = ""
-    let seoText = ""
-    let metaDescription = ""
-    let intro = ""
+    let keyword = "";
+    let seoText = "";
+    let metaDescription = "";
+    let intro = "";
     try {
       const stripped = resultStr
         .replace(/^```(?:json)?\s*/i, "")
         .replace(/\s*```\s*$/i, "")
-        .trim()
-      const parsed = JSON.parse(stripped)
-      keyword = String(parsed.focus_keyword ?? "").trim()
-      seoText = String(parsed.seo_text ?? "").trim()
-      metaDescription = String(parsed.meta_description ?? "").trim()
-      intro = String(parsed.intro ?? "").trim()
+        .trim();
+      const parsed = JSON.parse(stripped);
+      keyword = String(parsed.focus_keyword ?? "").trim();
+      seoText = String(parsed.seo_text ?? "").trim();
+      metaDescription = String(parsed.meta_description ?? "").trim();
+      intro = String(parsed.intro ?? "").trim();
     } catch {
       console.warn(
         `[seo-content] jobId=${job.id} attempt=${attempt} JSON parse failed — raw: ${resultStr.slice(0, 200)}`,
-      )
-      continue // try again
+      );
+      continue; // try again
     }
 
     const score = scoreMarkdown(
@@ -218,21 +210,21 @@ async function handleHomepage(
       keyword,
       "homepage",
       lang,
-    )
+    );
     console.log(
       `[seo-content] jobId=${job.id} jobType=seo_homepage siteId=${siteId} attempt=${attempt} score=${score}`,
-    )
+    );
 
     if (!bestResult || score > bestResult.score) {
-      bestResult = { keyword, text: seoText, metaDescription, intro, score }
+      bestResult = { keyword, text: seoText, metaDescription, intro, score };
     }
-    if (score >= THRESHOLD) break
+    if (score >= THRESHOLD) break;
 
-    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) The focus keyword must appear in the FIRST sentence and at least 4 times total — density ~1%. (2) Use 2-3 H2 subheadings, one every ~150 words. (3) Each section must be 100-150 words. (4) Vary phrasing — do not just repeat the keyword robotically.`
+    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) The focus keyword must appear in the FIRST sentence and at least 4 times total — density ~1%. (2) Use 2-3 H2 subheadings, one every ~150 words. (3) Each section must be 100-150 words. (4) Vary phrasing — do not just repeat the keyword robotically.`;
   }
 
   if (!bestResult) {
-    const msg = "All attempts failed to produce parseable content"
+    const msg = "All attempts failed to produce parseable content";
     await supabase
       .from("ai_jobs")
       .update({
@@ -240,28 +232,28 @@ async function handleHomepage(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Step D: write only the requested fields to sites (always update focus_keyword)
   const updatePayload: Record<string, string | null> = {
     focus_keyword: bestResult.keyword,
-  }
+  };
   if (fieldsToGenerate.includes("seo_text")) {
-    updatePayload.homepage_seo_text = bestResult.text || null
+    updatePayload.homepage_seo_text = bestResult.text || null;
   }
   if (fieldsToGenerate.includes("meta_description")) {
-    updatePayload.homepage_meta_description = bestResult.metaDescription || null
+    updatePayload.homepage_meta_description = bestResult.metaDescription || null;
   }
   if (fieldsToGenerate.includes("intro")) {
-    updatePayload.homepage_intro = bestResult.intro || null
+    updatePayload.homepage_intro = bestResult.intro || null;
   }
 
   const { error: siteUpdateErr } = await supabase
     .from("sites")
     .update(updatePayload)
-    .eq("id", siteId)
+    .eq("id", siteId);
 
   if (siteUpdateErr) {
     await supabase
@@ -271,8 +263,8 @@ async function handleHomepage(
         error: siteUpdateErr.message,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(siteUpdateErr.message)
+      .eq("id", job.id!);
+    throw new Error(siteUpdateErr.message);
   }
 
   // Step E: mark completed
@@ -288,11 +280,11 @@ async function handleHomepage(
         fields: fieldsToGenerate,
       },
     })
-    .eq("id", job.id!)
+    .eq("id", job.id!);
 
   console.log(
     `[seo-content] jobId=${job.id} jobType=seo_homepage siteId=${siteId} status=completed attempts=${attempts} score=${bestResult.score} fields=${fieldsToGenerate.join(",")}`,
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -300,46 +292,31 @@ async function handleHomepage(
 //                  with 3-attempt scoring loop
 // ---------------------------------------------------------------------------
 
-async function handleCategory(
-  job: import("bullmq").Job<SeoContentPayload>,
-): Promise<void> {
-  const {
-    siteId,
-    categoryId,
-    categoryFields,
-    currentCategoryContent,
-    currentCategoryScore,
-  } = job.data
-  const supabase = createServiceClient()
+async function handleCategory(job: import("bullmq").Job<SeoContentPayload>): Promise<void> {
+  const { siteId, categoryId, categoryFields, currentCategoryContent, currentCategoryScore } =
+    job.data;
+  const supabase = createServiceClient();
 
   // Which fields to regenerate — undefined means all three
-  const ALL_CAT_FIELDS: CategoryField[] = [
-    "focus_keyword",
-    "description",
-    "seo_text",
-  ]
+  const ALL_CAT_FIELDS: CategoryField[] = ["focus_keyword", "description", "seo_text"];
   const fieldsToGenerate: CategoryField[] =
-    categoryFields && categoryFields.length > 0
-      ? categoryFields
-      : ALL_CAT_FIELDS
+    categoryFields && categoryFields.length > 0 ? categoryFields : ALL_CAT_FIELDS;
 
   // Step A: mark running
   await supabase
     .from("ai_jobs")
     .update({ status: "running", started_at: new Date().toISOString() })
-    .eq("id", job.id!)
+    .eq("id", job.id!);
 
   // Step B: fetch site context (focus_keyword + homepage_meta_description give the agent niche tone)
   const { data: site, error: siteErr } = await supabase
     .from("sites")
-    .select(
-      "name, niche, market, language, currency, focus_keyword, homepage_meta_description",
-    )
+    .select("name, niche, market, language, currency, focus_keyword, homepage_meta_description")
     .eq("id", siteId)
-    .single()
+    .single();
 
   if (siteErr || !site) {
-    const msg = siteErr?.message ?? "Site not found"
+    const msg = siteErr?.message ?? "Site not found";
     await supabase
       .from("ai_jobs")
       .update({
@@ -347,8 +324,8 @@ async function handleCategory(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Step B (cont): fetch category context (include existing focus_keyword so prompt can reuse it)
@@ -357,10 +334,10 @@ async function handleCategory(
     .select("name, slug, keywords, focus_keyword")
     .eq("id", categoryId!)
     .eq("site_id", siteId)
-    .single()
+    .single();
 
   if (catErr || !category) {
-    const msg = catErr?.message ?? "Category not found"
+    const msg = catErr?.message ?? "Category not found";
     await supabase
       .from("ai_jobs")
       .update({
@@ -368,25 +345,25 @@ async function handleCategory(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Step C: scoring loop (max 3 attempts)
-  const MAX_ATTEMPTS = 3
-  const lang = site.language ?? "es"
-  const THRESHOLD = 70
+  const MAX_ATTEMPTS = 3;
+  const lang = site.language ?? "es";
+  const THRESHOLD = 70;
   let bestResult: {
-    keyword: string
-    seoText: string
-    description: string
-    score: number
-  } | null = null
-  let attempts = 0
-  let scoreFeedback = ""
+    keyword: string;
+    seoText: string;
+    description: string;
+    score: number;
+  } | null = null;
+  let attempts = 0;
+  let scoreFeedback = "";
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    attempts = attempt
+    attempts = attempt;
     const prompt = buildCategoryPrompt(
       site,
       category,
@@ -394,7 +371,7 @@ async function handleCategory(
       currentCategoryContent ?? null,
       currentCategoryScore ?? null,
       scoreFeedback,
-    )
+    );
 
     const sdkQuery = query({
       prompt,
@@ -405,51 +382,51 @@ async function handleCategory(
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
       },
-    })
+    });
 
-    let resultStr = ""
+    let resultStr = "";
     for await (const msg of sdkQuery) {
       if (msg.type === "result" && !msg.is_error && "result" in msg) {
-        resultStr = (msg.result as string)
+        resultStr = msg.result as string;
       }
     }
 
     // Parse JSON response: { focus_keyword, seo_text, description }
-    let keyword = ""
-    let seoText = ""
-    let description = ""
+    let keyword = "";
+    let seoText = "";
+    let description = "";
     try {
       const stripped = resultStr
         .replace(/^```(?:json)?\s*/i, "")
         .replace(/\s*```\s*$/i, "")
-        .trim()
-      const parsed = JSON.parse(stripped)
-      keyword = String(parsed.focus_keyword ?? "").trim()
-      seoText = String(parsed.seo_text ?? "").trim()
-      description = String(parsed.description ?? "").trim()
+        .trim();
+      const parsed = JSON.parse(stripped);
+      keyword = String(parsed.focus_keyword ?? "").trim();
+      seoText = String(parsed.seo_text ?? "").trim();
+      description = String(parsed.description ?? "").trim();
     } catch {
       console.warn(
         `[seo-content] jobId=${job.id} jobType=seo_category attempt=${attempt} JSON parse failed — raw: ${resultStr.slice(0, 200)}`,
-      )
-      continue // try again
+      );
+      continue; // try again
     }
 
     // Only score seo_text — description (~100 chars) is not suitable for SEO scoring
-    const score = scoreMarkdown(seoText, keyword, "category", lang)
+    const score = scoreMarkdown(seoText, keyword, "category", lang);
     console.log(
       `[seo-content] jobId=${job.id} jobType=seo_category siteId=${siteId} categoryId=${categoryId} attempt=${attempt} score=${score}`,
-    )
+    );
 
     if (!bestResult || score > bestResult.score) {
-      bestResult = { keyword, seoText, description, score }
+      bestResult = { keyword, seoText, description, score };
     }
-    if (score >= THRESHOLD) break
+    if (score >= THRESHOLD) break;
 
-    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) The focus keyword must appear in the FIRST sentence and at least 4 times total — density ~1%. (2) Use 2-3 H2 subheadings, one every ~150 words. (3) Each section must be 100-150 words. (4) Do not just pad or repeat keywords robotically — vary phrasing.`
+    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) The focus keyword must appear in the FIRST sentence and at least 4 times total — density ~1%. (2) Use 2-3 H2 subheadings, one every ~150 words. (3) Each section must be 100-150 words. (4) Do not just pad or repeat keywords robotically — vary phrasing.`;
   }
 
   if (!bestResult) {
-    const msg = "All attempts failed to produce parseable content"
+    const msg = "All attempts failed to produce parseable content";
     await supabase
       .from("ai_jobs")
       .update({
@@ -457,26 +434,26 @@ async function handleCategory(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Step D: write only the requested fields to tsa_categories
-  const catUpdatePayload: Record<string, string | null> = {}
+  const catUpdatePayload: Record<string, string | null> = {};
   if (fieldsToGenerate.includes("focus_keyword")) {
-    catUpdatePayload.focus_keyword = bestResult.keyword || null
+    catUpdatePayload.focus_keyword = bestResult.keyword || null;
   }
   if (fieldsToGenerate.includes("seo_text")) {
-    catUpdatePayload.seo_text = bestResult.seoText || null
+    catUpdatePayload.seo_text = bestResult.seoText || null;
   }
   if (fieldsToGenerate.includes("description")) {
-    catUpdatePayload.description = bestResult.description || null
+    catUpdatePayload.description = bestResult.description || null;
   }
 
   const { error: catUpdateErr } = await supabase
     .from("tsa_categories")
     .update(catUpdatePayload)
-    .eq("id", categoryId!)
+    .eq("id", categoryId!);
 
   if (catUpdateErr) {
     await supabase
@@ -486,8 +463,8 @@ async function handleCategory(
         error: catUpdateErr.message,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(catUpdateErr.message)
+      .eq("id", job.id!);
+    throw new Error(catUpdateErr.message);
   }
 
   // Step E: mark completed
@@ -503,38 +480,36 @@ async function handleCategory(
         fields: fieldsToGenerate,
       },
     })
-    .eq("id", job.id!)
+    .eq("id", job.id!);
 
   console.log(
     `[seo-content] jobId=${job.id} jobType=seo_category siteId=${siteId} categoryId=${categoryId} status=completed attempts=${attempts} score=${bestResult.score} fields=${fieldsToGenerate.join(",")}`,
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
 // handleProduct — generates product SEO content with 3-attempt scoring loop
 // ---------------------------------------------------------------------------
 
-async function handleProduct(
-  job: import("bullmq").Job<SeoContentPayload>,
-): Promise<void> {
-  const { siteId, productId } = job.data
-  const supabase = createServiceClient()
+async function handleProduct(job: import("bullmq").Job<SeoContentPayload>): Promise<void> {
+  const { siteId, productId } = job.data;
+  const supabase = createServiceClient();
 
   // Step A: mark running
   await supabase
     .from("ai_jobs")
     .update({ status: "running", started_at: new Date().toISOString() })
-    .eq("id", job.id!)
+    .eq("id", job.id!);
 
   // Step B: fetch site context
   const { data: site, error: siteErr } = await supabase
     .from("sites")
     .select("name, niche, market, language, currency, affiliate_tag")
     .eq("id", siteId)
-    .single()
+    .single();
 
   if (siteErr || !site) {
-    const msg = siteErr?.message ?? "Site not found"
+    const msg = siteErr?.message ?? "Site not found";
     await supabase
       .from("ai_jobs")
       .update({
@@ -542,22 +517,20 @@ async function handleProduct(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Step B (cont): fetch product context
   const { data: product, error: productErr } = await supabase
     .from("tsa_products")
-    .select(
-      "id, asin, title, current_price, rating, review_count, focus_keyword",
-    )
+    .select("id, asin, title, current_price, rating, review_count, focus_keyword")
     .eq("id", productId!)
     .eq("site_id", siteId)
-    .single()
+    .single();
 
   if (productErr || !product) {
-    const msg = productErr?.message ?? "Product not found"
+    const msg = productErr?.message ?? "Product not found";
     await supabase
       .from("ai_jobs")
       .update({
@@ -565,28 +538,28 @@ async function handleProduct(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Step C: scoring loop (max 3 attempts)
-  const MAX_ATTEMPTS = 3
-  const lang = site.language ?? "es"
-  const THRESHOLD = 70
+  const MAX_ATTEMPTS = 3;
+  const lang = site.language ?? "es";
+  const THRESHOLD = 70;
   let bestResult: {
-    keyword: string
-    detailedDescription: string
-    prosCons: { pros: string[] cons: string[] }
-    userOpinionsSummary: string
-    metaDescription: string
-    score: number
-  } | null = null
-  let attempts = 0
-  let scoreFeedback = ""
+    keyword: string;
+    detailedDescription: string;
+    prosCons: { pros: string[]; cons: string[] };
+    userOpinionsSummary: string;
+    metaDescription: string;
+    score: number;
+  } | null = null;
+  let attempts = 0;
+  let scoreFeedback = "";
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    attempts = attempt
-    const prompt = buildProductPrompt(site, product, scoreFeedback)
+    attempts = attempt;
+    const prompt = buildProductPrompt(site, product, scoreFeedback);
 
     const sdkQuery = query({
       prompt,
@@ -597,52 +570,48 @@ async function handleProduct(
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
       },
-    })
+    });
 
-    let resultStr = ""
+    let resultStr = "";
     for await (const msg of sdkQuery) {
       if (msg.type === "result" && !msg.is_error && "result" in msg) {
-        resultStr = (msg.result as string)
+        resultStr = msg.result as string;
       }
     }
 
     // Parse JSON response: { focus_keyword, detailed_description, pros_cons, user_opinions_summary, meta_description }
-    let keyword = ""
-    let detailedDescription = ""
-    let prosCons: { pros: string[] cons: string[] } = { pros: [], cons: [] }
-    let userOpinionsSummary = ""
-    let metaDescription = ""
+    let keyword = "";
+    let detailedDescription = "";
+    let prosCons: { pros: string[]; cons: string[] } = { pros: [], cons: [] };
+    let userOpinionsSummary = "";
+    let metaDescription = "";
     try {
       const stripped = resultStr
         .replace(/^```(?:json)?\s*/i, "")
         .replace(/\s*```\s*$/i, "")
-        .trim()
-      const parsed = JSON.parse(stripped)
-      keyword = String(parsed.focus_keyword ?? "").trim()
-      detailedDescription = String(parsed.detailed_description ?? "").trim()
-      const rawProsCons = parsed.pros_cons
+        .trim();
+      const parsed = JSON.parse(stripped);
+      keyword = String(parsed.focus_keyword ?? "").trim();
+      detailedDescription = String(parsed.detailed_description ?? "").trim();
+      const rawProsCons = parsed.pros_cons;
       prosCons = {
-        pros: Array.isArray(rawProsCons?.pros)
-          ? rawProsCons.pros.map(String)
-          : [],
-        cons: Array.isArray(rawProsCons?.cons)
-          ? rawProsCons.cons.map(String)
-          : [],
-      }
-      userOpinionsSummary = String(parsed.user_opinions_summary ?? "").trim()
-      metaDescription = String(parsed.meta_description ?? "").trim()
+        pros: Array.isArray(rawProsCons?.pros) ? rawProsCons.pros.map(String) : [],
+        cons: Array.isArray(rawProsCons?.cons) ? rawProsCons.cons.map(String) : [],
+      };
+      userOpinionsSummary = String(parsed.user_opinions_summary ?? "").trim();
+      metaDescription = String(parsed.meta_description ?? "").trim();
     } catch {
       console.warn(
         `[seo-content] jobId=${job.id} jobType=seo_product attempt=${attempt} JSON parse failed — raw: ${resultStr.slice(0, 200)}`,
-      )
-      continue // try again
+      );
+      continue; // try again
     }
 
     // Only score detailed_description — pros_cons and meta_description are structured/short
-    const score = scoreMarkdown(detailedDescription, keyword, "product", lang)
+    const score = scoreMarkdown(detailedDescription, keyword, "product", lang);
     console.log(
       `[seo-content] jobId=${job.id} jobType=seo_product siteId=${siteId} productId=${productId} attempt=${attempt} score=${score}`,
-    )
+    );
 
     if (!bestResult || score > bestResult.score) {
       bestResult = {
@@ -652,15 +621,15 @@ async function handleProduct(
         userOpinionsSummary,
         metaDescription,
         score,
-      }
+      };
     }
-    if (score >= THRESHOLD) break
+    if (score >= THRESHOLD) break;
 
-    scoreFeedback = `Previous attempt scored ${score}/100. Focus on: more natural keyword usage, longer paragraphs (100+ words each), clearer product value proposition. Do not just repeat keywords.`
+    scoreFeedback = `Previous attempt scored ${score}/100. Focus on: more natural keyword usage, longer paragraphs (100+ words each), clearer product value proposition. Do not just repeat keywords.`;
   }
 
   if (!bestResult) {
-    const msg = "All attempts failed to produce parseable content"
+    const msg = "All attempts failed to produce parseable content";
     await supabase
       .from("ai_jobs")
       .update({
@@ -668,8 +637,8 @@ async function handleProduct(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Step D: write 5 fields to tsa_products (KN024: double-cast pros_cons to satisfy Json type)
@@ -682,7 +651,7 @@ async function handleProduct(
       meta_description: bestResult.metaDescription,
       focus_keyword: bestResult.keyword,
     })
-    .eq("id", productId!)
+    .eq("id", productId!);
 
   if (productUpdateErr) {
     await supabase
@@ -692,8 +661,8 @@ async function handleProduct(
         error: productUpdateErr.message,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(productUpdateErr.message)
+      .eq("id", job.id!);
+    throw new Error(productUpdateErr.message);
   }
 
   // Step E: mark completed
@@ -708,11 +677,11 @@ async function handleProduct(
         keyword: bestResult.keyword,
       },
     })
-    .eq("id", job.id!)
+    .eq("id", job.id!);
 
   console.log(
     `[seo-content] jobId=${job.id} jobType=seo_product siteId=${siteId} productId=${productId} status=completed attempts=${attempts} score=${bestResult.score}`,
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -720,17 +689,15 @@ async function handleProduct(
 //                       products in a category (single ai_jobs row for the batch)
 // ---------------------------------------------------------------------------
 
-async function handleProductsBatch(
-  job: import("bullmq").Job<SeoContentPayload>,
-): Promise<void> {
-  const { siteId, categoryId } = job.data
-  const supabase = createServiceClient()
+async function handleProductsBatch(job: import("bullmq").Job<SeoContentPayload>): Promise<void> {
+  const { siteId, categoryId } = job.data;
+  const supabase = createServiceClient();
 
   // Step A: mark running
   await supabase
     .from("ai_jobs")
     .update({ status: "running", started_at: new Date().toISOString() })
-    .eq("id", job.id!)
+    .eq("id", job.id!);
 
   // Step B: fetch products with detailed_description IS NULL scoped to category via !inner join (KN020)
   const { data: rawProducts, error: productsErr } = await supabase
@@ -740,10 +707,10 @@ async function handleProductsBatch(
     )
     .eq("site_id", siteId)
     .eq("category_products.category_id", categoryId!)
-    .is("detailed_description", null)
+    .is("detailed_description", null);
 
   if (productsErr) {
-    const msg = productsErr.message
+    const msg = productsErr.message;
     await supabase
       .from("ai_jobs")
       .update({
@@ -751,24 +718,22 @@ async function handleProductsBatch(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Strip the category_products join column — not needed for content generation
-  const products = (rawProducts ?? []).map(
-    ({ category_products: _cp, ...p }) => p,
-  )
+  const products = (rawProducts ?? []).map(({ category_products: _cp, ...p }) => p);
 
   // Step B (cont): fetch site context
   const { data: site, error: siteErr } = await supabase
     .from("sites")
     .select("name, niche, market, language, currency, affiliate_tag")
     .eq("id", siteId)
-    .single()
+    .single();
 
   if (siteErr || !site) {
-    const msg = siteErr?.message ?? "Site not found"
+    const msg = siteErr?.message ?? "Site not found";
     await supabase
       .from("ai_jobs")
       .update({
@@ -776,37 +741,33 @@ async function handleProductsBatch(
         error: msg,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", job.id!)
-    throw new Error(msg)
+      .eq("id", job.id!);
+    throw new Error(msg);
   }
 
   // Step C: process in chunks of 10 with 500ms sleep between products
-  const CHUNK_SIZE = 10
-  const MAX_ATTEMPTS = 3
-  const lang = site.language ?? "es"
-  const THRESHOLD = 70
-  let totalProcessed = 0
+  const CHUNK_SIZE = 10;
+  const MAX_ATTEMPTS = 3;
+  const lang = site.language ?? "es";
+  const THRESHOLD = 70;
+  let totalProcessed = 0;
 
-  for (
-    let chunkStart = 0;
-    chunkStart < products.length;
-    chunkStart += CHUNK_SIZE
-  ) {
-    const chunk = products.slice(chunkStart, chunkStart + CHUNK_SIZE)
+  for (let chunkStart = 0; chunkStart < products.length; chunkStart += CHUNK_SIZE) {
+    const chunk = products.slice(chunkStart, chunkStart + CHUNK_SIZE);
 
     for (const product of chunk) {
       let bestResult: {
-        keyword: string
-        detailedDescription: string
-        prosCons: { pros: string[] cons: string[] }
-        userOpinionsSummary: string
-        metaDescription: string
-        score: number
-      } | null = null
-      let scoreFeedback = ""
+        keyword: string;
+        detailedDescription: string;
+        prosCons: { pros: string[]; cons: string[] };
+        userOpinionsSummary: string;
+        metaDescription: string;
+        score: number;
+      } | null = null;
+      let scoreFeedback = "";
 
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const prompt = buildProductPrompt(site, product, scoreFeedback)
+        const prompt = buildProductPrompt(site, product, scoreFeedback);
 
         const sdkQuery = query({
           prompt,
@@ -817,58 +778,47 @@ async function handleProductsBatch(
             permissionMode: "bypassPermissions",
             allowDangerouslySkipPermissions: true,
           },
-        })
+        });
 
-        let resultStr = ""
+        let resultStr = "";
         for await (const msg of sdkQuery) {
           if (msg.type === "result" && !msg.is_error && "result" in msg) {
-            resultStr = (msg.result as string)
+            resultStr = msg.result as string;
           }
         }
 
-        let keyword = ""
-        let detailedDescription = ""
-        let prosCons: { pros: string[] cons: string[] } = { pros: [], cons: [] }
-        let userOpinionsSummary = ""
-        let metaDescription = ""
+        let keyword = "";
+        let detailedDescription = "";
+        let prosCons: { pros: string[]; cons: string[] } = { pros: [], cons: [] };
+        let userOpinionsSummary = "";
+        let metaDescription = "";
         try {
           const stripped = resultStr
             .replace(/^```(?:json)?\s*/i, "")
             .replace(/\s*```\s*$/i, "")
-            .trim()
-          const parsed = JSON.parse(stripped)
-          keyword = String(parsed.focus_keyword ?? "").trim()
-          detailedDescription = String(parsed.detailed_description ?? "").trim()
-          const rawProsCons = parsed.pros_cons
+            .trim();
+          const parsed = JSON.parse(stripped);
+          keyword = String(parsed.focus_keyword ?? "").trim();
+          detailedDescription = String(parsed.detailed_description ?? "").trim();
+          const rawProsCons = parsed.pros_cons;
           prosCons = {
-            pros: Array.isArray(rawProsCons?.pros)
-              ? rawProsCons.pros.map(String)
-              : [],
-            cons: Array.isArray(rawProsCons?.cons)
-              ? rawProsCons.cons.map(String)
-              : [],
-          }
-          userOpinionsSummary = String(
-            parsed.user_opinions_summary ?? "",
-          ).trim()
-          metaDescription = String(parsed.meta_description ?? "").trim()
+            pros: Array.isArray(rawProsCons?.pros) ? rawProsCons.pros.map(String) : [],
+            cons: Array.isArray(rawProsCons?.cons) ? rawProsCons.cons.map(String) : [],
+          };
+          userOpinionsSummary = String(parsed.user_opinions_summary ?? "").trim();
+          metaDescription = String(parsed.meta_description ?? "").trim();
         } catch {
           console.warn(
             `[seo-content] jobId=${job.id} jobType=seo_products_batch productId=${product.id} asin=${product.asin} attempt=${attempt} JSON parse failed`,
-          )
-          continue
+          );
+          continue;
         }
 
         // Only score detailed_description — pros_cons and meta_description are structured/short
-        const score = scoreMarkdown(
-          detailedDescription,
-          keyword,
-          "product",
-          lang,
-        )
+        const score = scoreMarkdown(detailedDescription, keyword, "product", lang);
         console.log(
           `[seo-content] jobId=${job.id} jobType=seo_products_batch productId=${product.id} asin=${product.asin} attempt=${attempt} score=${score}`,
-        )
+        );
 
         if (!bestResult || score > bestResult.score) {
           bestResult = {
@@ -878,11 +828,11 @@ async function handleProductsBatch(
             userOpinionsSummary,
             metaDescription,
             score,
-          }
+          };
         }
-        if (score >= THRESHOLD) break
+        if (score >= THRESHOLD) break;
 
-        scoreFeedback = `Previous attempt scored ${score}/100. Focus on: more natural keyword usage, longer paragraphs (100+ words each), clearer product value proposition. Do not just repeat keywords.`
+        scoreFeedback = `Previous attempt scored ${score}/100. Focus on: more natural keyword usage, longer paragraphs (100+ words each), clearer product value proposition. Do not just repeat keywords.`;
       }
 
       if (bestResult) {
@@ -890,29 +840,28 @@ async function handleProductsBatch(
           .from("tsa_products")
           .update({
             detailed_description: bestResult.detailedDescription,
-            pros_cons:
-              bestResult.prosCons as unknown as import("@monster/db").Json,
+            pros_cons: bestResult.prosCons as unknown as import("@monster/db").Json,
             user_opinions_summary: bestResult.userOpinionsSummary,
             meta_description: bestResult.metaDescription,
             focus_keyword: bestResult.keyword,
           })
-          .eq("id", product.id)
+          .eq("id", product.id);
 
         if (updateErr) {
           console.error(
             `[seo-content] jobId=${job.id} jobType=seo_products_batch productId=${product.id} asin=${product.asin} update failed: ${updateErr.message}`,
-          )
+          );
         } else {
-          totalProcessed++
+          totalProcessed++;
         }
       } else {
         console.warn(
           `[seo-content] jobId=${job.id} jobType=seo_products_batch productId=${product.id} asin=${product.asin} all attempts failed — skipping`,
-        )
+        );
       }
 
       // 500ms sleep between products to avoid rate-limiting
-      await new Promise((r) => setTimeout(r, 500))
+      await new Promise((r) => setTimeout(r, 500));
     }
   }
 
@@ -924,11 +873,11 @@ async function handleProductsBatch(
       completed_at: new Date().toISOString(),
       result: { totalProcessed, siteId, categoryId },
     })
-    .eq("id", job.id!)
+    .eq("id", job.id!);
 
   console.log(
     `[seo-content] jobId=${job.id} jobType=seo_products_batch siteId=${siteId} categoryId=${categoryId} status=completed totalProcessed=${totalProcessed}`,
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -937,51 +886,43 @@ async function handleProductsBatch(
 
 function buildCategoryPrompt(
   site: {
-    name: string | null
-    niche: string | null
-    market: string | null
-    language: string | null
-    currency: string | null
-    focus_keyword?: string | null
-    homepage_meta_description?: string | null
+    name: string | null;
+    niche: string | null;
+    market: string | null;
+    language: string | null;
+    currency: string | null;
+    focus_keyword?: string | null;
+    homepage_meta_description?: string | null;
   },
   category: {
-    name: string | null
-    slug: string | null
-    keywords: string[] | null
-    focus_keyword?: string | null
+    name: string | null;
+    slug: string | null;
+    keywords: string[] | null;
+    focus_keyword?: string | null;
   },
   fieldsToGenerate: CategoryField[],
   currentContent: CategoryCurrentContent | null,
   currentScore: number | null,
   scoreFeedback: string,
 ): string {
-  const lang = site.language ?? "es"
-  const ALL_CAT_FIELDS: CategoryField[] = [
-    "focus_keyword",
-    "description",
-    "seo_text",
-  ]
-  const generatingAll = ALL_CAT_FIELDS.every((f) =>
-    fieldsToGenerate.includes(f),
-  )
+  const lang = site.language ?? "es";
+  const ALL_CAT_FIELDS: CategoryField[] = ["focus_keyword", "description", "seo_text"];
+  const generatingAll = ALL_CAT_FIELDS.every((f) => fieldsToGenerate.includes(f));
 
   const keywordList =
     Array.isArray(category.keywords) && category.keywords.length > 0
       ? category.keywords.join(", ")
-      : "none provided"
+      : "none provided";
 
   // Prefer existing keyword from currentContent, then from category row, to keep it stable across regenerations
-  const existingKeyword = (
-    currentContent?.focus_keyword ?? category.focus_keyword
-  )?.trim()
+  const existingKeyword = (currentContent?.focus_keyword ?? category.focus_keyword)?.trim();
   const keywordInstruction = existingKeyword
     ? `- Use "${existingKeyword}" as the focus keyword (already established for this category)`
-    : `- Choose the most effective focus keyword for this category in ${lang} (3-5 words)`
+    : `- Choose the most effective focus keyword for this category in ${lang} (3-5 words)`;
 
   // Current content reference block
   const hasCurrentContent =
-    currentContent && (currentContent.seo_text || currentContent.description)
+    currentContent && (currentContent.seo_text || currentContent.description);
   const currentContentBlock = hasCurrentContent
     ? `
 
@@ -996,18 +937,18 @@ Current content (for reference — improve on this, do not copy verbatim):${
 - Description: "${currentContent.description}"`
           : ""
       }`
-    : ""
+    : "";
 
   const scoreBlock =
     currentScore != null
       ? `
 Current content quality score: ${currentScore}/100 — your output must score strictly higher than ${currentScore}/100.`
-      : ""
+      : "";
 
   const fieldsNote = generatingAll
     ? ""
     : `
-Fields to regenerate: ${fieldsToGenerate.join(", ")} — generate ALL JSON keys but only these fields need to be high quality; the rest can be brief placeholders.`
+Fields to regenerate: ${fieldsToGenerate.join(", ")} — generate ALL JSON keys but only these fields need to be high quality; the rest can be brief placeholders.`;
 
   const seoTextReq = fieldsToGenerate.includes("seo_text")
     ? `
@@ -1020,7 +961,7 @@ Requirements for seo_text (400-500 words):
 - Clear value proposition: why explore this category, what products the user will find
 - Mention Amazon affiliate context naturally (best products, expert reviews, comparisons)`
     : `
-Requirements for seo_text: reuse existing or write a brief placeholder (this field is NOT being regenerated).`
+Requirements for seo_text: reuse existing or write a brief placeholder (this field is NOT being regenerated).`;
 
   const descReq = fieldsToGenerate.includes("description")
     ? `
@@ -1033,14 +974,14 @@ Requirements for description (1-2 sentences, ~100 characters):
       }
 - Should encourage clicks from the category grid on the homepage`
     : `
-Requirements for description: reuse existing or write a brief placeholder (this field is NOT being regenerated).`
+Requirements for description: reuse existing or write a brief placeholder (this field is NOT being regenerated).`;
 
   const keywordReq = fieldsToGenerate.includes("focus_keyword")
     ? `
 Requirements for focus_keyword:
 - ${keywordInstruction}`
     : `
-Requirements for focus_keyword: reuse the existing keyword "${existingKeyword ?? "none"}" — do NOT change it.`
+Requirements for focus_keyword: reuse the existing keyword "${existingKeyword ?? "none"}" — do NOT change it.`;
 
   return `You are an expert SEO copywriter. Generate category SEO content for an Amazon affiliate site.
 
@@ -1063,18 +1004,14 @@ Category details:
 ${keywordReq}
 ${seoTextReq}
 ${descReq}
-${
-  scoreFeedback
-    ? `\nImprovement feedback from previous attempt:\n${scoreFeedback}`
-    : ""
-}
+${scoreFeedback ? `\nImprovement feedback from previous attempt:\n${scoreFeedback}` : ""}
 IMPORTANT: seo_text must be written in plain Markdown — use ## for subheadings, plain paragraphs for body text. Never use HTML tags (<p>, <h2>, <strong>, etc.).
 Respond ONLY with a valid JSON object — no prose, no markdown fences before or after:
 {
   "focus_keyword": "<main SEO keyword for this category in ${lang}>",
   "seo_text": "<category SEO text of 400-500 words>",
   "description": "<1-2 sentence category description, ~100 chars>"
-}`
+}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1083,27 +1020,27 @@ Respond ONLY with a valid JSON object — no prose, no markdown fences before or
 
 function buildProductPrompt(
   site: {
-    name: string | null
-    niche: string | null
-    market: string | null
-    language: string | null
-    currency: string | null
+    name: string | null;
+    niche: string | null;
+    market: string | null;
+    language: string | null;
+    currency: string | null;
   },
   product: {
-    asin: string | null
-    title: string | null
-    current_price: number | null
-    rating: number | null
-    review_count: number | null
-    focus_keyword?: string | null
+    asin: string | null;
+    title: string | null;
+    current_price: number | null;
+    rating: number | null;
+    review_count: number | null;
+    focus_keyword?: string | null;
   },
   scoreFeedback: string,
 ): string {
-  const lang = site.language ?? "es"
-  const existingKeyword = product.focus_keyword?.trim()
+  const lang = site.language ?? "es";
+  const existingKeyword = product.focus_keyword?.trim();
   const keywordInstruction = existingKeyword
     ? `- Use "${existingKeyword}" as the focus keyword (already established for this product)`
-    : `- Choose the most effective SEO focus keyword for this product in ${lang} (3-5 words)`
+    : `- Choose the most effective SEO focus keyword for this product in ${lang} (3-5 words)`;
 
   return `You are an expert SEO copywriter. Generate product SEO content for an Amazon affiliate site.
 
@@ -1117,9 +1054,7 @@ Product details:
 - Title: ${product.title ?? "Unknown"}
 - ASIN: ${product.asin ?? "Unknown"}
 - Price: ${
-    product.current_price != null
-      ? `${product.current_price} ${site.currency ?? "EUR"}`
-      : "N/A"
+    product.current_price != null ? `${product.current_price} ${site.currency ?? "EUR"}` : "N/A"
   }
 - Rating: ${product.rating != null ? `${product.rating}/5` : "N/A"}
 - Reviews: ${product.review_count != null ? product.review_count : "N/A"}
@@ -1134,11 +1069,7 @@ Requirements:
 - Write a ~100 word summary of what users typically say about this product
 - Write a meta description under 155 characters including the focus keyword
 - All content must be in ${lang} language
-${
-  scoreFeedback
-    ? `\nImprovement feedback from previous attempt:\n${scoreFeedback}`
-    : ""
-}
+${scoreFeedback ? `\nImprovement feedback from previous attempt:\n${scoreFeedback}` : ""}
 
 IMPORTANT: detailed_description must be written in plain Markdown — use ## for subheadings, plain paragraphs for body text. Never use HTML tags.
 Respond ONLY with a valid JSON object — no prose, no markdown fences before or after:
@@ -1148,7 +1079,7 @@ Respond ONLY with a valid JSON object — no prose, no markdown fences before or
   "pros_cons": { "pros": ["<pro 1>", "<pro 2>", "<pro 3>"], "cons": ["<con 1>", "<con 2>", "<con 3>"] },
   "user_opinions_summary": "<~100 word summary of what users typically say in ${lang}>",
   "meta_description": "<155-char meta description in ${lang}>"
-}`
+}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1157,13 +1088,13 @@ Respond ONLY with a valid JSON object — no prose, no markdown fences before or
 
 function buildPrompt(
   site: {
-    name: string | null
-    niche: string | null
-    market: string | null
-    language: string | null
-    currency: string | null
-    affiliate_tag: string | null
-    focus_keyword?: string | null
+    name: string | null;
+    niche: string | null;
+    market: string | null;
+    language: string | null;
+    currency: string | null;
+    affiliate_tag: string | null;
+    focus_keyword?: string | null;
   },
   categoryNames: string[],
   fieldsToGenerate: HomepageField[],
@@ -1171,28 +1102,22 @@ function buildPrompt(
   currentScore: number | null,
   scoreFeedback: string,
 ): string {
-  const lang = site.language ?? "es"
-  const ALL_FIELDS: HomepageField[] = ["meta_description", "intro", "seo_text"]
-  const generatingAll = ALL_FIELDS.every((f) => fieldsToGenerate.includes(f))
+  const lang = site.language ?? "es";
+  const ALL_FIELDS: HomepageField[] = ["meta_description", "intro", "seo_text"];
+  const generatingAll = ALL_FIELDS.every((f) => fieldsToGenerate.includes(f));
 
   // Keyword: prefer existing in currentContent, then site.focus_keyword
-  const existingKeyword = (
-    currentContent?.focus_keyword ?? site.focus_keyword
-  )?.trim()
+  const existingKeyword = (currentContent?.focus_keyword ?? site.focus_keyword)?.trim();
   const categoriesBlock =
-    categoryNames.length > 0
-      ? `\nSite categories: ${categoryNames.join(", ")}`
-      : ""
+    categoryNames.length > 0 ? `\nSite categories: ${categoryNames.join(", ")}` : "";
   const keywordInstruction = existingKeyword
     ? `- Use "${existingKeyword}" as the focus keyword (already established for this site)`
-    : `- Choose the most effective focus keyword for this niche in ${lang}`
+    : `- Choose the most effective focus keyword for this niche in ${lang}`;
 
   // Current content reference block
   const hasCurrentContent =
     currentContent &&
-    (currentContent.meta_description ||
-      currentContent.intro ||
-      currentContent.seo_text)
+    (currentContent.meta_description || currentContent.intro || currentContent.seo_text);
   const currentContentBlock = hasCurrentContent
     ? `
 
@@ -1212,18 +1137,18 @@ Current content (for reference — improve on this, do not copy verbatim):${
 - SEO text (first 300 chars): "${currentContent.seo_text.slice(0, 300)}..."`
           : ""
       }`
-    : ""
+    : "";
 
   const scoreBlock =
     currentScore != null
       ? `
 Current content quality score: ${currentScore}/100 — your output must score strictly higher than ${currentScore}/100.`
-      : ""
+      : "";
 
   const fieldsNote = generatingAll
     ? ""
     : `
-Fields to regenerate: ${fieldsToGenerate.join(", ")} — generate ALL JSON keys but only these fields need to be high quality; the rest can be brief placeholders.`
+Fields to regenerate: ${fieldsToGenerate.join(", ")} — generate ALL JSON keys but only these fields need to be high quality; the rest can be brief placeholders.`;
 
   const seoTextReq = fieldsToGenerate.includes("seo_text")
     ? `
@@ -1236,7 +1161,7 @@ Requirements for seo_text (400-500 words):
 - Clear value proposition for users: why visit this site, what they will find
 - Mention Amazon affiliate context naturally (best products, reviews, comparisons)`
     : `
-Requirements for seo_text: reuse existing or write a brief placeholder (this field is NOT being regenerated).`
+Requirements for seo_text: reuse existing or write a brief placeholder (this field is NOT being regenerated).`;
 
   const metaReq = fieldsToGenerate.includes("meta_description")
     ? `
@@ -1246,7 +1171,7 @@ Requirements for meta_description (optimal: 140-155 characters):
 - Accurately describe the site content — do NOT keyword-stuff
 - Must be exactly 140-155 characters (count carefully)`
     : `
-Requirements for meta_description: reuse existing or write a brief placeholder (this field is NOT being regenerated).`
+Requirements for meta_description: reuse existing or write a brief placeholder (this field is NOT being regenerated).`;
 
   const introReq = fieldsToGenerate.includes("intro")
     ? `
@@ -1256,7 +1181,7 @@ Requirements for intro (optimal: 120-160 characters):
 - Engaging hook that motivates the user to explore the categories
 - Must be exactly 120-160 characters (count carefully)`
     : `
-Requirements for intro: reuse existing or write a brief placeholder (this field is NOT being regenerated).`
+Requirements for intro: reuse existing or write a brief placeholder (this field is NOT being regenerated).`;
 
   return `You are an expert SEO copywriter. Generate homepage SEO content for an Amazon affiliate site.
 
@@ -1268,11 +1193,7 @@ Site details:
 ${seoTextReq}
 ${metaReq}
 ${introReq}
-${
-  scoreFeedback
-    ? `\nImprovement feedback from previous attempt:\n${scoreFeedback}`
-    : ""
-}
+${scoreFeedback ? `\nImprovement feedback from previous attempt:\n${scoreFeedback}` : ""}
 IMPORTANT: seo_text must be written in plain Markdown — use ## for subheadings, plain paragraphs for body text. Never use HTML tags (<p>, <h2>, <strong>, etc.).
 Respond ONLY with a valid JSON object — no prose, no markdown fences before or after:
 {
@@ -1280,5 +1201,5 @@ Respond ONLY with a valid JSON object — no prose, no markdown fences before or
   "seo_text": "<homepage SEO text, 400-500 words>",
   "meta_description": "<meta description>",
   "intro": "<1-sentence intro>"
-}`
+}`;
 }

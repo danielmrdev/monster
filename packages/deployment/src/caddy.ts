@@ -1,5 +1,5 @@
-import { NodeSSH } from 'node-ssh';
-import type { Server } from './provisioning.js';
+import { NodeSSH } from "node-ssh";
+import type { Server } from "./provisioning.js";
 
 // ---------------------------------------------------------------------------
 // CaddyService
@@ -62,12 +62,12 @@ export class CaddyService {
       );
 
       if (writeResult.stdout) {
-        for (const line of writeResult.stdout.split('\n')) {
+        for (const line of writeResult.stdout.split("\n")) {
           if (line.trim()) console.log(`[CaddyService] write stdout: ${line}`);
         }
       }
       if (writeResult.stderr) {
-        for (const line of writeResult.stderr.split('\n')) {
+        for (const line of writeResult.stderr.split("\n")) {
           if (line.trim()) console.error(`[CaddyService] write stderr: ${line}`);
         }
       }
@@ -82,15 +82,15 @@ export class CaddyService {
 
       // Step 2: Reload Caddy
       console.log(`[CaddyService] reloading caddy on ${host}`);
-      const reloadResult = await conn.execCommand('sudo systemctl reload caddy');
+      const reloadResult = await conn.execCommand("sudo systemctl reload caddy");
 
       if (reloadResult.stdout) {
-        for (const line of reloadResult.stdout.split('\n')) {
+        for (const line of reloadResult.stdout.split("\n")) {
           if (line.trim()) console.log(`[CaddyService] reload stdout: ${line}`);
         }
       }
       if (reloadResult.stderr) {
-        for (const line of reloadResult.stderr.split('\n')) {
+        for (const line of reloadResult.stderr.split("\n")) {
           if (line.trim()) console.error(`[CaddyService] reload stderr: ${line}`);
         }
       }

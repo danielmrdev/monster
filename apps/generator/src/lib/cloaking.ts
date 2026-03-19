@@ -36,7 +36,7 @@ export function buildCloakUrl(productSlug: string): string {
 export function buildCloakMap(
   products: ProductData[],
   market: AmazonMarket,
-  affiliateTag: string
+  affiliateTag: string,
 ): Record<string, string> {
   const map: Record<string, string> = {};
   for (const product of products) {

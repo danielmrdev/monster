@@ -1,34 +1,24 @@
-export * from './customization.js';
-export * from './research-report.js';
+export * from "./customization.js";
+export * from "./research-report.js";
 
 // ── String-literal union types ─────────────────────────────────────────────
 
 export type SiteStatus =
-  | 'draft'
-  | 'generating'
-  | 'generated'
-  | 'deploying'
-  | 'dns_pending'
-  | 'ssl_pending'
-  | 'live'
-  | 'paused'
-  | 'error';
+  | "draft"
+  | "generating"
+  | "generated"
+  | "deploying"
+  | "dns_pending"
+  | "ssl_pending"
+  | "live"
+  | "paused"
+  | "error";
 
-export type AmazonMarket =
-  | 'ES'
-  | 'US'
-  | 'UK'
-  | 'DE'
-  | 'FR'
-  | 'IT'
-  | 'MX'
-  | 'CA'
-  | 'JP'
-  | 'AU';
+export type AmazonMarket = "ES" | "US" | "UK" | "DE" | "FR" | "IT" | "MX" | "CA" | "JP" | "AU";
 
-export type Language = 'es' | 'en' | 'de' | 'fr' | 'it' | 'ja';
+export type Language = "es" | "en" | "de" | "fr" | "it" | "ja";
 
-export type SiteTemplate = 'classic' | 'modern' | 'minimal' | 'tsa/classic';
+export type SiteTemplate = "classic" | "modern" | "minimal" | "tsa/classic";
 
 // ── Domain interfaces (fields narrowed to union types where applicable) ─────
 

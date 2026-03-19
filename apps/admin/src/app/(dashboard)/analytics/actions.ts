@@ -1,6 +1,6 @@
-'use server';
+"use server";
 
-import { analyticsAggregationQueue } from '@monster/agents';
+import { analyticsAggregationQueue } from "@monster/agents";
 
 /**
  * Enqueue an on-demand analytics aggregation job.
@@ -24,7 +24,7 @@ export async function enqueueAnalyticsAggregation(
   try {
     const queue = analyticsAggregationQueue();
     const job = await queue.add(
-      'run-now',
+      "run-now",
       { targetDate: date },
       { removeOnComplete: true, removeOnFail: false },
     );

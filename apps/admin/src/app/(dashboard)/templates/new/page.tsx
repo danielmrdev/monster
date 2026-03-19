@@ -1,5 +1,5 @@
-import { TemplateForm } from '../TemplateForm'
-import { createTemplate } from '../actions'
+import { TemplateForm } from "../TemplateForm";
+import { createTemplate } from "../actions";
 
 export default function NewTemplatePage() {
   return (
@@ -9,5 +9,5 @@ export default function NewTemplatePage() {
         <TemplateForm action={createTemplate} mode="create" />
       </div>
     </div>
-  )
+  );
 }

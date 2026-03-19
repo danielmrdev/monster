@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { InfraService } from '@monster/deployment';
+import { NextResponse } from "next/server";
+import { InfraService } from "@monster/deployment";
 
 export async function POST() {
   try {

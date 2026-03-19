@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useActionState } from 'react';
-import { checkDomainAvailability, registerDomain } from './actions';
+import { useActionState } from "react";
+import { checkDomainAvailability, registerDomain } from "./actions";
 
 interface DomainManagementProps {
   siteId?: string;
@@ -22,22 +22,16 @@ type RegisterState = {
 } | null;
 
 // Wrapper so useActionState gets the right shape
-async function checkAction(
-  _prev: CheckState,
-  formData: FormData,
-): Promise<CheckState> {
-  const domain = (formData.get('domain') as string | null)?.trim() ?? '';
-  if (!domain) return { error: 'Enter a domain name.' };
+async function checkAction(_prev: CheckState, formData: FormData): Promise<CheckState> {
+  const domain = (formData.get("domain") as string | null)?.trim() ?? "";
+  if (!domain) return { error: "Enter a domain name." };
   const result = await checkDomainAvailability(domain);
   return { domain, ...result };
 }
 
-async function registerAction(
-  _prev: RegisterState,
-  formData: FormData,
-): Promise<RegisterState> {
-  const siteId = formData.get('siteId') as string;
-  const domain = formData.get('domain') as string;
+async function registerAction(_prev: RegisterState, formData: FormData): Promise<RegisterState> {
+  const siteId = formData.get("siteId") as string;
+  const domain = formData.get("domain") as string;
   return await registerDomain(siteId, domain);
 }
 
@@ -65,7 +59,7 @@ export default function DomainManagement({ siteId, existingDomain }: DomainManag
             type="text"
             name="domain"
             placeholder="example.com"
-            defaultValue={checkState?.domain ?? ''}
+            defaultValue={checkState?.domain ?? ""}
             required
             className="flex-1 rounded-md border border-border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
@@ -74,7 +68,7 @@ export default function DomainManagement({ siteId, existingDomain }: DomainManag
             disabled={checkPending}
             className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >
-            {checkPending ? 'Checking…' : 'Check Availability'}
+            {checkPending ? "Checking…" : "Check Availability"}
           </button>
         </form>
 
@@ -108,7 +102,7 @@ export default function DomainManagement({ siteId, existingDomain }: DomainManag
             <div className="rounded-md border border-red-300 bg-red-50 px-4 py-4 space-y-3">
               <p className="text-sm font-semibold text-red-800">⚠️ Real registration</p>
               <p className="text-sm text-red-700">
-                Clicking <strong>Approve &amp; Register</strong> will register{' '}
+                Clicking <strong>Approve &amp; Register</strong> will register{" "}
                 <strong className="font-mono">{domainToRegister}</strong> through your Spaceship
                 account. <strong>Charges will apply to your Spaceship account.</strong> This action
                 cannot be undone.
@@ -121,7 +115,7 @@ export default function DomainManagement({ siteId, existingDomain }: DomainManag
                   disabled={registerPending}
                   className="inline-flex items-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                 >
-                  {registerPending ? 'Registering… (this may take ~20s)' : 'Approve & Register'}
+                  {registerPending ? "Registering… (this may take ~20s)" : "Approve & Register"}
                 </button>
               </form>
             </div>

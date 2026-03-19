@@ -1,25 +1,25 @@
-import { notFound } from 'next/navigation'
-import { createServiceClient } from '@/lib/supabase/service'
-import { TemplateForm } from '../../TemplateForm'
-import { updateTemplate } from '../../actions'
+import { notFound } from "next/navigation";
+import { createServiceClient } from "@/lib/supabase/service";
+import { TemplateForm } from "../../TemplateForm";
+import { updateTemplate } from "../../actions";
 
 interface PageProps {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }
 
 export default async function EditTemplatePage({ params }: PageProps) {
-  const { id } = await params
+  const { id } = await params;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createServiceClient() as any
+  const supabase = createServiceClient() as any;
   const { data: template } = await supabase
-    .from('legal_templates')
-    .select('*')
-    .eq('id', id)
-    .single()
+    .from("legal_templates")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  if (!template) notFound()
+  if (!template) notFound();
 
-  const action = updateTemplate.bind(null, id)
+  const action = updateTemplate.bind(null, id);
 
   return (
     <div className="space-y-6">
@@ -37,5 +37,5 @@ export default async function EditTemplatePage({ params }: PageProps) {
         />
       </div>
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { createServiceClient } from '@monster/db';
+import { createServiceClient } from "@monster/db";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,12 +30,12 @@ interface MarketConfig {
 // ---------------------------------------------------------------------------
 
 const MARKET_CONFIG: Record<string, MarketConfig> = {
-  ES: { location_code: 2724, language_code: 'es_ES', se_domain: 'amazon.es' },
-  US: { location_code: 2840, language_code: 'en_US', se_domain: 'amazon.com' },
-  UK: { location_code: 2826, language_code: 'en_GB', se_domain: 'amazon.co.uk' },
-  DE: { location_code: 2158, language_code: 'de_DE', se_domain: 'amazon.de' },
-  FR: { location_code: 2250, language_code: 'fr_FR', se_domain: 'amazon.fr' },
-  IT: { location_code: 2380, language_code: 'it_IT', se_domain: 'amazon.it' },
+  ES: { location_code: 2724, language_code: "es_ES", se_domain: "amazon.es" },
+  US: { location_code: 2840, language_code: "en_US", se_domain: "amazon.com" },
+  UK: { location_code: 2826, language_code: "en_GB", se_domain: "amazon.co.uk" },
+  DE: { location_code: 2158, language_code: "de_DE", se_domain: "amazon.de" },
+  FR: { location_code: 2250, language_code: "fr_FR", se_domain: "amazon.fr" },
+  IT: { location_code: 2380, language_code: "it_IT", se_domain: "amazon.it" },
 };
 
 // ---------------------------------------------------------------------------
@@ -44,12 +44,12 @@ const MARKET_CONFIG: Record<string, MarketConfig> = {
 // Always use this map for keywordIdeas / serpCompetitors / googleSerpResults.
 // ---------------------------------------------------------------------------
 const LABS_LANGUAGE_CODE: Record<string, string> = {
-  ES: 'es',
-  US: 'en',
-  UK: 'en',
-  DE: 'de',
-  FR: 'fr',
-  IT: 'it',
+  ES: "es",
+  US: "en",
+  UK: "en",
+  DE: "de",
+  FR: "fr",
+  IT: "it",
 };
 
 // ---------------------------------------------------------------------------
@@ -124,7 +124,7 @@ let _rawItemsLogged = false;
 // ---------------------------------------------------------------------------
 
 export class DataForSEOClient {
-  private static readonly BASE_URL = 'https://api.dataforseo.com/v3';
+  private static readonly BASE_URL = "https://api.dataforseo.com/v3";
   private static readonly MAX_POLL_ATTEMPTS = 12;
 
   // ── Credentials ──────────────────────────────────────────────────────────
@@ -138,25 +138,25 @@ export class DataForSEOClient {
   private async fetchAuthHeader(): Promise<string> {
     const db = createServiceClient();
     const { data, error } = await db
-      .from('settings')
-      .select('value')
-      .eq('key', 'dataforseo_api_key')
+      .from("settings")
+      .select("value")
+      .eq("key", "dataforseo_api_key")
       .single();
 
     if (error || !data) {
       throw new Error(
-        'DataForSEO credentials not configured — add dataforseo_api_key in admin Settings'
+        "DataForSEO credentials not configured — add dataforseo_api_key in admin Settings",
       );
     }
 
     const creds = (data.value as { value: string }).value;
-    if (!creds || typeof creds !== 'string' || !creds.includes(':')) {
+    if (!creds || typeof creds !== "string" || !creds.includes(":")) {
       throw new Error(
-        'DataForSEO credentials malformed — expected "email:password" format in dataforseo_api_key settings value'
+        'DataForSEO credentials malformed — expected "email:password" format in dataforseo_api_key settings value',
       );
     }
 
-    const token = Buffer.from(creds).toString('base64');
+    const token = Buffer.from(creds).toString("base64");
     return `Basic ${token}`;
   }
 
@@ -164,16 +164,16 @@ export class DataForSEOClient {
 
   private async apiPost<T>(path: string, auth: string, body: unknown): Promise<T> {
     const res = await fetch(`${DataForSEOClient.BASE_URL}${path}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: auth,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
     });
 
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
+      const text = await res.text().catch(() => "");
       throw new Error(`DataForSEO POST ${path} failed: ${res.status} ${res.statusText} — ${text}`);
     }
 
@@ -186,7 +186,7 @@ export class DataForSEOClient {
     });
 
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
+      const text = await res.text().catch(() => "");
       throw new Error(`DataForSEO GET ${path} failed: ${res.status} ${res.statusText} — ${text}`);
     }
 
@@ -205,7 +205,12 @@ export class DataForSEOClient {
    * Polls a tasks_ready endpoint until `taskId` appears or max attempts exceeded.
    * Shared by searchProducts (products/tasks_ready) and lookupAsin (asin/tasks_ready).
    */
-  private async awaitTask(tasksReadyPath: string, auth: string, taskId: string, label: string): Promise<void> {
+  private async awaitTask(
+    tasksReadyPath: string,
+    auth: string,
+    taskId: string,
+    label: string,
+  ): Promise<void> {
     for (let attempt = 0; attempt < DataForSEOClient.MAX_POLL_ATTEMPTS; attempt++) {
       const delay = 5000 * Math.pow(2, Math.min(attempt, 3));
       await this.sleep(delay);
@@ -224,7 +229,7 @@ export class DataForSEOClient {
     }
 
     throw new Error(
-      `DataForSEO task ${taskId} did not complete within timeout (${DataForSEOClient.MAX_POLL_ATTEMPTS} attempts) ${label}`
+      `DataForSEO task ${taskId} did not complete within timeout (${DataForSEOClient.MAX_POLL_ATTEMPTS} attempts) ${label}`,
     );
   }
 
@@ -244,7 +249,7 @@ export class DataForSEOClient {
     const config = MARKET_CONFIG[market];
     if (!config) {
       throw new Error(
-        `DataForSEO: unknown market "${market}". Supported: ${Object.keys(MARKET_CONFIG).join(', ')}`
+        `DataForSEO: unknown market "${market}". Supported: ${Object.keys(MARKET_CONFIG).join(", ")}`,
       );
     }
 
@@ -262,27 +267,30 @@ export class DataForSEOClient {
     ];
 
     const postResponse = await this.apiPost<DFSRawResponse>(
-      '/merchant/amazon/products/task_post',
+      "/merchant/amazon/products/task_post",
       auth,
-      postBody
+      postBody,
     );
 
     const taskId = postResponse?.tasks?.[0]?.id;
     if (!taskId) {
-      throw new Error(
-        `DataForSEO task_post did not return a task ID for keyword: "${keyword}"`
-      );
+      throw new Error(`DataForSEO task_post did not return a task ID for keyword: "${keyword}"`);
     }
 
     console.log(`[DataForSEO] task_post id=${taskId} keyword="${keyword}"`);
 
     // ── Step 2: poll tasks_ready ───────────────────────────────────────────
-    await this.awaitTask('/merchant/amazon/products/tasks_ready', auth, taskId, `keyword="${keyword}"`);
+    await this.awaitTask(
+      "/merchant/amazon/products/tasks_ready",
+      auth,
+      taskId,
+      `keyword="${keyword}"`,
+    );
 
     // ── Step 3: task_get/advanced ──────────────────────────────────────────
     const getResponse = await this.apiGet<DFSRawResponse>(
       `/merchant/amazon/products/task_get/advanced/${taskId}`,
-      auth
+      auth,
     );
 
     const rawItems: DFSRawItem[] = getResponse?.tasks?.[0]?.result?.[0]?.items ?? [];
@@ -290,7 +298,10 @@ export class DataForSEOClient {
     // Log raw items[0] once per process for shape validation (D035 observability)
     if (!_rawItemsLogged && rawItems.length > 0) {
       _rawItemsLogged = true;
-      console.log('[DataForSEO] items[0] shape (first call only):', JSON.stringify(rawItems[0], null, 2));
+      console.log(
+        "[DataForSEO] items[0] shape (first call only):",
+        JSON.stringify(rawItems[0], null, 2),
+      );
     }
 
     // ── Step 4: filter + map ───────────────────────────────────────────────
@@ -298,18 +309,18 @@ export class DataForSEOClient {
 
     for (const item of rawItems) {
       // Only organic Amazon SERP results — skip paid, editorial, related_searches
-      if (item.type !== 'amazon_serp') continue;
+      if (item.type !== "amazon_serp") continue;
 
-      const asin = item.data_asin ?? '';
+      const asin = item.data_asin ?? "";
       if (!asin) continue; // skip items with no ASIN
 
       products.push({
         asin,
-        title: item.title ?? '',
+        title: item.title ?? "",
         imageUrl: item.image_url ?? null,
         price: item.price_from ?? null,
         originalPrice: null, // not available from keyword search — populated by lookupAsin()
-        rating: parseFloat(item.rating?.value ?? '0'),
+        rating: parseFloat(item.rating?.value ?? "0"),
         reviewCount: item.rating?.votes_count ?? 0,
         isPrime: item.is_prime ?? item.delivery_info?.is_free_delivery ?? false,
         isBestSeller: item.is_best_seller ?? false,
@@ -335,7 +346,10 @@ export class DataForSEOClient {
    * Returns null if the ASIN is not found or DFS returns no item.
    * Does NOT throw on not-found — callers should handle null gracefully.
    */
-  async lookupAsin(asin: string, market: string): Promise<{ price: number | null; originalPrice: number | null } | null> {
+  async lookupAsin(
+    asin: string,
+    market: string,
+  ): Promise<{ price: number | null; originalPrice: number | null } | null> {
     const config = MARKET_CONFIG[market];
     if (!config) {
       throw new Error(`DataForSEO: unknown market "${market}"`);
@@ -344,19 +358,41 @@ export class DataForSEOClient {
     const auth = await this.fetchAuthHeader();
 
     // Step 1: POST task
-    interface AsinTaskResponse { tasks?: Array<{ id?: string | null }> | null }
-    const postBody = [{ asin, location_code: config.location_code, language_code: config.language_code, se_domain: config.se_domain }];
-    const postResp = await this.apiPost<AsinTaskResponse>('/merchant/amazon/asin/task_post', auth, postBody);
+    interface AsinTaskResponse {
+      tasks?: Array<{ id?: string | null }> | null;
+    }
+    const postBody = [
+      {
+        asin,
+        location_code: config.location_code,
+        language_code: config.language_code,
+        se_domain: config.se_domain,
+      },
+    ];
+    const postResp = await this.apiPost<AsinTaskResponse>(
+      "/merchant/amazon/asin/task_post",
+      auth,
+      postBody,
+    );
     const taskId = postResp?.tasks?.[0]?.id;
     if (!taskId) throw new Error(`[DataForSEO] lookupAsin(${asin}): no task_id in response`);
 
     // Step 2: Poll tasks_ready
-    await this.awaitTask('/merchant/amazon/asin/tasks_ready', auth, taskId, `asin=${asin}`);
+    await this.awaitTask("/merchant/amazon/asin/tasks_ready", auth, taskId, `asin=${asin}`);
 
     // Step 3: GET results
-    interface AsinItem { price_from?: number | null; price_to?: number | null; percentage_discount?: number | null }
-    interface AsinGetResponse { tasks?: Array<{ result?: Array<{ items?: AsinItem[] | null }> | null }> | null }
-    const getResp = await this.apiGet<AsinGetResponse>(`/merchant/amazon/asin/task_get/advanced/${taskId}`, auth);
+    interface AsinItem {
+      price_from?: number | null;
+      price_to?: number | null;
+      percentage_discount?: number | null;
+    }
+    interface AsinGetResponse {
+      tasks?: Array<{ result?: Array<{ items?: AsinItem[] | null }> | null }> | null;
+    }
+    const getResp = await this.apiGet<AsinGetResponse>(
+      `/merchant/amazon/asin/task_get/advanced/${taskId}`,
+      auth,
+    );
     const item = getResp?.tasks?.[0]?.result?.[0]?.items?.[0] ?? null;
 
     if (!item) {
@@ -406,9 +442,9 @@ export class DataForSEOClient {
     ];
 
     const response = await this.apiPost<DFSRawResponse>(
-      '/dataforseo_labs/google/keyword_ideas/live',
+      "/dataforseo_labs/google/keyword_ideas/live",
       auth,
-      body
+      body,
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -420,13 +456,23 @@ export class DataForSEOClient {
     }
 
     const ideas: KeywordIdea[] = rawItems.map((item: Record<string, unknown>) => ({
-      keyword: String(item['keyword'] ?? ''),
-      search_volume: (item['keyword_info'] as Record<string, unknown> | null)?.['search_volume'] as number | null ?? null,
-      cpc: (item['keyword_info'] as Record<string, unknown> | null)?.['cpc'] as number | null ?? null,
-      competition: (item['keyword_info'] as Record<string, unknown> | null)?.['competition'] as number | null ?? null,
+      keyword: String(item["keyword"] ?? ""),
+      search_volume:
+        ((item["keyword_info"] as Record<string, unknown> | null)?.["search_volume"] as
+          | number
+          | null) ?? null,
+      cpc:
+        ((item["keyword_info"] as Record<string, unknown> | null)?.["cpc"] as number | null) ??
+        null,
+      competition:
+        ((item["keyword_info"] as Record<string, unknown> | null)?.["competition"] as
+          | number
+          | null) ?? null,
     }));
 
-    console.log(`[dataforseo] keywordIdeas keyword="${keyword}" market=${market} items=${ideas.length}`);
+    console.log(
+      `[dataforseo] keywordIdeas keyword="${keyword}" market=${market} items=${ideas.length}`,
+    );
     return ideas;
   }
 
@@ -456,9 +502,9 @@ export class DataForSEOClient {
     ];
 
     const response = await this.apiPost<DFSRawResponse>(
-      '/dataforseo_labs/google/serp_competitors/live',
+      "/dataforseo_labs/google/serp_competitors/live",
       auth,
-      body
+      body,
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -470,10 +516,10 @@ export class DataForSEOClient {
     }
 
     const competitors: SerpCompetitor[] = rawItems.map((item: Record<string, unknown>) => ({
-      domain: String(item['domain'] ?? ''),
-      median_position: (item['median_position'] as number | null) ?? null,
-      avg_position: (item['avg_position'] as number | null) ?? null,
-      competitor_metrics: (item['competitor_metrics'] as Record<string, unknown> | null) ?? null,
+      domain: String(item["domain"] ?? ""),
+      median_position: (item["median_position"] as number | null) ?? null,
+      avg_position: (item["avg_position"] as number | null) ?? null,
+      competitor_metrics: (item["competitor_metrics"] as Record<string, unknown> | null) ?? null,
     }));
 
     console.log(`[dataforseo] serpCompetitors market=${market} items=${competitors.length}`);
@@ -503,35 +549,39 @@ export class DataForSEOClient {
         keyword,
         location_code: config.location_code,
         language_code: langCode,
-        os: 'desktop',
+        os: "desktop",
         depth: 10,
       },
     ];
 
     const response = await this.apiPost<DFSRawResponse>(
-      '/serp/google/organic/live/regular',
+      "/serp/google/organic/live/regular",
       auth,
-      body
+      body,
     );
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const allItems: any[] = (response as any)?.tasks?.[0]?.result?.[0]?.items ?? [];
-    const rawItems = allItems.filter((item: Record<string, unknown>) => item['type'] === 'organic');
+    const rawItems = allItems.filter((item: Record<string, unknown>) => item["type"] === "organic");
 
     if (rawItems.length === 0) {
-      console.log(`[dataforseo] googleSerpResults empty result keyword="${keyword}" market=${market}`);
+      console.log(
+        `[dataforseo] googleSerpResults empty result keyword="${keyword}" market=${market}`,
+      );
       return [];
     }
 
     const results: SerpResult[] = rawItems.map((item: Record<string, unknown>) => ({
-      domain: String(item['domain'] ?? ''),
-      url: String(item['url'] ?? ''),
-      title: String(item['title'] ?? ''),
-      description: (item['description'] as string | null) ?? null,
-      rank_group: (item['rank_group'] as number) ?? 0,
+      domain: String(item["domain"] ?? ""),
+      url: String(item["url"] ?? ""),
+      title: String(item["title"] ?? ""),
+      description: (item["description"] as string | null) ?? null,
+      rank_group: (item["rank_group"] as number) ?? 0,
     }));
 
-    console.log(`[dataforseo] googleSerpResults keyword="${keyword}" market=${market} items=${results.length}`);
+    console.log(
+      `[dataforseo] googleSerpResults keyword="${keyword}" market=${market} items=${results.length}`,
+    );
     return results;
   }
 }

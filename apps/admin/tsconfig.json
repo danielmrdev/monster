@@ -1,11 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "jsx": "preserve",
     "module": "esnext",
     "moduleResolution": "Bundler",
@@ -14,9 +10,7 @@
     "allowJs": true,
     "skipLibCheck": true,
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "plugins": [
       {
@@ -25,12 +19,6 @@
     ],
     "incremental": true
   },
-  "include": [
-    "next-env.d.ts",
-    "src/**/*",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "src/**/*", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useActionState } from 'react';
-import { enqueueResearch, type EnqueueResearchState } from './actions';
-import { MARKET_OPTIONS } from './constants';
-import { Button } from '@/components/ui/button';
+import { useActionState } from "react";
+import { enqueueResearch, type EnqueueResearchState } from "./actions";
+import { MARKET_OPTIONS } from "./constants";
+import { Button } from "@/components/ui/button";
 
 const initialState: EnqueueResearchState = null;
 
@@ -55,7 +55,7 @@ export default function ResearchForm() {
       )}
 
       <Button type="submit" disabled={isPending} className="w-full">
-        {isPending ? 'Starting research…' : 'Start Research'}
+        {isPending ? "Starting research…" : "Start Research"}
       </Button>
     </form>
   );

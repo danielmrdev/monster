@@ -1,4 +1,4 @@
-"use client"
+"use client";
 // keep currentJob updated for phase/progress display
 
 // Extract progress from job payload
@@ -6,13 +6,13 @@
 // Detect running from polled job (between pending enqueue and first worker tick)
 /* Action button */ /* Running — phase + progress bar */ /* Pending — waiting for worker */ /* Completed */ /* Failed */
 
-import { useState, useCallback } from "react"
-import { enqueueSiteGeneration, getLatestJobStatus } from "./actions"
-import { useJobPoller } from "./useJobPoller"
+import { useState, useCallback } from "react";
+import { enqueueSiteGeneration, getLatestJobStatus } from "./actions";
+import { useJobPoller } from "./useJobPoller";
 
 interface GenerateSitePanelProps {
-  siteId: string
-  domain?: string | null
+  siteId: string;
+  domain?: string | null;
 }
 
 const PHASE_LABEL: Record<string, string> = {
@@ -22,116 +22,87 @@ const PHASE_LABEL: Record<string, string> = {
   astro_build: "Building site",
   seo_files: "Writing SEO files",
   deploy: "Deploying",
-}
+};
 
-type Phase = "idle" | "enqueueing" | "pending" | "running" | "completed" | "failed"
+type Phase = "idle" | "enqueueing" | "pending" | "running" | "completed" | "failed";
 
-type JobRow = Awaited<ReturnType<typeof getLatestJobStatus>>
+type JobRow = Awaited<ReturnType<typeof getLatestJobStatus>>;
 
 export function GenerateSitePanel({ siteId, domain }: GenerateSitePanelProps) {
-  const [phase, setPhase] = useState<Phase>("idle")
-  const [error, setError] = useState<string | null>(null)
-  const [currentJob, setCurrentJob] = useState<JobRow>(null)
-  const [polling, setPolling] = useState(false)
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [currentJob, setCurrentJob] = useState<JobRow>(null);
+  const [polling, setPolling] = useState(false);
 
   const fetchStatus = useCallback(async () => {
-    const job = await getLatestJobStatus(siteId)
-    setCurrentJob(job)
-    return job
-  }, [siteId])
+    const job = await getLatestJobStatus(siteId);
+    setCurrentJob(job);
+    return job;
+  }, [siteId]);
 
   useJobPoller({
     fetchFn: fetchStatus,
     enabled: polling,
     intervalMs: 2000,
     onResume: (job) => {
-      if (!job) return false
-      if (
-        job.status ===
-          "pending" ||
-        job.status ===
-          "running"
-      ) {
-        setPhase(job.status as Phase)
-        setCurrentJob(job as JobRow)
-        setPolling(true)
-        return true
+      if (!job) return false;
+      if (job.status === "pending" || job.status === "running") {
+        setPhase(job.status as Phase);
+        setCurrentJob(job as JobRow);
+        setPolling(true);
+        return true;
       }
-      if (
-        job.status ===
-        "completed"
-      ) {
-        setPhase("completed")
-        setCurrentJob(job as JobRow)
-      } else if (
-        job.status ===
-        "failed"
-      ) {
-        setPhase("failed")
-        setError(
-          (job as { error?: string | null }).error ??
-            "Job failed",
-        )
-        setCurrentJob(job as JobRow)
+      if (job.status === "completed") {
+        setPhase("completed");
+        setCurrentJob(job as JobRow);
+      } else if (job.status === "failed") {
+        setPhase("failed");
+        setError((job as { error?: string | null }).error ?? "Job failed");
+        setCurrentJob(job as JobRow);
       }
-      return false
+      return false;
     },
     onComplete: (job) => {
-      setPolling(false)
-      setPhase("completed")
-      setCurrentJob(job as JobRow)
+      setPolling(false);
+      setPhase("completed");
+      setCurrentJob(job as JobRow);
     },
     onFail: (job) => {
-      setPolling(false)
-      setPhase("failed")
-      setError(
-        (job as { error?: string | null }).error ??
-          "Job failed",
-      )
-      setCurrentJob(job as JobRow)
+      setPolling(false);
+      setPhase("failed");
+      setError((job as { error?: string | null }).error ?? "Job failed");
+      setCurrentJob(job as JobRow);
     },
-  })
+  });
 
   async function handleGenerate() {
-    setError(null)
-    setPhase("enqueueing")
+    setError(null);
+    setPhase("enqueueing");
 
-    const result = await enqueueSiteGeneration(siteId)
+    const result = await enqueueSiteGeneration(siteId);
     if (result.error) {
-      setPhase("failed")
-      setError(result.error)
-      return
+      setPhase("failed");
+      setError(result.error);
+      return;
     }
 
-    setPhase("pending")
-    setPolling(true)
+    setPhase("pending");
+    setPolling(true);
   }
 
-  const isActive =
-    phase ===
-      "enqueueing" ||
-    phase ===
-      "pending" ||
-    phase ===
-      "running"
+  const isActive = phase === "enqueueing" || phase === "pending" || phase === "running";
   const payload = currentJob?.payload as {
-    phase?: string
-    done?: number
-    total?: number
-  } | null
-  const jobPhase = payload?.phase
-  const done = payload?.done
-  const total = payload?.total
-  const hasProgress =
-    typeof done ===
-      "number" &&
-    typeof total ===
-      "number" &&
-    total >
-      0
-  const pct = hasProgress ? Math.round((done! / total!) * 100) : null
+    phase?: string;
+    done?: number;
+    total?: number;
+  } | null;
+  const jobPhase = payload?.phase;
+  const done = payload?.done;
+  const total = payload?.total;
+  const hasProgress = typeof done === "number" && typeof total === "number" && total > 0;
+  const pct = hasProgress ? Math.round((done! / total!) * 100) : null;
   if (currentJob?.status === "running" && phase === "pending") {
-    setPhase("running")
+    setPhase("running");
   }
 
   return (
@@ -200,9 +171,7 @@ export function GenerateSitePanel({ siteId, domain }: GenerateSitePanelProps) {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
               />
             </svg>
-            <span>
-              {jobPhase ? (PHASE_LABEL[jobPhase] ?? jobPhase) : "Processing…"}
-            </span>
+            <span>{jobPhase ? (PHASE_LABEL[jobPhase] ?? jobPhase) : "Processing…"}</span>
             {hasProgress && (
               <span className="ml-auto font-mono">
                 {done}/{total} ({pct}%)
@@ -283,5 +252,5 @@ export function GenerateSitePanel({ siteId, domain }: GenerateSitePanelProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

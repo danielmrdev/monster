@@ -1,11 +1,11 @@
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import { Worker } from 'bullmq';
-import { createServiceClient } from '@monster/db';
-import { SpaceshipClient } from '@monster/domains';
-import { ResearchReportSchema } from '@monster/shared';
-import { createRedisConnection } from '../queue.js';
-import { DataForSEOClient } from '../clients/dataforseo.js';
-import { createNicheResearcherMcpServer } from '../mcp/niche-researcher-server.js';
+import { query } from "@anthropic-ai/claude-agent-sdk";
+import { Worker } from "bullmq";
+import { createServiceClient } from "@monster/db";
+import { SpaceshipClient } from "@monster/domains";
+import { ResearchReportSchema } from "@monster/shared";
+import { createRedisConnection } from "../queue.js";
+import { DataForSEOClient } from "../clients/dataforseo.js";
+import { createNicheResearcherMcpServer } from "../mcp/niche-researcher-server.js";
 
 // ---------------------------------------------------------------------------
 // NicheResearchPayload
@@ -85,17 +85,15 @@ export class NicheResearcherJob {
   register(): Worker {
     const connection = createRedisConnection();
 
-    const worker = new Worker<NicheResearchPayload>(
-      'niche-research',
-      handler,
-      {
-        connection,
-        lockDuration: 600000, // 10 min — 15 turns + 30-60s amazonProducts call
-      },
-    );
+    const worker = new Worker<NicheResearchPayload>("niche-research", handler, {
+      connection,
+      lockDuration: 600000, // 10 min — 15 turns + 30-60s amazonProducts call
+    });
 
-    worker.on('failed', (job, err) => {
-      console.error(`[NicheResearcherJob] Job ${job?.id} session=${job?.data?.sessionId} failed: ${err.message}`);
+    worker.on("failed", (job, err) => {
+      console.error(
+        `[NicheResearcherJob] Job ${job?.id} session=${job?.data?.sessionId} failed: ${err.message}`,
+      );
     });
 
     return worker;
@@ -106,17 +104,19 @@ export class NicheResearcherJob {
 // Handler — runs inside the Worker process
 // ---------------------------------------------------------------------------
 
-async function handler(job: import('bullmq').Job<NicheResearchPayload>): Promise<void> {
+async function handler(job: import("bullmq").Job<NicheResearchPayload>): Promise<void> {
   const { sessionId, nicheIdea, market } = job.data;
   const supabase = createServiceClient();
 
-  console.log(`[niche-researcher] sessionId=${sessionId} status=running nicheIdea="${nicheIdea}" market=${market}`);
+  console.log(
+    `[niche-researcher] sessionId=${sessionId} status=running nicheIdea="${nicheIdea}" market=${market}`,
+  );
 
   // ── Step 1: Verify session exists + write status=running ─────────────────
   const { data: session, error: sessionError } = await supabase
-    .from('research_sessions')
-    .select('id, status')
-    .eq('id', sessionId)
+    .from("research_sessions")
+    .select("id, status")
+    .eq("id", sessionId)
     .single();
 
   if (sessionError || !session) {
@@ -125,12 +125,14 @@ async function handler(job: import('bullmq').Job<NicheResearchPayload>): Promise
   }
 
   const { error: startUpdateError } = await supabase
-    .from('research_sessions')
-    .update({ status: 'running', progress: [] })
-    .eq('id', sessionId);
+    .from("research_sessions")
+    .update({ status: "running", progress: [] })
+    .eq("id", sessionId);
 
   if (startUpdateError) {
-    console.error(`[niche-researcher] sessionId=${sessionId} failed to write status=running: ${startUpdateError.message}`);
+    console.error(
+      `[niche-researcher] sessionId=${sessionId} failed to write status=running: ${startUpdateError.message}`,
+    );
   }
 
   // ── Step 2: Instantiate clients ─────────────────────────────────────────
@@ -155,7 +157,7 @@ async function handler(job: import('bullmq').Job<NicheResearchPayload>): Promise
         maxTurns: 15,
         persistSession: false,
         tools: [], // No built-in tools — only MCP
-        permissionMode: 'bypassPermissions',
+        permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
         mcpServers: { researcher: mcpServer },
         // includePartialMessages absent (defaults false) — only SDKAssistantMessage + SDKResultMessage emitted
@@ -163,20 +165,20 @@ async function handler(job: import('bullmq').Job<NicheResearchPayload>): Promise
     });
 
     for await (const msg of sdkQuery) {
-      if (msg.type === 'assistant') {
+      if (msg.type === "assistant") {
         // Extract a summary from the first 150 chars of message content
         // BetaMessage.content is always an array of content blocks
         const content = msg.message?.content;
-        let summary = '';
+        let summary = "";
         if (Array.isArray(content)) {
           // Find first text block
-          const textBlock = content.find((b) => b.type === 'text');
-          if (textBlock && 'text' in textBlock) {
-            summary = String(textBlock.text).slice(0, 150).replace(/\n/g, ' ');
+          const textBlock = content.find((b) => b.type === "text");
+          if (textBlock && "text" in textBlock) {
+            summary = String(textBlock.text).slice(0, 150).replace(/\n/g, " ");
           } else {
             // Tool use block — describe the tool call
-            const toolBlock = content.find((b) => b.type === 'tool_use');
-            if (toolBlock && 'name' in toolBlock) {
+            const toolBlock = content.find((b) => b.type === "tool_use");
+            if (toolBlock && "name" in toolBlock) {
               summary = `Tool call: ${String(toolBlock.name)}`;
             }
           }
@@ -185,52 +187,58 @@ async function handler(job: import('bullmq').Job<NicheResearchPayload>): Promise
         turnIndex++;
         const entry = {
           turn: turnIndex,
-          phase: 'research',
+          phase: "research",
           summary: summary || `Turn ${turnIndex}`,
           timestamp: new Date().toISOString(),
         };
         progressEntries.push(entry);
 
-        console.log(`[niche-researcher] sessionId=${sessionId} turn=${turnIndex} progress_entries=${progressEntries.length}`);
+        console.log(
+          `[niche-researcher] sessionId=${sessionId} turn=${turnIndex} progress_entries=${progressEntries.length}`,
+        );
 
         // Write progress to DB after each assistant turn
         const { error: progressError } = await supabase
-          .from('research_sessions')
+          .from("research_sessions")
           .update({ progress: progressEntries })
-          .eq('id', sessionId);
+          .eq("id", sessionId);
 
         if (progressError) {
-          console.error(`[niche-researcher] sessionId=${sessionId} progress write failed turn=${turnIndex}: ${progressError.message}`);
+          console.error(
+            `[niche-researcher] sessionId=${sessionId} progress write failed turn=${turnIndex}: ${progressError.message}`,
+          );
         }
-      } else if (msg.type === 'result') {
+      } else if (msg.type === "result") {
         // SDKResultMessage — parse the report from result string
         if (msg.is_error) {
           // Error result (SDKResultError) — no .result string
-          const errors = 'errors' in msg ? (msg.errors as string[]) : [];
-          const errorSummary = errors.join('; ') || `subtype=${msg.subtype}`;
-          console.error(`[niche-researcher] sessionId=${sessionId} result is_error=true: ${errorSummary}`);
+          const errors = "errors" in msg ? (msg.errors as string[]) : [];
+          const errorSummary = errors.join("; ") || `subtype=${msg.subtype}`;
+          console.error(
+            `[niche-researcher] sessionId=${sessionId} result is_error=true: ${errorSummary}`,
+          );
 
           // Append error to progress
           progressEntries.push({
             turn: turnIndex + 1,
-            phase: 'failed',
+            phase: "failed",
             summary: `Agent error: ${errorSummary}`,
             timestamp: new Date().toISOString(),
           });
 
           await supabase
-            .from('research_sessions')
+            .from("research_sessions")
             .update({
-              status: 'failed',
+              status: "failed",
               progress: progressEntries,
             })
-            .eq('id', sessionId);
+            .eq("id", sessionId);
 
           return;
         }
 
         // SDKResultSuccess — has .result string
-        const resultStr = 'result' in msg ? (msg.result as string) : '';
+        const resultStr = "result" in msg ? (msg.result as string) : "";
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let report: any = null;
         let parseSuccess = false;
@@ -238,34 +246,46 @@ async function handler(job: import('bullmq').Job<NicheResearchPayload>): Promise
         try {
           // Strip potential markdown fences if model wrapped JSON despite instructions
           const stripped = resultStr
-            .replace(/^```(?:json)?\s*/i, '')
-            .replace(/\s*```\s*$/i, '')
+            .replace(/^```(?:json)?\s*/i, "")
+            .replace(/\s*```\s*$/i, "")
             .trim();
           const parsed = JSON.parse(stripped);
           report = ResearchReportSchema.parse(parsed);
           parseSuccess = true;
-          console.log(`[niche-researcher] sessionId=${sessionId} status=completed report parsed successfully`);
+          console.log(
+            `[niche-researcher] sessionId=${sessionId} status=completed report parsed successfully`,
+          );
         } catch (parseErr) {
           const parseErrMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
-          console.warn(`[niche-researcher] sessionId=${sessionId} report parse failed: ${parseErrMsg} — storing raw result`);
-          report = { raw: resultStr.slice(0, 5000), error: 'parse_failed', parse_error: parseErrMsg };
+          console.warn(
+            `[niche-researcher] sessionId=${sessionId} report parse failed: ${parseErrMsg} — storing raw result`,
+          );
+          report = {
+            raw: resultStr.slice(0, 5000),
+            error: "parse_failed",
+            parse_error: parseErrMsg,
+          };
         }
 
         // Write report + completed status (even on parse failure — partial > failure)
         const { error: finalUpdateError } = await supabase
-          .from('research_sessions')
+          .from("research_sessions")
           .update({
-            status: 'completed',
+            status: "completed",
             report,
             progress: progressEntries,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', sessionId);
+          .eq("id", sessionId);
 
         if (finalUpdateError) {
-          console.error(`[niche-researcher] sessionId=${sessionId} final update failed: ${finalUpdateError.message}`);
+          console.error(
+            `[niche-researcher] sessionId=${sessionId} final update failed: ${finalUpdateError.message}`,
+          );
         } else {
-          console.log(`[niche-researcher] sessionId=${sessionId} status=completed parseSuccess=${parseSuccess} turns=${turnIndex}`);
+          console.log(
+            `[niche-researcher] sessionId=${sessionId} status=completed parseSuccess=${parseSuccess} turns=${turnIndex}`,
+          );
         }
 
         return;
@@ -274,29 +294,31 @@ async function handler(job: import('bullmq').Job<NicheResearchPayload>): Promise
     }
 
     // Iterator exhausted without result message — mark completed with what we have
-    console.warn(`[niche-researcher] sessionId=${sessionId} iterator exhausted without result message`);
+    console.warn(
+      `[niche-researcher] sessionId=${sessionId} iterator exhausted without result message`,
+    );
     await supabase
-      .from('research_sessions')
-      .update({ status: 'failed', progress: progressEntries })
-      .eq('id', sessionId);
+      .from("research_sessions")
+      .update({ status: "failed", progress: progressEntries })
+      .eq("id", sessionId);
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[niche-researcher] sessionId=${sessionId} status=failed error: ${errMsg}`);
 
     progressEntries.push({
       turn: turnIndex + 1,
-      phase: 'failed',
+      phase: "failed",
       summary: errMsg.slice(0, 300),
       timestamp: new Date().toISOString(),
     });
 
     await supabase
-      .from('research_sessions')
+      .from("research_sessions")
       .update({
-        status: 'failed',
+        status: "failed",
         progress: progressEntries,
       })
-      .eq('id', sessionId);
+      .eq("id", sessionId);
 
     throw err; // Re-throw so BullMQ marks the job as failed and persists it in Redis
   }

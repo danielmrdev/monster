@@ -1,4 +1,4 @@
-declare module 'text-readability' {
+declare module "text-readability" {
   interface ReadabilityInstance {
     fleschReadingEase(text: string): number | null;
     fleschKincaidGrade(text: string): number | null;

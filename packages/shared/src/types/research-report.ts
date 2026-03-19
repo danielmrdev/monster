@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // ---------------------------------------------------------------------------
 // ResearchReport — structured output of the NicheResearcher agent.
@@ -31,7 +31,7 @@ export const ResearchReportSchema = z.object({
       search_volume: z.number().nullable(),
       cpc: z.number().nullable(),
       competition: z.number().nullable(), // 0–1 scale
-    })
+    }),
   ),
 
   /** Competitor domains identified via DataForSEO Labs SERP competitors. */
@@ -40,7 +40,7 @@ export const ResearchReportSchema = z.object({
       domain: z.string(),
       median_position: z.number().nullable(),
       relevance: z.string(),
-    })
+    }),
   ),
 
   /** Amazon products found via DataForSEO Merchant API. */
@@ -52,7 +52,7 @@ export const ResearchReportSchema = z.object({
       rating: z.number(),
       review_count: z.number(),
       is_prime: z.boolean(),
-    })
+    }),
   ),
 
   /**
@@ -64,7 +64,7 @@ export const ResearchReportSchema = z.object({
       domain: z.string(),
       available: z.boolean().nullable(),
       price: z.string().optional(),
-    })
+    }),
   ),
 
   /** Agent's actionable recommendation for whether to pursue this niche. */

@@ -21,10 +21,7 @@ async function visitorHash(): Promise<string> {
   const date = new Date().toISOString().slice(0, 10);
   const input = date + navigator.userAgent;
   if (window.isSecureContext && crypto.subtle) {
-    const buf = await crypto.subtle.digest(
-      "SHA-256",
-      new TextEncoder().encode(input)
-    );
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
     return Array.from(new Uint8Array(buf))
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
@@ -44,12 +41,16 @@ function flush(): void {
     keepalive: true,
     headers: {
       "Content-Type": "application/json",
-      "apikey": ANON_KEY,
-      "Authorization": `Bearer ${ANON_KEY}`,
-      "Prefer": "return=minimal",
+      apikey: ANON_KEY,
+      Authorization: `Bearer ${ANON_KEY}`,
+      Prefer: "return=minimal",
     },
     body: JSON.stringify(events),
-  }).catch(() => {}).finally(() => { flushing = false; });
+  })
+    .catch(() => {})
+    .finally(() => {
+      flushing = false;
+    });
 }
 
 let hashPromise: Promise<string> | null = null;
@@ -84,7 +85,9 @@ function init(): void {
 
   window.addEventListener("pagehide", flush);
 
-  setInterval(() => { if (queue.length > 0) flush(); }, 5000);
+  setInterval(() => {
+    if (queue.length > 0) flush();
+  }, 5000);
 }
 
 if (document.readyState === "loading") {

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback, useTransition } from 'react';
-import { getResearchSessionStatus } from './actions';
+import { useEffect, useState, useCallback, useTransition } from "react";
+import { getResearchSessionStatus } from "./actions";
 
-type SessionStatus = 'pending' | 'running' | 'completed' | 'failed';
+type SessionStatus = "pending" | "running" | "completed" | "failed";
 
 interface ProgressEntry {
   turn: number;
@@ -18,27 +18,28 @@ interface Props {
 }
 
 const BADGE: Record<SessionStatus, { label: string; className: string }> = {
-  pending:   { label: 'Pending',   className: 'bg-yellow-100 text-yellow-800' },
-  running:   { label: 'Running…',  className: 'bg-blue-100 text-blue-700'    },
-  completed: { label: 'Completed', className: 'bg-green-100 text-green-800'  },
-  failed:    { label: 'Failed',    className: 'bg-red-100 text-red-800'      },
+  pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800" },
+  running: { label: "Running…", className: "bg-blue-100 text-blue-700" },
+  completed: { label: "Completed", className: "bg-green-100 text-green-800" },
+  failed: { label: "Failed", className: "bg-red-100 text-red-800" },
 };
 
 function isTerminal(status: string): boolean {
-  return status === 'completed' || status === 'failed';
+  return status === "completed" || status === "failed";
 }
 
 function parseProgress(raw: unknown): ProgressEntry[] {
   if (!Array.isArray(raw)) return [];
   return raw
-    .filter((e): e is ProgressEntry =>
-      typeof e === 'object' && e !== null && 'turn' in e && 'summary' in e,
+    .filter(
+      (e): e is ProgressEntry =>
+        typeof e === "object" && e !== null && "turn" in e && "summary" in e,
     )
     .sort((a, b) => b.turn - a.turn); // newest first
 }
 
 function fmt(ts?: string): string {
-  if (!ts) return '';
+  if (!ts) return "";
   return new Date(ts).toLocaleTimeString();
 }
 
@@ -70,10 +71,10 @@ export default function ResearchSessionStatus({ sessionId, initialStatus }: Prop
     return () => clearInterval(id);
   }, [status, poll]);
 
-  const s = (status as SessionStatus) in BADGE ? (status as SessionStatus) : 'pending';
+  const s = (status as SessionStatus) in BADGE ? (status as SessionStatus) : "pending";
   const badge = BADGE[s];
 
-  const lastFailedEntry = status === 'failed' ? progress[0] : null;
+  const lastFailedEntry = status === "failed" ? progress[0] : null;
 
   return (
     <div className="space-y-4">
@@ -90,14 +91,14 @@ export default function ResearchSessionStatus({ sessionId, initialStatus }: Prop
       </div>
 
       {/* Completion message */}
-      {status === 'completed' && (
+      {status === "completed" && (
         <div className="rounded-md bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
           ✓ Research complete — report ready for viewing in S03
         </div>
       )}
 
       {/* Failed message */}
-      {status === 'failed' && lastFailedEntry && (
+      {status === "failed" && lastFailedEntry && (
         <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
           <span className="font-medium">Error:</span> {lastFailedEntry.summary}
         </div>
@@ -111,10 +112,7 @@ export default function ResearchSessionStatus({ sessionId, initialStatus }: Prop
           </h4>
           <ol className="space-y-1.5">
             {progress.map((entry) => (
-              <li
-                key={entry.turn}
-                className="flex items-start gap-3 text-sm text-foreground/80"
-              >
+              <li key={entry.turn} className="flex items-start gap-3 text-sm text-foreground/80">
                 <span className="mt-0.5 flex-shrink-0 inline-flex items-center justify-center h-5 w-5 rounded-full bg-muted/50 text-xs font-mono text-muted-foreground">
                   {entry.turn}
                 </span>
@@ -123,7 +121,9 @@ export default function ResearchSessionStatus({ sessionId, initialStatus }: Prop
                   {entry.summary}
                 </span>
                 {entry.timestamp && (
-                  <span className="flex-shrink-0 text-xs text-muted-foreground/70">{fmt(entry.timestamp)}</span>
+                  <span className="flex-shrink-0 text-xs text-muted-foreground/70">
+                    {fmt(entry.timestamp)}
+                  </span>
                 )}
               </li>
             ))}
@@ -137,7 +137,7 @@ export default function ResearchSessionStatus({ sessionId, initialStatus }: Prop
       )}
 
       {/* Raw report JSON — collapsed, S03 will render properly */}
-      {status === 'completed' && report != null && (
+      {status === "completed" && report != null && (
         <details className="mt-4">
           <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
             Raw report JSON

@@ -2,7 +2,6 @@
   "name": "monster",
   "version": "0.13.0",
   "private": true,
-  "packageManager": "pnpm@10.30.3",
   "scripts": {
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",
@@ -10,12 +9,20 @@
     "format:check": "oxfmt --check .",
     "prepare": "husky"
   },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
+    "playwright": "^1.58.2"
+  },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
       "oxlint --fix",
       "oxfmt --write"
     ]
   },
+  "packageManager": "pnpm@10.30.3",
   "pnpm": {
     "overrides": {
       "ioredis": "5.9.3"
@@ -24,12 +31,5 @@
       "cpu-features",
       "ssh2"
     ]
-  },
-  "devDependencies": {
-    "husky": "^9.1.7",
-    "lint-staged": "^15.5.2",
-    "oxfmt": "^0.1.0",
-    "oxlint": "^1.56.0",
-    "playwright": "^1.58.2"
   }
 }

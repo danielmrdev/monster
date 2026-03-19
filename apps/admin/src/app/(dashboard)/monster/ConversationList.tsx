@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface ConversationRow {
   id: string;
@@ -21,11 +21,11 @@ function formatRelativeTime(dateString: string): string {
   const diffHours = Math.floor(diffMs / 3_600_000);
   const diffDays = Math.floor(diffMs / 86_400_000);
 
-  if (diffMins < 1) return 'just now';
+  if (diffMins < 1) return "just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 /**
@@ -41,8 +41,8 @@ export function ConversationList({ conversations, activeId }: ConversationListPr
         <Link
           href="/monster"
           className={cn(
-            'flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm font-medium transition-colors',
-            'bg-primary text-primary-foreground hover:bg-primary/90',
+            "flex items-center gap-2 w-full rounded-md px-3 py-2 text-sm font-medium transition-colors",
+            "bg-primary text-primary-foreground hover:bg-primary/90",
           )}
         >
           <svg
@@ -72,16 +72,16 @@ export function ConversationList({ conversations, activeId }: ConversationListPr
           <ul className="space-y-0.5 px-2">
             {conversations.map((conv) => {
               const isActive = conv.id === activeId;
-              const label = conv.title?.trim() || 'Untitled conversation';
+              const label = conv.title?.trim() || "Untitled conversation";
               return (
                 <li key={conv.id}>
                   <Link
                     href={`/monster?c=${conv.id}`}
                     className={cn(
-                      'flex flex-col gap-0.5 w-full rounded-md px-3 py-2 text-sm transition-colors',
+                      "flex flex-col gap-0.5 w-full rounded-md px-3 py-2 text-sm transition-colors",
                       isActive
-                        ? 'bg-accent text-accent-foreground font-medium'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                        ? "bg-accent text-accent-foreground font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                     title={label}
                   >

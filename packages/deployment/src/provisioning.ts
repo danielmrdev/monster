@@ -1,7 +1,7 @@
-import { join } from 'node:path';
-import { NodeSSH } from 'node-ssh';
-import { createServiceClient } from '@monster/db';
-import { HetznerClient } from './hetzner.js';
+import { join } from "node:path";
+import { NodeSSH } from "node-ssh";
+import { createServiceClient } from "@monster/db";
+import { HetznerClient } from "./hetzner.js";
 
 // ---------------------------------------------------------------------------
 // ProvisioningService
@@ -49,7 +49,10 @@ export interface ProvisionOpts {
 export class ProvisioningService {
   private hetzner = new HetznerClient();
 
-  async provision(opts: ProvisionOpts, onProgress?: (step: string, message: string) => void): Promise<Server> {
+  async provision(
+    opts: ProvisionOpts,
+    onProgress?: (step: string, message: string) => void,
+  ): Promise<Server> {
     const emit = (step: string, message: string) => {
       if (onProgress) onProgress(step, message);
     };
@@ -57,51 +60,51 @@ export class ProvisioningService {
     console.log(`[ProvisioningService] starting provision for "${opts.name}"`);
 
     // 1. Register SSH key with Hetzner (idempotent)
-    emit('ssh_key', 'Registering SSH key with Hetzner…');
-    const sshKeyId = await this.hetzner.registerSshKey('monster-provisioning', opts.sshPublicKey);
+    emit("ssh_key", "Registering SSH key with Hetzner…");
+    const sshKeyId = await this.hetzner.registerSshKey("monster-provisioning", opts.sshPublicKey);
     console.log(`[ProvisioningService] SSH key id=${sshKeyId}`);
 
     // 2. Create the server
-    emit('create_server', `Creating ${opts.serverType} server in ${opts.datacenter}…`);
+    emit("create_server", `Creating ${opts.serverType} server in ${opts.datacenter}…`);
     const { server: hServer } = await this.hetzner.createServer({
       name: opts.name,
       server_type: opts.serverType,
-      image: 'ubuntu-24.04',
+      image: "ubuntu-24.04",
       datacenter: opts.datacenter,
       ssh_keys: [sshKeyId],
     });
     console.log(`[ProvisioningService] server created id=${hServer.id} status=${hServer.status}`);
 
     // 3. Wait for boot
-    emit('wait_boot', 'Waiting for server to boot…');
+    emit("wait_boot", "Waiting for server to boot…");
     const publicIp = await this.waitForBoot(hServer.id);
     console.log(`[ProvisioningService] server running at ${publicIp}`);
 
     // 4. SSH bootstrap
-    emit('bootstrap', 'SSH bootstrap starting (setup-vps2.sh)…');
+    emit("bootstrap", "SSH bootstrap starting (setup-vps2.sh)…");
     await this.bootstrapVps(publicIp, opts.tailscaleKey, opts.sshPublicKey);
     console.log(`[ProvisioningService] bootstrap complete`);
 
     // 5. Insert into servers table
-    emit('register', 'Registering server in database…');
+    emit("register", "Registering server in database…");
     const supabase = createServiceClient();
     const { data, error } = await supabase
-      .from('servers')
+      .from("servers")
       .insert({
         name: opts.name,
-        provider: 'hetzner',
+        provider: "hetzner",
         external_id: hServer.id,
-        status: 'active',
+        status: "active",
         public_ip: publicIp,
         datacenter: opts.datacenter,
         server_type: opts.serverType,
-        ssh_user: 'root',
+        ssh_user: "root",
       })
       .select()
       .single();
 
     if (error || !data) {
-      throw new Error(`[ProvisioningService] DB insert failed: ${error?.message ?? 'no data'}`);
+      throw new Error(`[ProvisioningService] DB insert failed: ${error?.message ?? "no data"}`);
     }
 
     console.log(`[ProvisioningService] server registered in DB id=${data.id}`);
@@ -119,7 +122,7 @@ export class ProvisioningService {
       const { server } = await this.hetzner.getServer(serverId);
       console.log(`[ProvisioningService] server ${serverId} status=${server.status}`);
 
-      if (server.status === 'running') {
+      if (server.status === "running") {
         const ip = server.public_net.ipv4?.ip;
         if (!ip) {
           throw new Error(`[ProvisioningService] server running but no public IPv4 assigned`);
@@ -154,7 +157,7 @@ export class ProvisioningService {
         console.log(`[ProvisioningService] SSH connect attempt ${attempt}/${SSH_RETRY_ATTEMPTS}`);
         await conn.connect({
           host: publicIp,
-          username: 'root',
+          username: "root",
           agent: process.env.SSH_AUTH_SOCK,
           readyTimeout: 10_000,
         });
@@ -175,24 +178,24 @@ export class ProvisioningService {
     }
 
     try {
-      const setupScript = join(monorepoRoot, 'scripts', 'setup-vps2.sh');
-      const checkScript = join(monorepoRoot, 'scripts', 'lib', 'vps2-check.sh');
+      const setupScript = join(monorepoRoot, "scripts", "setup-vps2.sh");
+      const checkScript = join(monorepoRoot, "scripts", "lib", "vps2-check.sh");
 
       // Upload scripts
-      console.log('[ProvisioningService] uploading setup-vps2.sh');
-      await conn.putFile(setupScript, '/tmp/setup-vps2.sh');
+      console.log("[ProvisioningService] uploading setup-vps2.sh");
+      await conn.putFile(setupScript, "/tmp/setup-vps2.sh");
 
-      console.log('[ProvisioningService] uploading vps2-check.sh');
-      await conn.putFile(checkScript, '/tmp/vps2-check.sh');
+      console.log("[ProvisioningService] uploading vps2-check.sh");
+      await conn.putFile(checkScript, "/tmp/vps2-check.sh");
 
       // Make executable
-      const chmodResult = await conn.execCommand('chmod +x /tmp/setup-vps2.sh /tmp/vps2-check.sh');
+      const chmodResult = await conn.execCommand("chmod +x /tmp/setup-vps2.sh /tmp/vps2-check.sh");
       if (chmodResult.stderr) {
         console.warn(`[ProvisioningService] chmod stderr: ${chmodResult.stderr}`);
       }
 
       // Run bootstrap — NEVER log tailscaleKey
-      console.log('[ProvisioningService] running setup-vps2.sh bootstrap');
+      console.log("[ProvisioningService] running setup-vps2.sh bootstrap");
       const bootstrapResult = await conn.execCommand(
         `bash /tmp/setup-vps2.sh --tailscale-key ${tailscaleKey}`,
         { execOptions: { pty: false } },
@@ -207,11 +210,11 @@ export class ProvisioningService {
 
       // Non-zero exit code from bash -c doesn't surface as exception in node-ssh;
       // check stderr for known failure patterns
-      if (bootstrapResult.stderr?.includes('FATAL') || bootstrapResult.stderr?.includes('Error')) {
+      if (bootstrapResult.stderr?.includes("FATAL") || bootstrapResult.stderr?.includes("Error")) {
         throw new Error(`[ProvisioningService] bootstrap reported errors — check stderr above`);
       }
 
-      console.log('[ProvisioningService] bootstrap finished');
+      console.log("[ProvisioningService] bootstrap finished");
     } finally {
       conn.dispose();
     }

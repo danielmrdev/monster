@@ -1,6 +1,6 @@
-import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
-import type { ResearchReport } from '@monster/shared';
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import type { ResearchReport } from "@monster/shared";
 
 // ---------------------------------------------------------------------------
 // ResearchReportViewer — server component
@@ -27,16 +27,18 @@ interface Props {
   domains: DomainResult[];
 }
 
-function viabilityVariant(score: number): 'default' | 'secondary' | 'destructive' {
-  if (score >= 70) return 'default';   // green-ish (primary)
-  if (score >= 40) return 'secondary'; // yellow-ish
-  return 'destructive';                // red
+function viabilityVariant(score: number): "default" | "secondary" | "destructive" {
+  if (score >= 70) return "default"; // green-ish (primary)
+  if (score >= 40) return "secondary"; // yellow-ish
+  return "destructive"; // red
 }
 
 function domainBadge(available: boolean | null): { label: string; className: string } {
-  if (available === true)  return { label: 'Available', className: 'bg-green-100 text-green-800 border-green-200' };
-  if (available === false) return { label: 'Taken',     className: 'bg-muted/50 text-muted-foreground border-border'   };
-  return                          { label: 'Unknown',   className: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
+  if (available === true)
+    return { label: "Available", className: "bg-green-100 text-green-800 border-green-200" };
+  if (available === false)
+    return { label: "Taken", className: "bg-muted/50 text-muted-foreground border-border" };
+  return { label: "Unknown", className: "bg-yellow-100 text-yellow-700 border-yellow-200" };
 }
 
 export default function ResearchReportViewer({ report, domains }: Props) {
@@ -54,17 +56,15 @@ export default function ResearchReportViewer({ report, domains }: Props) {
   } = report;
 
   const generatedDate = new Date(generated_at).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   const ctaHref = `/sites/new?niche=${encodeURIComponent(niche_idea)}&market=${encodeURIComponent(market)}`;
 
   // Build a lookup from domain name → resolved availability result
-  const domainLookup = new Map<string, DomainResult>(
-    domains.map((d) => [d.domain, d]),
-  );
+  const domainLookup = new Map<string, DomainResult>(domains.map((d) => [d.domain, d]));
 
   return (
     <div className="space-y-8">
@@ -94,10 +94,10 @@ export default function ResearchReportViewer({ report, domains }: Props) {
         </div>
         <div className="text-sm text-muted-foreground leading-relaxed">
           {viability_score >= 70
-            ? 'Strong niche — good search volume and monetization potential.'
+            ? "Strong niche — good search volume and monetization potential."
             : viability_score >= 40
-            ? 'Moderate niche — may need more differentiation to rank.'
-            : 'Weak niche — high competition or low search volume.'}
+              ? "Moderate niche — may need more differentiation to rank."
+              : "Weak niche — high competition or low search volume."}
         </div>
       </div>
 
@@ -109,7 +109,9 @@ export default function ResearchReportViewer({ report, domains }: Props) {
 
       {/* ── Recommendation ──────────────────────────────────────────────── */}
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Recommendation</h3>
+        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+          Recommendation
+        </h3>
         <div className="rounded-md border-l-4 border-primary bg-primary/5 px-4 py-3 text-sm leading-relaxed">
           {recommendation}
         </div>
@@ -127,10 +129,16 @@ export default function ResearchReportViewer({ report, domains }: Props) {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b">
                 <tr>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Keyword</th>
-                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Volume</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">
+                    Keyword
+                  </th>
+                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
+                    Volume
+                  </th>
                   <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">CPC</th>
-                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Competition</th>
+                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
+                    Competition
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -138,13 +146,13 @@ export default function ResearchReportViewer({ report, domains }: Props) {
                   <tr key={i} className="hover:bg-muted/30">
                     <td className="px-4 py-2 font-medium">{kw.keyword}</td>
                     <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
-                      {kw.search_volume != null ? kw.search_volume.toLocaleString() : '—'}
+                      {kw.search_volume != null ? kw.search_volume.toLocaleString() : "—"}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
-                      {kw.cpc != null ? `$${kw.cpc.toFixed(2)}` : '—'}
+                      {kw.cpc != null ? `$${kw.cpc.toFixed(2)}` : "—"}
                     </td>
                     <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
-                      {kw.competition != null ? `${(kw.competition * 100).toFixed(0)}%` : '—'}
+                      {kw.competition != null ? `${(kw.competition * 100).toFixed(0)}%` : "—"}
                     </td>
                   </tr>
                 ))}
@@ -157,7 +165,8 @@ export default function ResearchReportViewer({ report, domains }: Props) {
       {/* ── Competitors ─────────────────────────────────────────────────── */}
       <section className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-          Competitors <span className="font-normal text-muted-foreground">({competitors.length})</span>
+          Competitors{" "}
+          <span className="font-normal text-muted-foreground">({competitors.length})</span>
         </h3>
         {competitors.length === 0 ? (
           <p className="text-sm text-muted-foreground">No competitors found.</p>
@@ -170,7 +179,7 @@ export default function ResearchReportViewer({ report, domains }: Props) {
                 </span>
                 <span className="flex-1 font-medium truncate">{c.domain}</span>
                 <span className="text-xs text-muted-foreground">
-                  pos {c.median_position != null ? c.median_position : '—'}
+                  pos {c.median_position != null ? c.median_position : "—"}
                 </span>
                 <span className="text-xs rounded-full bg-muted px-2 py-0.5">{c.relevance}</span>
               </li>
@@ -182,7 +191,8 @@ export default function ResearchReportViewer({ report, domains }: Props) {
       {/* ── Amazon products ─────────────────────────────────────────────── */}
       <section className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-          Amazon Products <span className="font-normal text-muted-foreground">({amazon_products.length})</span>
+          Amazon Products{" "}
+          <span className="font-normal text-muted-foreground">({amazon_products.length})</span>
         </h3>
         {amazon_products.length === 0 ? (
           <p className="text-sm text-muted-foreground">No products found.</p>
@@ -193,7 +203,7 @@ export default function ResearchReportViewer({ report, domains }: Props) {
                 <p className="text-sm font-medium leading-snug line-clamp-2">{p.title}</p>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground">
-                    {p.price != null ? `$${p.price.toFixed(2)}` : '—'}
+                    {p.price != null ? `$${p.price.toFixed(2)}` : "—"}
                   </span>
                   <span>⭐ {p.rating.toFixed(1)}</span>
                   <span>{p.review_count.toLocaleString()} reviews</span>
@@ -213,7 +223,7 @@ export default function ResearchReportViewer({ report, domains }: Props) {
       {/* ── Domain suggestions ──────────────────────────────────────────── */}
       <section className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-          Domain Suggestions{' '}
+          Domain Suggestions{" "}
           <span className="font-normal text-muted-foreground">({domain_suggestions.length})</span>
         </h3>
         <p className="text-xs text-muted-foreground">

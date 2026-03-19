@@ -1,22 +1,22 @@
-'use client'
+"use client";
 
-import { useTransition } from 'react'
-import { deleteProduct } from './actions'
+import { useTransition } from "react";
+import { deleteProduct } from "./actions";
 
 interface Props {
-  siteId: string
-  productId: string
-  asin: string
+  siteId: string;
+  productId: string;
+  asin: string;
 }
 
 export function DeleteProductButton({ siteId, productId, asin }: Props) {
-  const [pending, startTransition] = useTransition()
+  const [pending, startTransition] = useTransition();
 
   function handleClick() {
-    if (!confirm(`Delete product ${asin}? This action cannot be undone.`)) return
+    if (!confirm(`Delete product ${asin}? This action cannot be undone.`)) return;
     startTransition(async () => {
-      await deleteProduct(siteId, productId)
-    })
+      await deleteProduct(siteId, productId);
+    });
   }
 
   return (
@@ -26,7 +26,7 @@ export function DeleteProductButton({ siteId, productId, asin }: Props) {
       disabled={pending}
       className="text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
     >
-      {pending ? 'Deleting…' : 'Delete'}
+      {pending ? "Deleting…" : "Delete"}
     </button>
-  )
+  );
 }

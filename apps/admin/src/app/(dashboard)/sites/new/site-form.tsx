@@ -1,51 +1,51 @@
-'use client'
+"use client";
 
-import { useActionState } from 'react'
-import Link from 'next/link'
-import { createSite, type CreateSiteState } from '../actions'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
+import { useActionState } from "react";
+import Link from "next/link";
+import { createSite, type CreateSiteState } from "../actions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 const AMAZON_MARKETS = [
-  { value: 'ES', label: 'Spain (ES)' },
-  { value: 'US', label: 'United States (US)' },
-  { value: 'UK', label: 'United Kingdom (UK)' },
-  { value: 'DE', label: 'Germany (DE)' },
-  { value: 'FR', label: 'France (FR)' },
-  { value: 'IT', label: 'Italy (IT)' },
-  { value: 'MX', label: 'Mexico (MX)' },
-  { value: 'CA', label: 'Canada (CA)' },
-  { value: 'JP', label: 'Japan (JP)' },
-  { value: 'AU', label: 'Australia (AU)' },
-]
+  { value: "ES", label: "Spain (ES)" },
+  { value: "US", label: "United States (US)" },
+  { value: "UK", label: "United Kingdom (UK)" },
+  { value: "DE", label: "Germany (DE)" },
+  { value: "FR", label: "France (FR)" },
+  { value: "IT", label: "Italy (IT)" },
+  { value: "MX", label: "Mexico (MX)" },
+  { value: "CA", label: "Canada (CA)" },
+  { value: "JP", label: "Japan (JP)" },
+  { value: "AU", label: "Australia (AU)" },
+];
 
 const LANGUAGES = [
-  { value: 'es', label: 'Spanish (es)' },
-  { value: 'en', label: 'English (en)' },
-  { value: 'de', label: 'German (de)' },
-  { value: 'fr', label: 'French (fr)' },
-  { value: 'it', label: 'Italian (it)' },
-  { value: 'ja', label: 'Japanese (ja)' },
-]
+  { value: "es", label: "Spanish (es)" },
+  { value: "en", label: "English (en)" },
+  { value: "de", label: "German (de)" },
+  { value: "fr", label: "French (fr)" },
+  { value: "it", label: "Italian (it)" },
+  { value: "ja", label: "Japanese (ja)" },
+];
 
 const CURRENCIES = [
-  { value: 'EUR', label: 'Euro (EUR)' },
-  { value: 'USD', label: 'US Dollar (USD)' },
-  { value: 'GBP', label: 'British Pound (GBP)' },
-  { value: 'MXN', label: 'Mexican Peso (MXN)' },
-  { value: 'CAD', label: 'Canadian Dollar (CAD)' },
-  { value: 'JPY', label: 'Japanese Yen (JPY)' },
-  { value: 'AUD', label: 'Australian Dollar (AUD)' },
-]
+  { value: "EUR", label: "Euro (EUR)" },
+  { value: "USD", label: "US Dollar (USD)" },
+  { value: "GBP", label: "British Pound (GBP)" },
+  { value: "MXN", label: "Mexican Peso (MXN)" },
+  { value: "CAD", label: "Canadian Dollar (CAD)" },
+  { value: "JPY", label: "Japanese Yen (JPY)" },
+  { value: "AUD", label: "Australian Dollar (AUD)" },
+];
 
-const TEMPLATES: { value: string; label: string }[] = [] // kept for type reference; actual data comes from DB via props
+const TEMPLATES: { value: string; label: string }[] = []; // kept for type reference; actual data comes from DB via props
 
 function FieldError({ messages }: { messages?: string[] }) {
-  if (!messages?.length) return null
-  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>
+  if (!messages?.length) return null;
+  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>;
 }
 
 function NativeSelect({
@@ -54,32 +54,38 @@ function NativeSelect({
   children,
   className,
 }: {
-  name: string
-  defaultValue?: string
-  children: React.ReactNode
-  className?: string
+  name: string;
+  defaultValue?: string;
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <select
       name={name}
       defaultValue={defaultValue}
       className={
-        'flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 ' +
-        (className ?? '')
+        "flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 " +
+        (className ?? "")
       }
     >
       {children}
     </select>
-  )
+  );
 }
 
-export function SiteForm({ defaultValues, templates = [] }: { defaultValues?: { niche?: string; market?: string }; templates?: { value: string; label: string }[] } = {}) {
+export function SiteForm({
+  defaultValues,
+  templates = [],
+}: {
+  defaultValues?: { niche?: string; market?: string };
+  templates?: { value: string; label: string }[];
+} = {}) {
   const [state, formAction, isPending] = useActionState<CreateSiteState, FormData>(
     createSite,
-    null
-  )
+    null,
+  );
 
-  const errors = state?.errors
+  const errors = state?.errors;
 
   return (
     <form action={formAction} className="space-y-6">
@@ -126,7 +132,7 @@ export function SiteForm({ defaultValues, templates = [] }: { defaultValues?: { 
               name="niche"
               placeholder="Describe the site niche (e.g. camping gear for families)"
               rows={2}
-              defaultValue={defaultValues?.niche ?? ''}
+              defaultValue={defaultValues?.niche ?? ""}
               aria-invalid={!!errors?.niche}
             />
             <FieldError messages={errors?.niche} />
@@ -136,7 +142,7 @@ export function SiteForm({ defaultValues, templates = [] }: { defaultValues?: { 
             {/* Market */}
             <div className="space-y-1.5">
               <Label htmlFor="market">Amazon Market</Label>
-              <NativeSelect name="market" defaultValue={defaultValues?.market ?? ''}>
+              <NativeSelect name="market" defaultValue={defaultValues?.market ?? ""}>
                 <option value="">— Select market —</option>
                 {AMAZON_MARKETS.map(({ value, label }) => (
                   <option key={value} value={value}>
@@ -194,7 +200,10 @@ export function SiteForm({ defaultValues, templates = [] }: { defaultValues?: { 
               <Label htmlFor="template_slug">
                 Template <span className="text-destructive">*</span>
               </Label>
-              <NativeSelect name="template_slug" defaultValue={templates[0]?.value ?? 'tsa/classic'}>
+              <NativeSelect
+                name="template_slug"
+                defaultValue={templates[0]?.value ?? "tsa/classic"}
+              >
                 {templates.map(({ value, label }) => (
                   <option key={value} value={value}>
                     {label}
@@ -225,9 +234,9 @@ export function SiteForm({ defaultValues, templates = [] }: { defaultValues?: { 
                   className="h-8 w-10 cursor-pointer rounded border border-input bg-transparent p-0.5"
                   onChange={(e) => {
                     const textInput = document.getElementById(
-                      'primaryColor'
-                    ) as HTMLInputElement | null
-                    if (textInput) textInput.value = e.target.value
+                      "primaryColor",
+                    ) as HTMLInputElement | null;
+                    if (textInput) textInput.value = e.target.value;
                   }}
                 />
                 <Input
@@ -253,9 +262,9 @@ export function SiteForm({ defaultValues, templates = [] }: { defaultValues?: { 
                   className="h-8 w-10 cursor-pointer rounded border border-input bg-transparent p-0.5"
                   onChange={(e) => {
                     const textInput = document.getElementById(
-                      'accentColor'
-                    ) as HTMLInputElement | null
-                    if (textInput) textInput.value = e.target.value
+                      "accentColor",
+                    ) as HTMLInputElement | null;
+                    if (textInput) textInput.value = e.target.value;
                   }}
                 />
                 <Input
@@ -321,7 +330,7 @@ export function SiteForm({ defaultValues, templates = [] }: { defaultValues?: { 
       {/* Actions */}
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={isPending}>
-          {isPending ? 'Creating…' : 'Create Site'}
+          {isPending ? "Creating…" : "Create Site"}
         </Button>
         <Link
           href="/sites"
@@ -331,5 +340,5 @@ export function SiteForm({ defaultValues, templates = [] }: { defaultValues?: { 
         </Link>
       </div>
     </form>
-  )
+  );
 }

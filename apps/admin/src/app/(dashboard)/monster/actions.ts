@@ -1,6 +1,6 @@
-'use server';
+"use server";
 
-import { createServiceClient } from '@/lib/supabase/service';
+import { createServiceClient } from "@/lib/supabase/service";
 
 /**
  * Fetch the 20 most-recently-updated conversations for the sidebar list.
@@ -13,13 +13,13 @@ export async function getConversations(): Promise<
 > {
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from('chat_conversations')
-    .select('id, title, created_at, updated_at')
-    .order('updated_at', { ascending: false })
+    .from("chat_conversations")
+    .select("id, title, created_at, updated_at")
+    .order("updated_at", { ascending: false })
     .limit(20);
 
   if (error) {
-    console.error('[monster/chat] getConversations error:', error.message);
+    console.error("[monster/chat] getConversations error:", error.message);
     return [];
   }
 
@@ -37,13 +37,18 @@ export async function getMessages(
 ): Promise<Array<{ id: string; role: string; content: string; created_at: string }>> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from('chat_messages')
-    .select('id, role, content, created_at')
-    .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
+    .from("chat_messages")
+    .select("id, role, content, created_at")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
 
   if (error) {
-    console.error('[monster/chat] getMessages error:', error.message, 'conversationId:', conversationId);
+    console.error(
+      "[monster/chat] getMessages error:",
+      error.message,
+      "conversationId:",
+      conversationId,
+    );
     return [];
   }
 
@@ -61,22 +66,22 @@ export async function deleteConversation(id: string): Promise<{ error?: string }
 
   // Delete messages first in case FK cascade is not configured
   const { error: msgError } = await supabase
-    .from('chat_messages')
+    .from("chat_messages")
     .delete()
-    .eq('conversation_id', id);
+    .eq("conversation_id", id);
 
   if (msgError) {
-    console.error('[monster/chat] deleteConversation: failed to delete messages:', msgError.message);
+    console.error(
+      "[monster/chat] deleteConversation: failed to delete messages:",
+      msgError.message,
+    );
     return { error: msgError.message };
   }
 
-  const { error } = await supabase
-    .from('chat_conversations')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from("chat_conversations").delete().eq("id", id);
 
   if (error) {
-    console.error('[monster/chat] deleteConversation error:', error.message);
+    console.error("[monster/chat] deleteConversation error:", error.message);
     return { error: error.message };
   }
 

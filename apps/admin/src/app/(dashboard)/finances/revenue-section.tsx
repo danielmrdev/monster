@@ -1,25 +1,25 @@
-'use client'
+"use client";
 
-import { useActionState } from 'react'
+import { useActionState } from "react";
 import {
   importAmazonCSV,
   addManualRevenue,
   type ImportAmazonState,
   type AddManualRevenueState,
-} from './actions'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
+} from "./actions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
 // Shared form helpers
 // ---------------------------------------------------------------------------
 
 function FieldError({ messages }: { messages?: string[] }) {
-  if (!messages?.length) return null
-  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>
+  if (!messages?.length) return null;
+  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>;
 }
 
 function NativeSelect({
@@ -27,9 +27,9 @@ function NativeSelect({
   defaultValue,
   children,
 }: {
-  name: string
-  defaultValue?: string
-  children: React.ReactNode
+  name: string;
+  defaultValue?: string;
+  children: React.ReactNode;
 }) {
   return (
     <select
@@ -39,7 +39,7 @@ function NativeSelect({
     >
       {children}
     </select>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -49,8 +49,8 @@ function NativeSelect({
 function CsvImportCard() {
   const [state, formAction, isPending] = useActionState<ImportAmazonState, FormData>(
     importAmazonCSV,
-    null
-  )
+    null,
+  );
 
   return (
     <Card>
@@ -68,7 +68,7 @@ function CsvImportCard() {
               {state.result.unattributed.length > 0 && (
                 <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300">
                   <p className="font-medium mb-1">
-                    Unmatched tracking IDs — update <code className="font-mono">affiliate_tag</code>{' '}
+                    Unmatched tracking IDs — update <code className="font-mono">affiliate_tag</code>{" "}
                     on the corresponding site:
                   </p>
                   <ul className="space-y-0.5 mt-1">
@@ -123,12 +123,12 @@ function CsvImportCard() {
           </div>
 
           <Button type="submit" disabled={isPending}>
-            {isPending ? 'Importing…' : 'Import CSV'}
+            {isPending ? "Importing…" : "Import CSV"}
           </Button>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -136,16 +136,16 @@ function CsvImportCard() {
 // ---------------------------------------------------------------------------
 
 interface ManualRevenueCardProps {
-  sites: { id: string; name: string }[]
+  sites: { id: string; name: string }[];
 }
 
 function ManualRevenueCard({ sites }: ManualRevenueCardProps) {
   const [state, formAction, isPending] = useActionState<AddManualRevenueState, FormData>(
     addManualRevenue,
-    null
-  )
+    null,
+  );
 
-  const errors = state?.errors
+  const errors = state?.errors;
 
   return (
     <Card>
@@ -232,13 +232,7 @@ function ManualRevenueCard({ sites }: ManualRevenueCardProps) {
               <Label htmlFor="date">
                 Date <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="date"
-                name="date"
-                type="date"
-                required
-                aria-invalid={!!errors?.date}
-              />
+              <Input id="date" name="date" type="date" required aria-invalid={!!errors?.date} />
               <FieldError messages={errors?.date} />
             </div>
           </div>
@@ -257,12 +251,12 @@ function ManualRevenueCard({ sites }: ManualRevenueCardProps) {
           </div>
 
           <Button type="submit" disabled={isPending}>
-            {isPending ? 'Adding…' : 'Add Revenue Entry'}
+            {isPending ? "Adding…" : "Add Revenue Entry"}
           </Button>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -270,7 +264,7 @@ function ManualRevenueCard({ sites }: ManualRevenueCardProps) {
 // ---------------------------------------------------------------------------
 
 interface RevenueSectionProps {
-  sites: { id: string; name: string }[]
+  sites: { id: string; name: string }[];
 }
 
 export function RevenueSection({ sites }: RevenueSectionProps) {
@@ -279,5 +273,5 @@ export function RevenueSection({ sites }: RevenueSectionProps) {
       <CsvImportCard />
       <ManualRevenueCard sites={sites} />
     </div>
-  )
+  );
 }

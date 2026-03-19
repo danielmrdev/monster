@@ -1,7 +1,7 @@
-import { Worker } from 'bullmq';
-import { Redis } from 'ioredis';
-import { createServiceClient } from '@monster/db';
-import { createRedisOptions, createAnalyticsAggregationQueue } from '../queue.js';
+import { Worker } from "bullmq";
+import { Redis } from "ioredis";
+import { createServiceClient } from "@monster/db";
+import { createRedisOptions, createAnalyticsAggregationQueue } from "../queue.js";
 
 // ---------------------------------------------------------------------------
 // AnalyticsAggregationPayload
@@ -45,13 +45,11 @@ export class AnalyticsAggregationJob {
   register(): Worker {
     const connection = new Redis(createRedisOptions());
 
-    const worker = new Worker<AnalyticsAggregationPayload>(
-      'analytics-aggregation',
-      handler,
-      { connection },
-    );
+    const worker = new Worker<AnalyticsAggregationPayload>("analytics-aggregation", handler, {
+      connection,
+    });
 
-    worker.on('failed', (job, err) => {
+    worker.on("failed", (job, err) => {
       console.error(`[AnalyticsAggregationJob] Job ${job?.id} failed: ${err.message}`);
     });
 
@@ -66,11 +64,11 @@ export class AnalyticsAggregationJob {
     const queue = createAnalyticsAggregationQueue();
     try {
       await queue.upsertJobScheduler(
-        'analytics-daily-aggregation',
-        { pattern: '0 2 * * *', tz: 'UTC' },
-        { name: 'aggregate', data: {} },
+        "analytics-daily-aggregation",
+        { pattern: "0 2 * * *", tz: "UTC" },
+        { name: "aggregate", data: {} },
       );
-      console.log('[AnalyticsAggregationJob] scheduler registered (0 2 * * * UTC)');
+      console.log("[AnalyticsAggregationJob] scheduler registered (0 2 * * * UTC)");
     } finally {
       await queue.close();
     }
@@ -81,15 +79,13 @@ export class AnalyticsAggregationJob {
 // Handler — runs inside the Worker process
 // ---------------------------------------------------------------------------
 
-async function handler(job: import('bullmq').Job<AnalyticsAggregationPayload>): Promise<void> {
+async function handler(job: import("bullmq").Job<AnalyticsAggregationPayload>): Promise<void> {
   const supabase = createServiceClient();
 
   // Resolve target date
   const raw = job.data.targetDate;
   const targetDate =
-    !raw || raw === 'yesterday'
-      ? new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-      : raw;
+    !raw || raw === "yesterday" ? new Date(Date.now() - 86400000).toISOString().slice(0, 10) : raw;
 
   console.log(`[AnalyticsAggregationJob] running for date ${targetDate}`);
 
@@ -98,13 +94,15 @@ async function handler(job: import('bullmq').Job<AnalyticsAggregationPayload>): 
 
   // Fetch all events for the target date
   const { data: events, error: fetchError } = await supabase
-    .from('analytics_events')
-    .select('site_id, event_type, page_path, referrer, visitor_hash')
-    .gte('created_at', dayStart)
-    .lte('created_at', dayEnd);
+    .from("analytics_events")
+    .select("site_id, event_type, page_path, referrer, visitor_hash")
+    .gte("created_at", dayStart)
+    .lte("created_at", dayEnd);
 
   if (fetchError) {
-    console.error(`[AnalyticsAggregationJob] ERROR: fetch failed for date ${targetDate}: ${fetchError.message}`);
+    console.error(
+      `[AnalyticsAggregationJob] ERROR: fetch failed for date ${targetDate}: ${fetchError.message}`,
+    );
     throw new Error(`fetch analytics_events: ${fetchError.message}`);
   }
 
@@ -121,7 +119,7 @@ async function handler(job: import('bullmq').Job<AnalyticsAggregationPayload>): 
 
   for (const event of events!) {
     const siteId: string = event.site_id;
-    const pagePath: string = event.page_path ?? '';
+    const pagePath: string = event.page_path ?? "";
     const key = `${siteId}::${pagePath}`;
 
     if (!accumMap.has(key)) {
@@ -136,9 +134,9 @@ async function handler(job: import('bullmq').Job<AnalyticsAggregationPayload>): 
 
     const row = accumMap.get(key)!;
 
-    if (event.event_type === 'pageview') {
+    if (event.event_type === "pageview") {
       row.pageviews += 1;
-    } else if (event.event_type === 'click_affiliate') {
+    } else if (event.event_type === "click_affiliate") {
       row.affiliateClicks += 1;
     }
 
@@ -148,8 +146,8 @@ async function handler(job: import('bullmq').Job<AnalyticsAggregationPayload>): 
 
     // Country: skip null/unknown to avoid noise in Phase 1 (all null)
     // When real country data arrives, store it.
-    const country: string | null = (event as Record<string, unknown>)['country'] as string | null;
-    if (country && country !== 'unknown') {
+    const country: string | null = (event as Record<string, unknown>)["country"] as string | null;
+    if (country && country !== "unknown") {
       row.topCountries[country] = (row.topCountries[country] ?? 0) + 1;
     }
 
@@ -170,7 +168,7 @@ async function handler(job: import('bullmq').Job<AnalyticsAggregationPayload>): 
 
   // Build upsert rows
   const upsertRows = Array.from(accumMap.entries()).map(([key, row]) => {
-    const separatorIdx = key.indexOf('::');
+    const separatorIdx = key.indexOf("::");
     const siteId = key.slice(0, separatorIdx);
     const pagePath = key.slice(separatorIdx + 2);
 
@@ -181,15 +179,15 @@ async function handler(job: import('bullmq').Job<AnalyticsAggregationPayload>): 
       pageviews: row.pageviews,
       unique_visitors: row.uniqueVisitors.size,
       affiliate_clicks: row.affiliateClicks,
-      top_countries: row.topCountries,    // {} when no country data (Phase 1)
+      top_countries: row.topCountries, // {} when no country data (Phase 1)
       top_referrers: row.topReferrers,
     };
   });
 
   // Upsert into analytics_daily
   const { error: upsertError } = await supabase
-    .from('analytics_daily')
-    .upsert(upsertRows, { onConflict: 'site_id,date,page_path' });
+    .from("analytics_daily")
+    .upsert(upsertRows, { onConflict: "site_id,date,page_path" });
 
   if (upsertError) {
     console.error(

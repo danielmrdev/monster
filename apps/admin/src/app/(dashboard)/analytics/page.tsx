@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -6,52 +6,52 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { fetchAnalyticsData } from './lib'
-import { AnalyticsFilters } from './AnalyticsFilters'
-import { AggregationTrigger } from './AggregationTrigger'
-import { createServiceClient } from '@/lib/supabase/service'
+} from "@/components/ui/table";
+import { fetchAnalyticsData } from "./lib";
+import { AnalyticsFilters } from "./AnalyticsFilters";
+import { AggregationTrigger } from "./AggregationTrigger";
+import { createServiceClient } from "@/lib/supabase/service";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 interface AnalyticsPageProps {
-  searchParams: Promise<{ site?: string; range?: string }>
+  searchParams: Promise<{ site?: string; range?: string }>;
 }
 
 export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps) {
-  const { site, range: rawRange } = await searchParams
+  const { site, range: rawRange } = await searchParams;
 
   // Normalize range — unknown values default to '7d'
-  const validRanges = ['today', '7d', '30d'] as const
-  type ValidRange = (typeof validRanges)[number]
-  const normalizedRange: ValidRange = (validRanges as readonly string[]).includes(rawRange ?? '')
+  const validRanges = ["today", "7d", "30d"] as const;
+  type ValidRange = (typeof validRanges)[number];
+  const normalizedRange: ValidRange = (validRanges as readonly string[]).includes(rawRange ?? "")
     ? (rawRange as ValidRange)
-    : '7d'
+    : "7d";
 
   // Fetch analytics data and sites list for filter dropdown in parallel
   const [data, sitesResult] = await Promise.all([
     fetchAnalyticsData(site || undefined, normalizedRange),
-    createServiceClient().from('sites').select('id, name').order('name'),
-  ])
+    createServiceClient().from("sites").select("id, name").order("name"),
+  ]);
 
   if (sitesResult.error) {
-    throw new Error(`Failed to fetch sites: ${sitesResult.error.message}`)
+    throw new Error(`Failed to fetch sites: ${sitesResult.error.message}`);
   }
 
-  const sites = sitesResult.data
+  const sites = sitesResult.data;
 
   // Derive combined top pages across all sites in the current filter scope
   const allTopPages = data.siteMetrics
     .flatMap((m) => m.topPages)
     .reduce<Record<string, number>>((acc, p) => {
-      acc[p.path] = (acc[p.path] ?? 0) + p.count
-      return acc
-    }, {})
+      acc[p.path] = (acc[p.path] ?? 0) + p.count;
+      return acc;
+    }, {});
 
   const combinedTopPages = Object.entries(allTopPages)
     .map(([path, count]) => ({ path, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 10)
+    .slice(0, 10);
 
   return (
     <div className="space-y-6">
@@ -85,8 +85,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Unique Visitors{' '}
-              <span className="font-normal text-xs">(approximate)</span>
+              Unique Visitors <span className="font-normal text-xs">(approximate)</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -122,7 +121,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
                 <TableHead>Site</TableHead>
                 <TableHead className="text-right">Pageviews</TableHead>
                 <TableHead className="text-right">
-                  Unique Visitors{' '}
+                  Unique Visitors{" "}
                   <span className="text-xs font-normal text-muted-foreground">(approx)</span>
                 </TableHead>
                 <TableHead className="text-right">Affiliate Clicks</TableHead>
@@ -150,7 +149,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
                       {m.affiliateClicks.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground font-mono">
-                      {m.topPages[0]?.path ?? '—'}
+                      {m.topPages[0]?.path ?? "—"}
                     </TableCell>
                   </TableRow>
                 ))
@@ -253,5 +252,5 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

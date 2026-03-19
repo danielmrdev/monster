@@ -1,89 +1,79 @@
-"use client" /* Header */ /* Field checkboxes */ /* Current content preview (collapsed hints) */ /* Action */ // all = no restriction in payload
+"use client"; /* Header */ /* Field checkboxes */ /* Current content preview (collapsed hints) */ /* Action */ // all = no restriction in payload
+import { useTransition, useState } from "react";
+import { enqueueHomepageSeo } from "./seo/actions";
 
-import { useTransition, useState } from "react"
-import { enqueueHomepageSeo } from "./seo/actions"
-
-type HomepageField = "meta_description" | "intro" | "seo_text"
+type HomepageField = "meta_description" | "intro" | "seo_text";
 
 interface GenerateHomepageSeoButtonProps {
-  siteId: string
+  siteId: string;
   currentContent?: {
-    focus_keyword?: string | null
-    meta_description?: string | null
-    intro?: string | null
-    seo_text?: string | null
-  }
-  currentScore?: number | null
+    focus_keyword?: string | null;
+    meta_description?: string | null;
+    intro?: string | null;
+    seo_text?: string | null;
+  };
+  currentScore?: number | null;
 }
 
 const FIELD_LABELS: Record<HomepageField, string> = {
   meta_description: "Meta Description",
   intro: "Intro",
   seo_text: "SEO Text",
-}
+};
 
-const ALL_FIELDS: HomepageField[] = ["meta_description", "intro", "seo_text"]
+const ALL_FIELDS: HomepageField[] = ["meta_description", "intro", "seo_text"];
 
 export function GenerateHomepageSeoButton({
   siteId,
   currentContent,
   currentScore,
 }: GenerateHomepageSeoButtonProps) {
-  const [isPending, startTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
-  const [selected, setSelected] = useState<Set<HomepageField>>(
-    new Set(ALL_FIELDS),
-  )
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<HomepageField>>(new Set(ALL_FIELDS));
 
   function toggle(field: HomepageField) {
     setSelected((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (next.has(field)) {
-        next.delete(field)
+        next.delete(field);
       } else {
-        next.add(field)
+        next.add(field);
       }
-      return next
-    })
+      return next;
+    });
   }
 
   function handleClick() {
-    if (
-      selected.size ===
-      0
-    )
-      return
-    setError(null)
+    if (selected.size === 0) return;
+    setError(null);
     startTransition(async () => {
       const fields = ALL_FIELDS.every((f) => selected.has(f))
         ? undefined
-        : ALL_FIELDS.filter((f) => selected.has(f))
+        : ALL_FIELDS.filter((f) => selected.has(f));
 
       const result = await enqueueHomepageSeo(siteId, {
         fields,
         currentContent,
         currentScore,
-      })
+      });
       if (result.error) {
-        setError(result.error)
+        setError(result.error);
       }
-    })
+    });
   }
 
-  const hasAny = selected.size > 0
+  const hasAny = selected.size > 0;
 
   return (
     <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4 space-y-3">
       {}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-foreground">
-            Generate with AI
-          </p>
+          <p className="text-sm font-medium text-foreground">Generate with AI</p>
           {currentScore != null && (
             <p className="text-xs text-muted-foreground mt-0.5">
-              Current content quality:{" "}
-              <span className="font-mono">{currentScore}/100</span>
+              Current content quality: <span className="font-mono">{currentScore}/100</span>
               {currentScore < 70
                 ? " — AI will try to improve"
                 : currentScore >= 80
@@ -108,9 +98,7 @@ export function GenerateHomepageSeoButton({
                 : "border-border bg-transparent text-muted-foreground hover:text-foreground",
             ].join(" ")}
           >
-            <span className={selected.has(field) ? "opacity-100" : "opacity-0"}>
-              ✓
-            </span>
+            <span className={selected.has(field) ? "opacity-100" : "opacity-0"}>✓</span>
             {FIELD_LABELS[field]}
           </button>
         ))}
@@ -176,14 +164,10 @@ export function GenerateHomepageSeoButton({
             }`
           )}
         </button>
-        {!hasAny && (
-          <p className="text-xs text-muted-foreground">
-            Select at least one field
-          </p>
-        )}
+        {!hasAny && <p className="text-xs text-muted-foreground">Select at least one field</p>}
       </div>
 
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
-  )
+  );
 }

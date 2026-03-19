@@ -66,13 +66,8 @@
       "is_prime": true,
       "detailed_description": null,
       "pros_cons": {
-        "pros": [
-          "Quality build",
-          "Good value"
-        ],
-        "cons": [
-          "Limited availability"
-        ]
+        "pros": ["Quality build", "Good value"],
+        "cons": ["Limited availability"]
       },
       "category_slug": "camping-gear-for-families-category-1"
     },

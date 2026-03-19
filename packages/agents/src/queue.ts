@@ -1,6 +1,6 @@
-import { Queue } from 'bullmq';
-import { Redis } from 'ioredis';
-import type { RedisOptions } from 'ioredis';
+import { Queue } from "bullmq";
+import { Redis } from "ioredis";
+import type { RedisOptions } from "ioredis";
 
 /**
  * Build Redis connection options from REDIS_URL.
@@ -11,15 +11,15 @@ export function createRedisOptions(): RedisOptions {
   const url = process.env.REDIS_URL;
 
   if (!url) {
-    throw new Error('Missing required environment variable: REDIS_URL');
+    throw new Error("Missing required environment variable: REDIS_URL");
   }
 
   const parsed = new URL(url);
-  const isTls = parsed.protocol === 'rediss:';
+  const isTls = parsed.protocol === "rediss:";
 
   const options: RedisOptions = {
     host: parsed.hostname,
-    port: parseInt(parsed.port || (isTls ? '6380' : '6379'), 10),
+    port: parseInt(parsed.port || (isTls ? "6380" : "6379"), 10),
     // BullMQ requirement: never queue commands when disconnected
     enableOfflineQueue: false,
     maxRetriesPerRequest: null,
@@ -28,7 +28,7 @@ export function createRedisOptions(): RedisOptions {
   if (parsed.password) {
     options.password = decodeURIComponent(parsed.password);
   }
-  if (parsed.username && parsed.username !== 'default') {
+  if (parsed.username && parsed.username !== "default") {
     options.username = parsed.username;
   }
   if (isTls) {
@@ -52,7 +52,7 @@ export function createRedisConnection(): Redis {
  */
 export function createGenerateQueue(): Queue {
   const connection = createRedisConnection();
-  return new Queue('generate', { connection });
+  return new Queue("generate", { connection });
 }
 
 // Singleton for use in the admin server action (short-lived Next.js process).
@@ -72,7 +72,7 @@ export function generateQueue(): Queue {
  */
 export function createDeployQueue(): Queue {
   const connection = createRedisConnection();
-  return new Queue('deploy', { connection });
+  return new Queue("deploy", { connection });
 }
 
 let _deployQueue: Queue | null = null;
@@ -90,7 +90,7 @@ export function deployQueue(): Queue {
  */
 export function createSslPollerQueue(): Queue {
   const connection = createRedisConnection();
-  return new Queue('ssl-poller', { connection });
+  return new Queue("ssl-poller", { connection });
 }
 
 let _sslPollerQueue: Queue | null = null;
@@ -108,7 +108,7 @@ export function sslPollerQueue(): Queue {
  */
 export function createAnalyticsAggregationQueue(): Queue {
   const connection = createRedisConnection();
-  return new Queue('analytics-aggregation', { connection });
+  return new Queue("analytics-aggregation", { connection });
 }
 
 let _analyticsAggregationQueue: Queue | null = null;
@@ -126,7 +126,7 @@ export function analyticsAggregationQueue(): Queue {
  */
 export function createProductRefreshQueue(): Queue {
   const connection = createRedisConnection();
-  return new Queue('product-refresh', { connection });
+  return new Queue("product-refresh", { connection });
 }
 
 let _productRefreshQueue: Queue | null = null;
@@ -144,7 +144,7 @@ export function productRefreshQueue(): Queue {
  */
 export function createNicheResearchQueue(): Queue {
   const connection = createRedisConnection();
-  return new Queue('niche-research', { connection });
+  return new Queue("niche-research", { connection });
 }
 
 let _nicheResearchQueue: Queue | null = null;
@@ -162,7 +162,7 @@ export function nicheResearchQueue(): Queue {
  */
 export function createSeoContentQueue(): Queue {
   const connection = createRedisConnection();
-  return new Queue('seo-content', { connection });
+  return new Queue("seo-content", { connection });
 }
 
 let _seoContentQueue: Queue | null = null;

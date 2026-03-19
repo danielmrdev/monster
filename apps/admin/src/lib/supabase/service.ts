@@ -7,4 +7,4 @@
  * The client throws a descriptive error at call time if SUPABASE_SERVICE_ROLE_KEY
  * is missing (see packages/db/src/client.ts — D021).
  */
-export { createServiceClient } from '@monster/db';
+export { createServiceClient } from "@monster/db";

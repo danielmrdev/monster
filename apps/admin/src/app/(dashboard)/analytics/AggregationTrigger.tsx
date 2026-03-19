@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useState, useTransition } from 'react'
-import { Button } from '@/components/ui/button'
-import { enqueueAnalyticsAggregation } from './actions'
+import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { enqueueAnalyticsAggregation } from "./actions";
 
 /**
  * "Run Aggregation" button — enqueues an on-demand analytics aggregation job
@@ -15,19 +15,19 @@ import { enqueueAnalyticsAggregation } from './actions'
  *  - Worker logs: pm2 logs monster-worker --lines 20 | grep AnalyticsAggregationJob
  */
 export function AggregationTrigger() {
-  const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   function handleClick() {
-    setStatus(null)
+    setStatus(null);
     startTransition(async () => {
-      const result = await enqueueAnalyticsAggregation()
+      const result = await enqueueAnalyticsAggregation();
       if (result.ok) {
-        setStatus({ ok: true, message: `Queued for ${result.date}` })
+        setStatus({ ok: true, message: `Queued for ${result.date}` });
       } else {
-        setStatus({ ok: false, message: `Error: ${result.error ?? 'Unknown error'}` })
+        setStatus({ ok: false, message: `Error: ${result.error ?? "Unknown error"}` });
       }
-    })
+    });
   }
 
   return (
@@ -39,15 +39,15 @@ export function AggregationTrigger() {
         disabled={isPending}
         className="whitespace-nowrap"
       >
-        {isPending ? 'Queuing…' : 'Run Aggregation'}
+        {isPending ? "Queuing…" : "Run Aggregation"}
       </Button>
       {status && (
         <p
-          className={`text-xs ${status.ok ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}
+          className={`text-xs ${status.ok ? "text-green-600 dark:text-green-400" : "text-destructive"}`}
         >
           {status.message}
         </p>
       )}
     </div>
-  )
+  );
 }

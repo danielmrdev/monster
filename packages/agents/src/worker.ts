@@ -5,15 +5,15 @@
  * Reads env vars from process.env — caller is responsible for
  * loading .env before starting this process (e.g. via dotenv or pm2 env_file).
  */
-import 'dotenv/config';
-import { createServiceClient } from '@monster/db';
-import { GenerateSiteJob } from './jobs/generate-site.js';
-import { DeploySiteJob } from './jobs/deploy-site.js';
-import { SslPollerJob } from './jobs/ssl-poller.js';
-import { AnalyticsAggregationJob } from './jobs/analytics-aggregation.js';
-import { ProductRefreshJob } from './jobs/product-refresh.js';
-import { NicheResearcherJob } from './jobs/niche-researcher.js';
-import { SeoContentJob } from './jobs/seo-content.js';
+import "dotenv/config";
+import { createServiceClient } from "@monster/db";
+import { GenerateSiteJob } from "./jobs/generate-site.js";
+import { DeploySiteJob } from "./jobs/deploy-site.js";
+import { SslPollerJob } from "./jobs/ssl-poller.js";
+import { AnalyticsAggregationJob } from "./jobs/analytics-aggregation.js";
+import { ProductRefreshJob } from "./jobs/product-refresh.js";
+import { NicheResearcherJob } from "./jobs/niche-researcher.js";
+import { SeoContentJob } from "./jobs/seo-content.js";
 
 const generateJob = new GenerateSiteJob();
 const generateWorker = generateJob.register();
@@ -31,13 +31,15 @@ const analyticsWorker = analyticsJob.register();
 // ProductRefreshJob: fetch live sites, register per-site schedulers, start worker
 const supabase = createServiceClient();
 const { data: liveSites, error: liveSitesError } = await supabase
-  .from('sites')
-  .select('id, refresh_interval_hours')
-  .eq('status', 'live')
-  .eq('is_active', true);
+  .from("sites")
+  .select("id, refresh_interval_hours")
+  .eq("status", "live")
+  .eq("is_active", true);
 
 if (liveSitesError) {
-  console.error(`[worker] Failed to fetch live sites for ProductRefreshJob scheduler: ${liveSitesError.message}`);
+  console.error(
+    `[worker] Failed to fetch live sites for ProductRefreshJob scheduler: ${liveSitesError.message}`,
+  );
 }
 
 const productRefreshJob = new ProductRefreshJob();
@@ -60,8 +62,8 @@ console.log('[worker] NicheResearcherJob listening on queue "niche-research"');
 console.log('[worker] SeoContentJob listening on queue "seo-content"');
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('[worker] SIGTERM received — closing workers');
+process.on("SIGTERM", async () => {
+  console.log("[worker] SIGTERM received — closing workers");
   await Promise.all([
     generateWorker.close(),
     deployWorker.close(),
@@ -74,8 +76,8 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-process.on('SIGINT', async () => {
-  console.log('[worker] SIGINT received — closing workers');
+process.on("SIGINT", async () => {
+  console.log("[worker] SIGINT received — closing workers");
   await Promise.all([
     generateWorker.close(),
     deployWorker.close(),

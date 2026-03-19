@@ -1,6 +1,6 @@
-import { marked } from "marked"
-import { scorePage } from "@monster/seo-scorer"
-import type { PageType } from "@monster/seo-scorer"
+import { marked } from "marked";
+import { scorePage } from "@monster/seo-scorer";
+import type { PageType } from "@monster/seo-scorer";
 
 /**
  * Score raw markdown text for content quality.
@@ -23,7 +23,7 @@ export function scoreMarkdown(
   pageType: PageType,
   language = "en",
 ): number {
-  const htmlBody = marked(text) as string
+  const htmlBody = marked(text) as string;
   const html = `<!DOCTYPE html>
 <html lang="${language}">
 <head>
@@ -34,7 +34,7 @@ export function scoreMarkdown(
 <h1>${keyword}</h1>
 ${htmlBody}
 </body>
-</html>`
-  const result = scorePage(html, keyword, pageType, language)
-  return result.content_quality
+</html>`;
+  const result = scorePage(html, keyword, pageType, language);
+  return result.content_quality;
 }

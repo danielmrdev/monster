@@ -6,16 +6,16 @@
  *
  * D132: agent_prompts table with unique (agent_key, prompt_type).
  */
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Known agent keys — used as agent_key values in agent_prompts table.
  * Import this in UI code to populate the editor with canonical keys.
  */
 export const AGENT_KEYS = {
-  CONTENT_GENERATOR: 'content_generator',
-  NICHE_RESEARCHER: 'niche_researcher',
-  MONSTER: 'monster',
+  CONTENT_GENERATOR: "content_generator",
+  NICHE_RESEARCHER: "niche_researcher",
+  MONSTER: "monster",
 } as const;
 
 export type AgentKey = (typeof AGENT_KEYS)[keyof typeof AGENT_KEYS];
@@ -36,10 +36,10 @@ export async function getAgentPrompt(
 ): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
-    .from('agent_prompts')
-    .select('content')
-    .eq('agent_key', agentKey)
-    .eq('prompt_type', promptType)
+    .from("agent_prompts")
+    .select("content")
+    .eq("agent_key", agentKey)
+    .eq("prompt_type", promptType)
     .maybeSingle();
 
   if (error) {

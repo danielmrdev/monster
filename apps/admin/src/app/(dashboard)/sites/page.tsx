@@ -1,7 +1,7 @@
-import Link from 'next/link'
-import { createServiceClient } from '@/lib/supabase/service'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import Link from "next/link";
+import { createServiceClient } from "@/lib/supabase/service";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -9,33 +9,33 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import type { SiteStatus } from '@monster/shared'
+} from "@/components/ui/table";
+import type { SiteStatus } from "@monster/shared";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
-function statusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+function statusBadgeVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
   switch (status as SiteStatus) {
-    case 'live':
-      return 'default'
-    case 'error':
-      return 'destructive'
-    case 'draft':
-      return 'outline'
+    case "live":
+      return "default";
+    case "error":
+      return "destructive";
+    case "draft":
+      return "outline";
     default:
-      return 'secondary'
+      return "secondary";
   }
 }
 
 export default async function SitesPage() {
-  const supabase = createServiceClient()
+  const supabase = createServiceClient();
   const { data: sites, error } = await supabase
-    .from('sites')
-    .select('id, name, domain, status, is_active, market, created_at')
-    .order('created_at', { ascending: false })
+    .from("sites")
+    .select("id, name, domain, status, is_active, market, created_at")
+    .order("created_at", { ascending: false });
 
   if (error) {
-    throw new Error(`Failed to fetch sites: ${error.message}`)
+    throw new Error(`Failed to fetch sites: ${error.message}`);
   }
 
   return (
@@ -78,31 +78,25 @@ export default async function SitesPage() {
               {sites.map((site) => (
                 <TableRow key={site.id}>
                   <TableCell className="font-medium">
-                    <Link
-                      href={`/sites/${site.id}`}
-                      className="text-primary hover:underline"
-                    >
+                    <Link href={`/sites/${site.id}`} className="text-primary hover:underline">
                       {site.name}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {site.domain || '—'}
-                  </TableCell>
+                  <TableCell className="text-muted-foreground">{site.domain || "—"}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Badge variant={statusBadgeVariant(site.status)}>
-                        {site.status}
-                      </Badge>
+                      <Badge variant={statusBadgeVariant(site.status)}>{site.status}</Badge>
                       {!site.is_active && (
-                        <Badge variant="outline" className="text-muted-foreground border-muted-foreground/40">
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground border-muted-foreground/40"
+                        >
                           inactive
                         </Badge>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {site.market || '—'}
-                  </TableCell>
+                  <TableCell className="text-muted-foreground">{site.market || "—"}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {new Date(site.created_at).toLocaleDateString()}
                   </TableCell>
@@ -113,5 +107,5 @@ export default async function SitesPage() {
         </Card>
       )}
     </div>
-  )
+  );
 }

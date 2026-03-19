@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useTransition, useState } from 'react';
-import { enqueueAllProductsSeo } from '../../seo/actions';
+import { useTransition, useState } from "react";
+import { enqueueAllProductsSeo } from "../../seo/actions";
 
 interface GenerateAllProductsSeoButtonProps {
   siteId: string;
@@ -23,7 +23,10 @@ interface GenerateAllProductsSeoButtonProps {
  * ai_jobs.status='failed' + ai_jobs.error column. Any enqueue-level error
  * is surfaced inline below this button via the error state.
  */
-export function GenerateAllProductsSeoButton({ siteId, categoryId }: GenerateAllProductsSeoButtonProps) {
+export function GenerateAllProductsSeoButton({
+  siteId,
+  categoryId,
+}: GenerateAllProductsSeoButtonProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -70,12 +73,10 @@ export function GenerateAllProductsSeoButton({ siteId, categoryId }: GenerateAll
             Generating…
           </>
         ) : (
-          'Generate All SEO'
+          "Generate All SEO"
         )}
       </button>
-      {error && (
-        <p className="text-xs text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 }

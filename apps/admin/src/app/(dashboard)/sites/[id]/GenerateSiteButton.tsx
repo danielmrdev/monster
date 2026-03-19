@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useTransition, useState } from 'react';
-import { enqueueSiteGeneration } from './actions';
+import { useTransition, useState } from "react";
+import { enqueueSiteGeneration } from "./actions";
 
 interface GenerateSiteButtonProps {
   siteId: string;
@@ -65,12 +65,10 @@ export function GenerateSiteButton({ siteId, onEnqueued }: GenerateSiteButtonPro
             Generating…
           </>
         ) : (
-          'Generate Site'
+          "Generate Site"
         )}
       </button>
-      {error && (
-        <p className="text-xs text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   );
 }

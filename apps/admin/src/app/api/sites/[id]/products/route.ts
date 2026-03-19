@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/service'
+import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 25;
 
 interface Params {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -15,40 +15,43 @@ interface Params {
  * Returns: { products, total, page, pageSize, totalPages }
  */
 export async function GET(request: NextRequest, { params }: Params) {
-  const { id: siteId } = await params
-  const { searchParams } = request.nextUrl
+  const { id: siteId } = await params;
+  const { searchParams } = request.nextUrl;
 
-  const q = searchParams.get('q')?.trim() ?? ''
-  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? String(PAGE_SIZE), 10)))
-  const from = (page - 1) * limit
-  const to = from + limit - 1
+  const q = searchParams.get("q")?.trim() ?? "";
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+  const limit = Math.min(
+    100,
+    Math.max(1, parseInt(searchParams.get("limit") ?? String(PAGE_SIZE), 10)),
+  );
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
 
-  const supabase = createServiceClient()
+  const supabase = createServiceClient();
 
   let query = supabase
-    .from('tsa_products')
+    .from("tsa_products")
     .select(
-      'id, asin, title, current_price, rating, review_count, is_prime, source_image_url, images',
-      { count: 'exact' }
+      "id, asin, title, current_price, rating, review_count, is_prime, source_image_url, images",
+      { count: "exact" },
     )
-    .eq('site_id', siteId)
-    .order('created_at', { ascending: false })
-    .range(from, to)
+    .eq("site_id", siteId)
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (q) {
     // ilike on title OR exact ASIN match
-    query = query.or(`title.ilike.%${q}%,asin.ilike.%${q}%`)
+    query = query.or(`title.ilike.%${q}%,asin.ilike.%${q}%`);
   }
 
-  const { data, error, count } = await query
+  const { data, error, count } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const total = count ?? 0
-  const totalPages = Math.ceil(total / limit)
+  const total = count ?? 0;
+  const totalPages = Math.ceil(total / limit);
 
   return NextResponse.json({
     products: data ?? [],
@@ -56,5 +59,5 @@ export async function GET(request: NextRequest, { params }: Params) {
     page,
     pageSize: limit,
     totalPages,
-  })
+  });
 }

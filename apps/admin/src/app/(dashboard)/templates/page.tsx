@@ -1,38 +1,38 @@
-import Link from 'next/link'
-import { createServiceClient } from '@/lib/supabase/service'
-import { DeleteTemplateButton } from './DeleteTemplateButton'
+import Link from "next/link";
+import { createServiceClient } from "@/lib/supabase/service";
+import { DeleteTemplateButton } from "./DeleteTemplateButton";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 const TYPE_LABELS: Record<string, string> = {
-  privacy: 'Privacy Policy',
-  terms: 'Terms of Use',
-  cookies: 'Cookie Policy',
-  contact: 'Contact',
-}
+  privacy: "Privacy Policy",
+  terms: "Terms of Use",
+  cookies: "Cookie Policy",
+  contact: "Contact",
+};
 
 interface Template {
-  id: string
-  title: string
-  type: string
-  language: string
-  updated_at: string
+  id: string;
+  title: string;
+  type: string;
+  language: string;
+  updated_at: string;
 }
 
 export default async function TemplatesPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createServiceClient() as any
+  const supabase = createServiceClient() as any;
   const { data: templates } = await supabase
-    .from('legal_templates')
-    .select('id, title, type, language, updated_at')
-    .order('type', { ascending: true })
-    .order('language', { ascending: true })
+    .from("legal_templates")
+    .select("id, title, type, language, updated_at")
+    .order("type", { ascending: true })
+    .order("language", { ascending: true });
 
   const byType = (templates ?? []).reduce((acc: Record<string, Template[]>, t: Template) => {
-    if (!acc[t.type]) acc[t.type] = []
-    acc[t.type].push(t)
-    return acc
-  }, {})
+    if (!acc[t.type]) acc[t.type] = [];
+    acc[t.type].push(t);
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -40,7 +40,8 @@ export default async function TemplatesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Legal Templates</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Create and manage reusable legal page templates. Assign them to sites in the site edit page.
+            Create and manage reusable legal page templates. Assign them to sites in the site edit
+            page.
           </p>
         </div>
         <Link
@@ -60,12 +61,17 @@ export default async function TemplatesPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {['privacy', 'terms', 'cookies', 'contact'].map((type) => {
-            const items: Template[] = byType[type] ?? []
+          {["privacy", "terms", "cookies", "contact"].map((type) => {
+            const items: Template[] = byType[type] ?? [];
             return (
-              <div key={type} className="rounded-xl border border-border bg-card divide-y divide-border">
+              <div
+                key={type}
+                className="rounded-xl border border-border bg-card divide-y divide-border"
+              >
                 <div className="px-5 py-3">
-                  <h2 className="text-sm font-semibold text-foreground">{TYPE_LABELS[type] ?? type}</h2>
+                  <h2 className="text-sm font-semibold text-foreground">
+                    {TYPE_LABELS[type] ?? type}
+                  </h2>
                 </div>
                 {items.length === 0 ? (
                   <div className="px-5 py-4">
@@ -78,7 +84,7 @@ export default async function TemplatesPage() {
                         <p className="text-sm font-medium text-foreground">{t.title}</p>
                         <p className="text-xs text-muted-foreground">
                           Language: <span className="font-mono">{t.language}</span>
-                          {' · '}Updated {new Date(t.updated_at).toLocaleDateString()}
+                          {" · "}Updated {new Date(t.updated_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -94,10 +100,10 @@ export default async function TemplatesPage() {
                   ))
                 )}
               </div>
-            )
+            );
           })}
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -47,6 +47,7 @@ packages/
 Phase 1 implements ONLY TSA (Amazon Affiliate) sites. Architecture must be extensible for future site types (AdSense, Multi-Affiliate, Lead Gen, etc.).
 
 ### TSA Site Structure
+
 - **Homepage:** Hero (Unsplash stock) + category grid + featured products + SEO text
 - **Category pages:** SEO text (~400 words) + product grid. Category image = representative product image.
 - **Product pages:** Large image + gallery (local, downloaded from Amazon, optimized WebP), AI content
@@ -55,6 +56,7 @@ Phase 1 implements ONLY TSA (Amazon Affiliate) sites. Architecture must be exten
 - **Images:** All served as local static assets (never hotlinked). Products: Amazon download → WebP. Stock: Unsplash. AI: on user demand only.
 
 ### TSA Data Model
+
 - Site: name, domain, niche, market (1 Amazon market), language (1 language for all content), currency, affiliate_tag, template, customization (colors, typography, logo, favicon)
 - Rule: 1 site = 1 language + 1 Amazon market. All content, UI, legal pages in that language. All affiliate links to that market's Amazon domain.
 - Category: name, slug, representative_product_image, SEO text, keywords[]
@@ -73,10 +75,12 @@ Phase 1 implements ONLY TSA (Amazon Affiliate) sites. Architecture must be exten
 ## AI Agents
 
 ### Agent SDK agents (interactive, autonomous, with built-in tools)
+
 1. **Monster** — Chat agent (`ClaudeSDKClient` with streaming). Full portfolio context via system prompt + MCP server for DB access. Tools: WebSearch, WebFetch, Bash, custom MCP tools.
 2. **NicheResearcher** — Autonomous background agent (`query()` with `maxTurns` limit). Tools: DataForSEO (Labs, SERP, Keywords, Merchant/Amazon), Spaceship (domain availability only — NEVER purchases), WebSearch, WebFetch. Runs in BullMQ job, streams results to DB.
 
 ### Claude API agents (batch content generation via BullMQ)
+
 3. **ContentGenerator** — Batch content via `@anthropic-ai/sdk`. Generates SEO texts, product descriptions, pros/cons, homepage copy. Uses structured outputs (Zod schemas) for consistent format.
 4. **ContentOptimizer** (Phase 2+) — Analyze + improve existing content based on performance
 5. **PerformanceMonitor** (Phase 2+) — Monitor metrics, detect issues, suggest actions

@@ -1,54 +1,60 @@
-'use server';
+"use server";
 
-import { createServiceClient } from '@/lib/supabase/service';
-import { generateQueue, deployQueue, productRefreshQueue } from '@monster/agents';
-import { SpaceshipClient } from '@monster/domains';
+import { createServiceClient } from "@/lib/supabase/service";
+import { generateQueue, deployQueue, productRefreshQueue } from "@monster/agents";
+import { SpaceshipClient } from "@monster/domains";
 
 /**
  * Enqueue a site generation job.
  * Inserts an ai_jobs row with status='pending', then adds to BullMQ queue.
  * The worker upserts the row to 'running' when it picks up the job.
  */
-export async function enqueueSiteGeneration(siteId: string): Promise<{ jobId: string | null; error?: string }> {
+export async function enqueueSiteGeneration(
+  siteId: string,
+): Promise<{ jobId: string | null; error?: string }> {
   const supabase = createServiceClient();
 
   // Insert pending ai_jobs row first so UI can show 'Pending' immediately
   const { data: jobRow, error: insertErr } = await supabase
-    .from('ai_jobs')
+    .from("ai_jobs")
     .insert({
-      job_type: 'generate_site',
+      job_type: "generate_site",
       site_id: siteId,
-      status: 'pending',
-      payload: { phase: 'queued' },
+      status: "pending",
+      payload: { phase: "queued" },
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (insertErr || !jobRow) {
-    return { jobId: null, error: insertErr?.message ?? 'Failed to create job record' };
+    return { jobId: null, error: insertErr?.message ?? "Failed to create job record" };
   }
 
   try {
     const queue = generateQueue();
-    const bullJob = await queue.add('generate-site', { siteId }, {
-      jobId: jobRow.id,
-      removeOnComplete: false,
-      removeOnFail: false,
-    });
+    const bullJob = await queue.add(
+      "generate-site",
+      { siteId },
+      {
+        jobId: jobRow.id,
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    );
 
     // Update the ai_jobs row with the bull_job_id
     await supabase
-      .from('ai_jobs')
+      .from("ai_jobs")
       .update({ bull_job_id: bullJob.id ?? null })
-      .eq('id', jobRow.id);
+      .eq("id", jobRow.id);
 
     return { jobId: jobRow.id };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await supabase
-      .from('ai_jobs')
-      .update({ status: 'failed', error: message, completed_at: new Date().toISOString() })
-      .eq('id', jobRow.id);
+      .from("ai_jobs")
+      .update({ status: "failed", error: message, completed_at: new Date().toISOString() })
+      .eq("id", jobRow.id);
     return { jobId: jobRow.id, error: message };
   }
 }
@@ -60,11 +66,11 @@ export async function enqueueSiteGeneration(siteId: string): Promise<{ jobId: st
 export async function getLatestJobStatus(siteId: string) {
   const supabase = createServiceClient();
   const { data } = await supabase
-    .from('ai_jobs')
-    .select('id, status, started_at, completed_at, error, payload, created_at')
-    .eq('site_id', siteId)
-    .eq('job_type', 'generate_site')
-    .order('created_at', { ascending: false })
+    .from("ai_jobs")
+    .select("id, status, started_at, completed_at, error, payload, created_at")
+    .eq("site_id", siteId)
+    .eq("job_type", "generate_site")
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -78,44 +84,50 @@ export async function getLatestJobStatus(siteId: string) {
  * worker transitions status pending→running→completed/failed; payload.phase tracks
  * rsync/caddy/cloudflare steps and is surfaced in DeployStatus component.
  */
-export async function enqueueSiteDeploy(siteId: string): Promise<{ jobId: string | null; error?: string }> {
+export async function enqueueSiteDeploy(
+  siteId: string,
+): Promise<{ jobId: string | null; error?: string }> {
   const supabase = createServiceClient();
 
   const { data: jobRow, error: insertErr } = await supabase
-    .from('ai_jobs')
+    .from("ai_jobs")
     .insert({
-      job_type: 'deploy_site',
+      job_type: "deploy_site",
       site_id: siteId,
-      status: 'pending',
-      payload: { phase: 'queued' },
+      status: "pending",
+      payload: { phase: "queued" },
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (insertErr || !jobRow) {
-    return { jobId: null, error: insertErr?.message ?? 'Failed to create deploy job record' };
+    return { jobId: null, error: insertErr?.message ?? "Failed to create deploy job record" };
   }
 
   try {
     const queue = deployQueue();
-    const bullJob = await queue.add('deploy-site', { siteId }, {
-      jobId: jobRow.id,
-      removeOnComplete: false,
-      removeOnFail: false,
-    });
+    const bullJob = await queue.add(
+      "deploy-site",
+      { siteId },
+      {
+        jobId: jobRow.id,
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    );
 
     await supabase
-      .from('ai_jobs')
+      .from("ai_jobs")
       .update({ bull_job_id: bullJob.id ?? null })
-      .eq('id', jobRow.id);
+      .eq("id", jobRow.id);
 
     return { jobId: jobRow.id };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await supabase
-      .from('ai_jobs')
-      .update({ status: 'failed', error: message, completed_at: new Date().toISOString() })
-      .eq('id', jobRow.id);
+      .from("ai_jobs")
+      .update({ status: "failed", error: message, completed_at: new Date().toISOString() })
+      .eq("id", jobRow.id);
     return { jobId: jobRow.id, error: message };
   }
 }
@@ -128,11 +140,11 @@ export async function enqueueSiteDeploy(siteId: string): Promise<{ jobId: string
 export async function getLatestDeployStatus(siteId: string) {
   const supabase = createServiceClient();
   const { data } = await supabase
-    .from('ai_jobs')
-    .select('id, status, started_at, completed_at, error, payload, created_at')
-    .eq('site_id', siteId)
-    .eq('job_type', 'deploy_site')
-    .order('created_at', { ascending: false })
+    .from("ai_jobs")
+    .select("id, status, started_at, completed_at, error, payload, created_at")
+    .eq("site_id", siteId)
+    .eq("job_type", "deploy_site")
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -148,22 +160,18 @@ export async function getDeploymentCard(siteId: string) {
   const supabase = createServiceClient();
 
   const [siteResult, deploymentResult, domainResult] = await Promise.all([
+    supabase.from("sites").select("id, status").eq("id", siteId).single(),
     supabase
-      .from('sites')
-      .select('id, status')
-      .eq('id', siteId)
-      .single(),
-    supabase
-      .from('deployments')
-      .select('id, status, deployed_at, duration_ms, error, created_at')
-      .eq('site_id', siteId)
-      .order('created_at', { ascending: false })
+      .from("deployments")
+      .select("id, status, deployed_at, duration_ms, error, created_at")
+      .eq("site_id", siteId)
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
     supabase
-      .from('domains')
-      .select('cf_zone_id, cf_nameservers, dns_status')
-      .eq('site_id', siteId)
+      .from("domains")
+      .select("cf_zone_id, cf_nameservers, dns_status")
+      .eq("site_id", siteId)
       .limit(1)
       .maybeSingle(),
   ]);
@@ -213,31 +221,31 @@ export async function registerDomain(
 
   // Guard 1: domains row must exist
   const { data: domainRow } = await supabase
-    .from('domains')
-    .select('cf_nameservers, spaceship_id')
-    .eq('site_id', siteId)
+    .from("domains")
+    .select("cf_nameservers, spaceship_id")
+    .eq("site_id", siteId)
     .limit(1)
     .maybeSingle();
 
   if (!domainRow) {
-    return { error: 'Deploy the site first to generate Cloudflare nameservers.' };
+    return { error: "Deploy the site first to generate Cloudflare nameservers." };
   }
 
   // Guard 2: cf_nameservers must be populated
   if (!domainRow.cf_nameservers || domainRow.cf_nameservers.length === 0) {
-    return { error: 'Cloudflare nameservers not yet assigned — deploy the site first.' };
+    return { error: "Cloudflare nameservers not yet assigned — deploy the site first." };
   }
 
   // Guard 3: spaceship_contact_id must be in settings (D028 pattern)
   const { data: contactRow } = await supabase
-    .from('settings')
-    .select('value')
-    .eq('key', 'spaceship_contact_id')
+    .from("settings")
+    .select("value")
+    .eq("key", "spaceship_contact_id")
     .maybeSingle();
 
   const contactId = contactRow ? (contactRow.value as { value: string }).value : null;
   if (!contactId) {
-    return { error: 'spaceship_contact_id not configured — add it in Settings.' };
+    return { error: "spaceship_contact_id not configured — add it in Settings." };
   }
 
   try {
@@ -249,18 +257,18 @@ export async function registerDomain(
     console.log(`[registerDomain] Operation ${operationId} submitted for ${domain}`);
 
     // Poll up to 10 × 2s
-    let finalStatus: string = 'pending';
+    let finalStatus: string = "pending";
     for (let attempt = 1; attempt <= 10; attempt++) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       finalStatus = await client.pollOperation(operationId);
       console.log(`[registerDomain] Poll ${attempt}/10 for op ${operationId}: ${finalStatus}`);
-      if (finalStatus === 'success' || finalStatus === 'failed') break;
+      if (finalStatus === "success" || finalStatus === "failed") break;
     }
 
-    if (finalStatus === 'failed') {
+    if (finalStatus === "failed") {
       return { error: `Spaceship registration failed (operation: ${operationId})` };
     }
-    if (finalStatus !== 'success') {
+    if (finalStatus !== "success") {
       return {
         error: `Registration timed out — check Spaceship account for operation ${operationId}`,
       };
@@ -272,13 +280,13 @@ export async function registerDomain(
 
     // Persist result to domains row
     await supabase
-      .from('domains')
+      .from("domains")
       .update({
-        registrar: 'spaceship',
+        registrar: "spaceship",
         registered_at: new Date().toISOString(),
         spaceship_id: operationId,
       })
-      .eq('site_id', siteId);
+      .eq("site_id", siteId);
 
     console.log(`[registerDomain] Registration complete for ${domain}, op ${operationId}`);
     return { success: true, nameservers: domainRow.cf_nameservers };
@@ -300,7 +308,7 @@ export async function enqueueProductRefresh(
   try {
     const queue = productRefreshQueue();
     const job = await queue.add(
-      'refresh-site',
+      "refresh-site",
       { siteId },
       { removeOnComplete: true, removeOnFail: false },
     );

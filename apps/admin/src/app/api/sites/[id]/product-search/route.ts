@@ -1,26 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/service'
-import { DataForSEOClient } from '@monster/agents'
+import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
+import { DataForSEOClient } from "@monster/agents";
 
 // DataForSEO Merchant API uses async task flow (task_post → poll → task_get).
 // Allow up to 60s for the polling to complete.
-export const maxDuration = 60
+export const maxDuration = 60;
 
 interface Params {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }
 
 export interface SearchResultItem {
-  asin: string
-  title: string
-  imageUrl: string | null
-  price: number | null
-  rating: number
-  reviewCount: number
-  isPrime: boolean
-  isBestSeller: boolean
+  asin: string;
+  title: string;
+  imageUrl: string | null;
+  price: number | null;
+  rating: number;
+  reviewCount: number;
+  isPrime: boolean;
+  isBestSeller: boolean;
   /** Whether this ASIN already exists in the site */
-  alreadyAdded: boolean
+  alreadyAdded: boolean;
 }
 
 /**
@@ -33,37 +33,37 @@ export interface SearchResultItem {
  * Uses async task flow (task_post → poll → task_get/advanced) — expect 15-30s.
  */
 export async function GET(request: NextRequest, { params }: Params) {
-  const { id: siteId } = await params
-  const q = request.nextUrl.searchParams.get('q')?.trim()
+  const { id: siteId } = await params;
+  const q = request.nextUrl.searchParams.get("q")?.trim();
 
   if (!q) {
-    return NextResponse.json({ error: 'q query param required' }, { status: 400 })
+    return NextResponse.json({ error: "q query param required" }, { status: 400 });
   }
 
-  const supabase = createServiceClient()
+  const supabase = createServiceClient();
   const { data: site, error: siteError } = await supabase
-    .from('sites')
-    .select('market')
-    .eq('id', siteId)
-    .single()
+    .from("sites")
+    .select("market")
+    .eq("id", siteId)
+    .single();
 
   if (siteError || !site) {
-    return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+    return NextResponse.json({ error: "Site not found" }, { status: 404 });
   }
 
-  const market = site.market ?? 'ES'
+  const market = site.market ?? "ES";
 
   try {
-    const client = new DataForSEOClient()
-    const products = await client.searchProducts(q, market, 100)
+    const client = new DataForSEOClient();
+    const products = await client.searchProducts(q, market, 100);
 
     // Fetch existing ASINs for this site to flag already-added ones
     const { data: existing } = await supabase
-      .from('tsa_products')
-      .select('asin')
-      .eq('site_id', siteId)
+      .from("tsa_products")
+      .select("asin")
+      .eq("site_id", siteId);
 
-    const existingAsins = new Set((existing ?? []).map((r) => r.asin))
+    const existingAsins = new Set((existing ?? []).map((r) => r.asin));
 
     const results: SearchResultItem[] = products.map((p) => ({
       asin: p.asin,
@@ -75,22 +75,24 @@ export async function GET(request: NextRequest, { params }: Params) {
       isPrime: p.isPrime,
       isBestSeller: p.isBestSeller,
       alreadyAdded: existingAsins.has(p.asin),
-    }))
+    }));
 
-    console.log(`[product-search] siteId=${siteId} q="${q}" market=${market} results=${results.length}`)
-    return NextResponse.json({ results, market })
+    console.log(
+      `[product-search] siteId=${siteId} q="${q}" market=${market} results=${results.length}`,
+    );
+    return NextResponse.json({ results, market });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error(`[product-search] siteId=${siteId} q="${q}" error=${message}`)
-    return NextResponse.json({ error: message }, { status: 500 })
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[product-search] siteId=${siteId} q="${q}" error=${message}`);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 // ── Bulk add ──────────────────────────────────────────────────────────────────
 
 interface BulkAddBody {
-  products: SearchResultItem[]
-  categoryIds: string[]
+  products: SearchResultItem[];
+  categoryIds: string[];
 }
 
 /**
@@ -104,56 +106,52 @@ interface BulkAddBody {
  * Returns: { added: number, skipped: number }
  */
 export async function POST(request: NextRequest, { params }: Params) {
-  const { id: siteId } = await params
+  const { id: siteId } = await params;
 
-  let body: BulkAddBody
+  let body: BulkAddBody;
   try {
-    body = await request.json()
+    body = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { products, categoryIds = [] } = body
+  const { products, categoryIds = [] } = body;
 
   if (!Array.isArray(products) || products.length === 0) {
-    return NextResponse.json({ error: 'products array required' }, { status: 400 })
+    return NextResponse.json({ error: "products array required" }, { status: 400 });
   }
 
   // Verify site exists
-  const supabase = createServiceClient()
-  const { data: site } = await supabase
-    .from('sites')
-    .select('id')
-    .eq('id', siteId)
-    .single()
+  const supabase = createServiceClient();
+  const { data: site } = await supabase.from("sites").select("id").eq("id", siteId).single();
 
   if (!site) {
-    return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+    return NextResponse.json({ error: "Site not found" }, { status: 404 });
   }
 
   // Fetch existing ASINs to skip duplicates
   const { data: existing } = await supabase
-    .from('tsa_products')
-    .select('asin')
-    .eq('site_id', siteId)
+    .from("tsa_products")
+    .select("asin")
+    .eq("site_id", siteId);
 
-  const existingAsins = new Set((existing ?? []).map((r) => r.asin))
+  const existingAsins = new Set((existing ?? []).map((r) => r.asin));
 
-  const toInsert = products.filter((p) => !existingAsins.has(p.asin))
-  let added = 0
-  const skipped = products.length - toInsert.length
+  const toInsert = products.filter((p) => !existingAsins.has(p.asin));
+  let added = 0;
+  const skipped = products.length - toInsert.length;
 
   if (toInsert.length === 0) {
-    return NextResponse.json({ added: 0, skipped })
+    return NextResponse.json({ added: 0, skipped });
   }
 
   // Insert products one by one to collect IDs for category linking
-  const insertedIds: string[] = []
+  const insertedIds: string[] = [];
 
   for (const p of toInsert) {
-    const slug = slugify(p.title || p.asin)
+    const slug = slugify(p.title || p.asin);
     const { data: row, error } = await supabase
-      .from('tsa_products')
+      .from("tsa_products")
       .insert({
         site_id: siteId,
         asin: p.asin,
@@ -165,16 +163,16 @@ export async function POST(request: NextRequest, { params }: Params) {
         is_prime: p.isPrime,
         source_image_url: p.imageUrl,
       })
-      .select('id')
-      .single()
+      .select("id")
+      .single();
 
     if (!error && row) {
-      insertedIds.push(row.id)
-      added++
-    } else if (error?.code === '23505') {
+      insertedIds.push(row.id);
+      added++;
+    } else if (error?.code === "23505") {
       // Race condition — already exists, skip silently
     } else if (error) {
-      console.error(`[product-search/bulk-add] ASIN=${p.asin} error=${error.message}`)
+      console.error(`[product-search/bulk-add] ASIN=${p.asin} error=${error.message}`);
     }
   }
 
@@ -185,12 +183,12 @@ export async function POST(request: NextRequest, { params }: Params) {
         category_id: categoryId,
         product_id: productId,
         position: pIdx * categoryIds.length + cIdx,
-      }))
-    )
-    await supabase.from('category_products').insert(links)
+      })),
+    );
+    await supabase.from("category_products").insert(links);
   }
 
-  return NextResponse.json({ added, skipped })
+  return NextResponse.json({ added, skipped });
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -198,9 +196,9 @@ export async function POST(request: NextRequest, { params }: Params) {
 function slugify(text: string): string {
   return text
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
 }

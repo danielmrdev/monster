@@ -1,20 +1,20 @@
-import { InfraService, type FleetHealth } from '@monster/deployment'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import TestConnectionButton from './TestConnectionButton'
-import ProvisionSection from './ProvisionSection'
+import { InfraService, type FleetHealth } from "@monster/deployment";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import TestConnectionButton from "./TestConnectionButton";
+import ProvisionSection from "./ProvisionSection";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function InfraPage() {
-  let fleet: FleetHealth
+  let fleet: FleetHealth;
 
   // InfraService.getFleetHealth() never throws by contract, but we wrap with
   // try/catch as a defensive measure against unexpected errors.
   try {
-    const infra = new InfraService()
-    fleet = await infra.getFleetHealth()
+    const infra = new InfraService();
+    fleet = await infra.getFleetHealth();
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
+    const message = err instanceof Error ? err.message : String(err);
     return (
       <div className="space-y-8">
         <h1 className="text-2xl font-bold tracking-tight">Infrastructure</h1>
@@ -29,7 +29,7 @@ export default async function InfraPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -37,10 +37,10 @@ export default async function InfraPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Infrastructure</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Live health status of all registered servers — fetched at{' '}
-          {new Date(fleet.fetchedAt).toLocaleString('en-GB', {
-            dateStyle: 'short',
-            timeStyle: 'medium',
+          Live health status of all registered servers — fetched at{" "}
+          {new Date(fleet.fetchedAt).toLocaleString("en-GB", {
+            dateStyle: "short",
+            timeStyle: "medium",
           })}
         </p>
       </div>
@@ -76,19 +76,17 @@ export default async function InfraPage() {
                 {fleet.servers.map((s) => (
                   <tr key={s.serverId} className="border-b last:border-0">
                     <td className="py-2 font-medium">{s.serverName}</td>
-                    <td className={`py-2 ${s.reachable ? 'text-green-500' : 'text-red-500'}`}>
-                      {s.reachable ? 'Yes' : 'No'}
+                    <td className={`py-2 ${s.reachable ? "text-green-500" : "text-red-500"}`}>
+                      {s.reachable ? "Yes" : "No"}
                     </td>
-                    <td className={`py-2 ${s.caddyActive ? 'text-green-500' : 'text-red-500'}`}>
-                      {s.caddyActive ? 'Active' : 'Inactive'}
+                    <td className={`py-2 ${s.caddyActive ? "text-green-500" : "text-red-500"}`}>
+                      {s.caddyActive ? "Active" : "Inactive"}
                     </td>
-                    <td className="py-2">
-                      {s.diskUsedPct != null ? `${s.diskUsedPct}%` : '—'}
-                    </td>
+                    <td className="py-2">{s.diskUsedPct != null ? `${s.diskUsedPct}%` : "—"}</td>
                     <td className="py-2">
                       {s.memUsedMb != null && s.memTotalMb != null
                         ? `${s.memUsedMb} / ${s.memTotalMb} MB`
-                        : '—'}
+                        : "—"}
                     </td>
                   </tr>
                 ))}
@@ -108,5 +106,5 @@ export default async function InfraPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

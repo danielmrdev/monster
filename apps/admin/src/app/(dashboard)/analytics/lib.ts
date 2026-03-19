@@ -10,19 +10,19 @@
  * analytics_daily rows instead of raw analytics_events rows.
  */
 
-import type { Database } from '@monster/db';
-import { createServiceClient } from '@/lib/supabase/service';
+import type { Database } from "@monster/db";
+import { createServiceClient } from "@/lib/supabase/service";
 
 // ---------------------------------------------------------------------------
 // Raw row types from generated Supabase types
 // ---------------------------------------------------------------------------
 
 type EventRow = Pick<
-  Database['public']['Tables']['analytics_events']['Row'],
-  'site_id' | 'event_type' | 'page_path' | 'visitor_hash'
+  Database["public"]["Tables"]["analytics_events"]["Row"],
+  "site_id" | "event_type" | "page_path" | "visitor_hash"
 >;
 
-type DailyRow = Database['public']['Tables']['analytics_daily']['Row'];
+type DailyRow = Database["public"]["Tables"]["analytics_daily"]["Row"];
 
 type SiteRow = { id: string; name: string };
 
@@ -63,17 +63,17 @@ export type { DailyRow, EventRow, SiteRow };
  * Returns UTC ISO start/end strings for the requested range.
  * Unknown range values default to 7d.
  */
-export function getDateRange(range: 'today' | '7d' | '30d' | string): DateRange {
+export function getDateRange(range: "today" | "7d" | "30d" | string): DateRange {
   const now = new Date();
 
-  if (range === 'today') {
+  if (range === "today") {
     return {
-      start: now.toISOString().slice(0, 10) + 'T00:00:00.000Z',
+      start: now.toISOString().slice(0, 10) + "T00:00:00.000Z",
       end: now.toISOString(),
     };
   }
 
-  if (range === '30d') {
+  if (range === "30d") {
     return {
       start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
       end: now.toISOString(),
@@ -109,24 +109,20 @@ export function computeMetrics(events: EventRow[], sites: SiteRow[]): SiteMetric
   return siteIds.map((siteId) => {
     const siteEvents = events.filter((e) => e.site_id === siteId);
 
-    const pageviewEvents = siteEvents.filter((e) => e.event_type === 'pageview');
+    const pageviewEvents = siteEvents.filter((e) => e.event_type === "pageview");
     const pageviews = pageviewEvents.length;
 
     // Guard null visitor_hash before building the Set
     // D080 — visitor_hash is approximate (daily SHA-256 without IP); unique_visitors is a lower bound, not exact.
     const uniqueVisitors = new Set(
-      siteEvents
-        .filter((e) => e.visitor_hash != null)
-        .map((e) => e.visitor_hash!)
+      siteEvents.filter((e) => e.visitor_hash != null).map((e) => e.visitor_hash!),
     ).size;
 
-    const affiliateClicks = siteEvents.filter(
-      (e) => e.event_type === 'click_affiliate'
-    ).length;
+    const affiliateClicks = siteEvents.filter((e) => e.event_type === "click_affiliate").length;
 
     // Top pages: aggregate pageview events by page_path, sort desc, take top 5
     const pagePathCounts = pageviewEvents.reduce<Record<string, number>>((acc, e) => {
-      const path = e.page_path ?? '(unknown)';
+      const path = e.page_path ?? "(unknown)";
       acc[path] = (acc[path] ?? 0) + 1;
       return acc;
     }, {});
@@ -162,7 +158,7 @@ export function computeMetrics(events: EventRow[], sites: SiteRow[]): SiteMetric
  */
 export async function fetchAnalyticsData(
   siteId: string | undefined,
-  range: 'today' | '7d' | '30d' | string = '7d'
+  range: "today" | "7d" | "30d" | string = "7d",
 ): Promise<AnalyticsData> {
   const supabase = createServiceClient();
   const dateRange = getDateRange(range);
@@ -171,28 +167,28 @@ export async function fetchAnalyticsData(
   // NOTE: fetching all rows for 30d works at Phase 1 volumes (<10k rows). If event
   // count exceeds 10k, add pagination (.range()) or switch aggregation to analytics_daily rows.
   let eventsQuery = supabase
-    .from('analytics_events')
-    .select('site_id, event_type, page_path, visitor_hash')
-    .gte('created_at', dateRange.start)
-    .lte('created_at', dateRange.end);
+    .from("analytics_events")
+    .select("site_id, event_type, page_path, visitor_hash")
+    .gte("created_at", dateRange.start)
+    .lte("created_at", dateRange.end);
 
   if (siteId !== undefined) {
-    eventsQuery = eventsQuery.eq('site_id', siteId);
+    eventsQuery = eventsQuery.eq("site_id", siteId);
   }
 
   // Build analytics_daily query
   let dailyQuery = supabase
-    .from('analytics_daily')
-    .select('*')
-    .gte('date', dateRange.start.slice(0, 10))
-    .lte('date', dateRange.end.slice(0, 10));
+    .from("analytics_daily")
+    .select("*")
+    .gte("date", dateRange.start.slice(0, 10))
+    .lte("date", dateRange.end.slice(0, 10));
 
   if (siteId !== undefined) {
-    dailyQuery = dailyQuery.eq('site_id', siteId);
+    dailyQuery = dailyQuery.eq("site_id", siteId);
   }
 
   // Fetch sites for name resolution — minimal columns
-  const sitesQuery = supabase.from('sites').select('id, name');
+  const sitesQuery = supabase.from("sites").select("id, name");
 
   // Parallel fetch — fail fast on any error
   const [eventsResult, dailyResult, sitesResult] = await Promise.all([

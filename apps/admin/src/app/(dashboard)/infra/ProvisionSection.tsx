@@ -1,12 +1,12 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
-import ProvisionModal from './ProvisionModal'
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import ProvisionModal from "./ProvisionModal";
 
 export default function ProvisionSection() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="space-y-4">
@@ -18,5 +18,5 @@ export default function ProvisionSection() {
       )}
       <ProvisionModal open={open} onClose={() => setOpen(false)} />
     </div>
-  )
+  );
 }

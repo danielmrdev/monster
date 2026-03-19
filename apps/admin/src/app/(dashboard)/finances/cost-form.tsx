@@ -1,21 +1,21 @@
-'use client'
+"use client";
 
-import { useActionState } from 'react'
-import { addCost, type AddCostState } from './actions'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
+import { useActionState } from "react";
+import { addCost, type AddCostState } from "./actions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 interface CostFormProps {
-  categories: { slug: string; name: string }[]
-  sites: { id: string; name: string }[]
+  categories: { slug: string; name: string }[];
+  sites: { id: string; name: string }[];
 }
 
 function FieldError({ messages }: { messages?: string[] }) {
-  if (!messages?.length) return null
-  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>
+  if (!messages?.length) return null;
+  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>;
 }
 
 function NativeSelect({
@@ -23,9 +23,9 @@ function NativeSelect({
   defaultValue,
   children,
 }: {
-  name: string
-  defaultValue?: string
-  children: React.ReactNode
+  name: string;
+  defaultValue?: string;
+  children: React.ReactNode;
 }) {
   return (
     <select
@@ -35,13 +35,13 @@ function NativeSelect({
     >
       {children}
     </select>
-  )
+  );
 }
 
 export function CostForm({ categories, sites }: CostFormProps) {
-  const [state, formAction, isPending] = useActionState<AddCostState, FormData>(addCost, null)
+  const [state, formAction, isPending] = useActionState<AddCostState, FormData>(addCost, null);
 
-  const errors = state?.errors
+  const errors = state?.errors;
 
   return (
     <Card>
@@ -106,13 +106,7 @@ export function CostForm({ categories, sites }: CostFormProps) {
               <Label htmlFor="date">
                 Date <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="date"
-                name="date"
-                type="date"
-                required
-                aria-invalid={!!errors?.date}
-              />
+              <Input id="date" name="date" type="date" required aria-invalid={!!errors?.date} />
               <FieldError messages={errors?.date} />
             </div>
 
@@ -170,10 +164,10 @@ export function CostForm({ categories, sites }: CostFormProps) {
           </div>
 
           <Button type="submit" disabled={isPending}>
-            {isPending ? 'Adding…' : 'Add Cost Entry'}
+            {isPending ? "Adding…" : "Add Cost Entry"}
           </Button>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

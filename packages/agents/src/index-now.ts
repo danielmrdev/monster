@@ -10,7 +10,7 @@
  *
  * Non-fatal: failures are logged as warnings, not thrown.
  */
-import { INDEXNOW_KEY } from './seo-files.js';
+import { INDEXNOW_KEY } from "./seo-files.js";
 
 /**
  * Ping IndexNow API to request crawling of the site homepage.
@@ -23,8 +23,8 @@ export async function pingIndexNow(domain: string): Promise<void> {
 
   try {
     const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'User-Agent': 'BuilderMonster/1.0' },
+      method: "GET",
+      headers: { "User-Agent": "BuilderMonster/1.0" },
       signal: AbortSignal.timeout(10_000),
     });
 

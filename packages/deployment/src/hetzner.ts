@@ -1,6 +1,6 @@
-import { createServiceClient } from '@monster/db';
+import { createServiceClient } from "@monster/db";
 
-const HETZNER_BASE = 'https://api.hetzner.cloud/v1';
+const HETZNER_BASE = "https://api.hetzner.cloud/v1";
 
 // ---------------------------------------------------------------------------
 // HetznerClient
@@ -29,7 +29,7 @@ export class HetznerApiError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'HetznerApiError';
+    this.name = "HetznerApiError";
   }
 }
 
@@ -86,27 +86,23 @@ export class HetznerClient {
     // The token is NEVER logged — only a "[HetznerClient]" prefixed call path is logged.
     const supabase = createServiceClient();
     const { data, error } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'hetzner_api_token')
+      .from("settings")
+      .select("value")
+      .eq("key", "hetzner_api_token")
       .single();
 
     if (error || !data) {
-      throw new Error('[HetznerClient] hetzner_api_token not found in settings');
+      throw new Error("[HetznerClient] hetzner_api_token not found in settings");
     }
 
     const token = (data.value as { value?: string })?.value;
     if (!token) {
-      throw new Error('[HetznerClient] hetzner_api_token is empty');
+      throw new Error("[HetznerClient] hetzner_api_token is empty");
     }
     return token;
   }
 
-  private async fetch<T>(
-    method: string,
-    path: string,
-    body?: unknown,
-  ): Promise<T> {
+  private async fetch<T>(method: string, path: string, body?: unknown): Promise<T> {
     const token = await this.getToken();
     const url = `${HETZNER_BASE}${path}`;
 
@@ -116,7 +112,7 @@ export class HetznerClient {
       method,
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
@@ -134,33 +130,33 @@ export class HetznerClient {
   }
 
   async createServer(opts: CreateServerOpts): Promise<{ server: HetznerServer }> {
-    return this.fetch<{ server: HetznerServer }>('POST', '/servers', opts);
+    return this.fetch<{ server: HetznerServer }>("POST", "/servers", opts);
   }
 
   async getServer(id: number): Promise<{ server: HetznerServer }> {
-    return this.fetch<{ server: HetznerServer }>('GET', `/servers/${id}`);
+    return this.fetch<{ server: HetznerServer }>("GET", `/servers/${id}`);
   }
 
   async listServers(): Promise<{ servers: HetznerServer[] }> {
-    return this.fetch<{ servers: HetznerServer[] }>('GET', '/servers');
+    return this.fetch<{ servers: HetznerServer[] }>("GET", "/servers");
   }
 
   async deleteServer(id: number): Promise<void> {
-    await this.fetch<null>('DELETE', `/servers/${id}`);
+    await this.fetch<null>("DELETE", `/servers/${id}`);
   }
 
   async listDatacenters(): Promise<HetznerDatacenter[]> {
-    const res = await this.fetch<{ datacenters: HetznerDatacenter[] }>('GET', '/datacenters');
+    const res = await this.fetch<{ datacenters: HetznerDatacenter[] }>("GET", "/datacenters");
     return res.datacenters;
   }
 
   async listServerTypes(): Promise<HetznerServerType[]> {
-    const res = await this.fetch<{ server_types: HetznerServerType[] }>('GET', '/server_types');
+    const res = await this.fetch<{ server_types: HetznerServerType[] }>("GET", "/server_types");
     return res.server_types;
   }
 
   async listSshKeys(): Promise<HetznerSshKey[]> {
-    const res = await this.fetch<{ ssh_keys: HetznerSshKey[] }>('GET', '/ssh_keys');
+    const res = await this.fetch<{ ssh_keys: HetznerSshKey[] }>("GET", "/ssh_keys");
     return res.ssh_keys;
   }
 
@@ -170,7 +166,7 @@ export class HetznerClient {
    */
   async registerSshKey(name: string, publicKey: string): Promise<number> {
     try {
-      const res = await this.fetch<{ ssh_key: HetznerSshKey }>('POST', '/ssh_keys', {
+      const res = await this.fetch<{ ssh_key: HetznerSshKey }>("POST", "/ssh_keys", {
         name,
         public_key: publicKey,
       });

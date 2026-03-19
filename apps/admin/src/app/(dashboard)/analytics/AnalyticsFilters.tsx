@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
 interface AnalyticsFiltersProps {
-  sites: Array<{ id: string; name: string }>
-  selectedSite: string | undefined
-  selectedRange: string
+  sites: Array<{ id: string; name: string }>;
+  selectedSite: string | undefined;
+  selectedRange: string;
 }
 
 export function AnalyticsFilters({ sites, selectedSite, selectedRange }: AnalyticsFiltersProps) {
@@ -17,7 +17,7 @@ export function AnalyticsFilters({ sites, selectedSite, selectedRange }: Analyti
         <select
           id="site"
           name="site"
-          defaultValue={selectedSite ?? ''}
+          defaultValue={selectedSite ?? ""}
           onChange={(e) => e.currentTarget.form?.submit()}
           className="h-8 min-w-[180px] rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         >
@@ -56,5 +56,5 @@ export function AnalyticsFilters({ sites, selectedSite, selectedRange }: Analyti
         Apply
       </button>
     </form>
-  )
+  );
 }

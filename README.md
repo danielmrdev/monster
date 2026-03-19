@@ -10,18 +10,18 @@ A platform to generate, deploy, and monetize websites automatically. AI is the c
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Admin Panel | Next.js 15 (App Router, RSC, Server Actions) + shadcn/ui + Tailwind v4 |
-| Database | Supabase Cloud (PostgreSQL + Auth + Real-time + Storage) |
-| Site Generation | Astro.js (fully static, SEO-optimized) + Tailwind CSS |
-| AI Agents | Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`) |
-| AI Content | Claude API (`@anthropic-ai/sdk`) via BullMQ |
-| Domains | Spaceship.com API (registration + DNS) |
-| Product & SEO Data | DataForSEO (Amazon products, keyword research, SERPs) |
-| Queue | BullMQ + Upstash Redis |
-| Infra (Admin) | Hetzner VPS + Tailscale (private) |
-| Infra (Sites) | Hetzner VPS + Caddy (public, auto-SSL) |
+| Layer              | Technology                                                             |
+| ------------------ | ---------------------------------------------------------------------- |
+| Admin Panel        | Next.js 15 (App Router, RSC, Server Actions) + shadcn/ui + Tailwind v4 |
+| Database           | Supabase Cloud (PostgreSQL + Auth + Real-time + Storage)               |
+| Site Generation    | Astro.js (fully static, SEO-optimized) + Tailwind CSS                  |
+| AI Agents          | Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`)                    |
+| AI Content         | Claude API (`@anthropic-ai/sdk`) via BullMQ                            |
+| Domains            | Spaceship.com API (registration + DNS)                                 |
+| Product & SEO Data | DataForSEO (Amazon products, keyword research, SERPs)                  |
+| Queue              | BullMQ + Upstash Redis                                                 |
+| Infra (Admin)      | Hetzner VPS + Tailscale (private)                                      |
+| Infra (Sites)      | Hetzner VPS + Caddy (public, auto-SSL)                                 |
 
 ## Project Structure
 

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 /**
  * Client component wrapping "Generate Category SEO" server action.
@@ -9,18 +9,18 @@
  * - Set a score floor (output must beat currentScore)
  */
 
-import { useTransition, useState } from "react"
-import { enqueueCategorySeo } from "../../seo/actions"
+import { useTransition, useState } from "react";
+import { enqueueCategorySeo } from "../../seo/actions";
 
 interface GenerateCategorySeoButtonProps {
-  siteId: string
-  categoryId: string
+  siteId: string;
+  categoryId: string;
   currentContent?: {
-    focus_keyword?: string | null
-    seo_text?: string | null
-    description?: string | null
-  }
-  currentScore?: number | null
+    focus_keyword?: string | null;
+    seo_text?: string | null;
+    description?: string | null;
+  };
+  currentScore?: number | null;
 }
 export function GenerateCategorySeoButton({
   siteId,
@@ -28,24 +28,23 @@ export function GenerateCategorySeoButton({
   currentContent,
   currentScore,
 }: GenerateCategorySeoButtonProps) {
-  const [isPending, startTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function handleClick() {
-    setError(null)
+    setError(null);
     startTransition(async () => {
       const result = await enqueueCategorySeo(siteId, categoryId, {
         currentContent,
         currentScore,
-      })
+      });
       if (result.error) {
-        setError(result.error)
+        setError(result.error);
       }
-    })
+    });
   }
 
-  const hasExistingContent =
-    currentContent?.seo_text || currentContent?.description
+  const hasExistingContent = currentContent?.seo_text || currentContent?.description;
 
   return (
     <div className="flex flex-col items-start gap-1">
@@ -101,5 +100,5 @@ export function GenerateCategorySeoButton({
       </button>
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
-  )
+  );
 }

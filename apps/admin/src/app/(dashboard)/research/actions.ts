@@ -1,13 +1,13 @@
-'use server';
+"use server";
 
-import { redirect } from 'next/navigation';
-import { createServiceClient } from '@/lib/supabase/service';
-import { nicheResearchQueue } from '@monster/agents';
-import type { EnqueueResearchState } from './constants';
+import { redirect } from "next/navigation";
+import { createServiceClient } from "@/lib/supabase/service";
+import { nicheResearchQueue } from "@monster/agents";
+import type { EnqueueResearchState } from "./constants";
 
 // Re-export type so callers can import from actions.ts directly
 // 'export type' is erased at runtime and does not violate 'use server' — D034 permits type-only exports
-export type { EnqueueResearchState } from './constants';
+export type { EnqueueResearchState } from "./constants";
 
 /**
  * Create a research_sessions row and enqueue a NicheResearcherJob.
@@ -29,27 +29,27 @@ export async function enqueueResearch(
   _prevState: EnqueueResearchState,
   formData: FormData,
 ): Promise<EnqueueResearchState> {
-  const rawIdea = formData.get('nicheIdea');
-  const rawMarket = formData.get('market');
+  const rawIdea = formData.get("nicheIdea");
+  const rawMarket = formData.get("market");
 
-  const nicheIdea = typeof rawIdea === 'string' ? rawIdea.trim() : '';
-  const market = typeof rawMarket === 'string' && rawMarket.length > 0 ? rawMarket : 'ES';
+  const nicheIdea = typeof rawIdea === "string" ? rawIdea.trim() : "";
+  const market = typeof rawMarket === "string" && rawMarket.length > 0 ? rawMarket : "ES";
 
   if (nicheIdea.length < 3) {
-    return { error: 'Niche idea must be at least 3 characters.' };
+    return { error: "Niche idea must be at least 3 characters." };
   }
 
   const supabase = createServiceClient();
 
   // 1. Create session row first — job must find it on startup
   const { data: session, error: insertError } = await supabase
-    .from('research_sessions')
-    .insert({ niche_idea: nicheIdea, market, status: 'pending' })
-    .select('id')
+    .from("research_sessions")
+    .insert({ niche_idea: nicheIdea, market, status: "pending" })
+    .select("id")
     .single();
 
   if (insertError || !session) {
-    return { error: insertError?.message ?? 'Failed to create research session.' };
+    return { error: insertError?.message ?? "Failed to create research session." };
   }
 
   const sessionId = session.id;
@@ -58,7 +58,7 @@ export async function enqueueResearch(
   try {
     const queue = nicheResearchQueue();
     await queue.add(
-      'research',
+      "research",
       { sessionId, nicheIdea, market },
       { removeOnComplete: true, removeOnFail: false },
     );
@@ -66,19 +66,19 @@ export async function enqueueResearch(
     const message = err instanceof Error ? err.message : String(err);
     // Session row exists but job failed to enqueue — mark as failed so it's not orphaned
     await supabase
-      .from('research_sessions')
+      .from("research_sessions")
       .update({
-        status: 'failed',
+        status: "failed",
         progress: [
           {
             turn: 0,
-            phase: 'failed',
+            phase: "failed",
             summary: `Enqueue error: ${message}`,
             timestamp: new Date().toISOString(),
           },
         ],
       })
-      .eq('id', sessionId);
+      .eq("id", sessionId);
     return { error: `Failed to enqueue research job: ${message}` };
   }
 
@@ -92,17 +92,23 @@ export async function enqueueResearch(
  * Observability: if this returns empty, check research_sessions table in Supabase.
  */
 export async function getResearchSessions(): Promise<
-  { id: string; niche_idea: string | null; market: string | null; status: string; created_at: string }[]
+  {
+    id: string;
+    niche_idea: string | null;
+    market: string | null;
+    status: string;
+    created_at: string;
+  }[]
 > {
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from('research_sessions')
-    .select('id, niche_idea, market, status, created_at')
-    .order('created_at', { ascending: false })
+    .from("research_sessions")
+    .select("id, niche_idea, market, status, created_at")
+    .order("created_at", { ascending: false })
     .limit(10);
 
   if (error) {
-    console.error('[research] getResearchSessions error:', error.message);
+    console.error("[research] getResearchSessions error:", error.message);
     return [];
   }
 
@@ -125,9 +131,9 @@ export async function getResearchSessionStatus(sessionId: string): Promise<{
 } | null> {
   const supabase = createServiceClient();
   const { data, error } = await supabase
-    .from('research_sessions')
-    .select('status, progress, report')
-    .eq('id', sessionId)
+    .from("research_sessions")
+    .select("status, progress, report")
+    .eq("id", sessionId)
     .single();
 
   if (error || !data) {

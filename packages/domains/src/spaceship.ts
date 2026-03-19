@@ -1,4 +1,4 @@
-import { createServiceClient } from '@monster/db';
+import { createServiceClient } from "@monster/db";
 
 // ---------------------------------------------------------------------------
 // SpaceshipClient
@@ -15,7 +15,7 @@ import { createServiceClient } from '@monster/db';
 // Raw fetch (D065) — no npm client exists for Spaceship API.
 // ---------------------------------------------------------------------------
 
-const SPACESHIP_BASE_URL = 'https://spaceship.dev/api/v1';
+const SPACESHIP_BASE_URL = "https://spaceship.dev/api/v1";
 
 interface SpaceshipCredentials {
   apiKey: string;
@@ -29,40 +29,40 @@ export class SpaceshipClient {
     const db = createServiceClient();
 
     const { data: keyData, error: keyError } = await db
-      .from('settings')
-      .select('value')
-      .eq('key', 'spaceship_api_key')
+      .from("settings")
+      .select("value")
+      .eq("key", "spaceship_api_key")
       .single();
 
     if (keyError || !keyData) {
       throw new Error(
-        '[SpaceshipClient] spaceship_api_key not configured — add it in admin Settings'
+        "[SpaceshipClient] spaceship_api_key not configured — add it in admin Settings",
       );
     }
 
     const apiKey = (keyData.value as { value: string }).value;
-    if (!apiKey || typeof apiKey !== 'string') {
+    if (!apiKey || typeof apiKey !== "string") {
       throw new Error(
-        '[SpaceshipClient] spaceship_api_key malformed — expected { value: "..." } in settings'
+        '[SpaceshipClient] spaceship_api_key malformed — expected { value: "..." } in settings',
       );
     }
 
     const { data: secretData, error: secretError } = await db
-      .from('settings')
-      .select('value')
-      .eq('key', 'spaceship_api_secret')
+      .from("settings")
+      .select("value")
+      .eq("key", "spaceship_api_secret")
       .single();
 
     if (secretError || !secretData) {
       throw new Error(
-        '[SpaceshipClient] spaceship_api_secret not configured — add it in admin Settings'
+        "[SpaceshipClient] spaceship_api_secret not configured — add it in admin Settings",
       );
     }
 
     const apiSecret = (secretData.value as { value: string }).value;
-    if (!apiSecret || typeof apiSecret !== 'string') {
+    if (!apiSecret || typeof apiSecret !== "string") {
       throw new Error(
-        '[SpaceshipClient] spaceship_api_secret malformed — expected { value: "..." } in settings'
+        '[SpaceshipClient] spaceship_api_secret malformed — expected { value: "..." } in settings',
       );
     }
 
@@ -74,9 +74,9 @@ export class SpaceshipClient {
   private async buildHeaders(): Promise<Record<string, string>> {
     const { apiKey, apiSecret } = await this.fetchCredentials();
     return {
-      'X-Api-Key': apiKey,
-      'X-Api-Secret': apiSecret,
-      'Content-Type': 'application/json',
+      "X-Api-Key": apiKey,
+      "X-Api-Secret": apiSecret,
+      "Content-Type": "application/json",
     };
   }
 
@@ -97,12 +97,12 @@ export class SpaceshipClient {
     const headers = await this.buildHeaders();
     const url = `${SPACESHIP_BASE_URL}/domains/${encodeURIComponent(domain)}/available`;
 
-    const response = await fetch(url, { method: 'GET', headers });
+    const response = await fetch(url, { method: "GET", headers });
 
     if (!response.ok) {
       const body = await response.text();
       throw new Error(
-        `[SpaceshipClient] checkAvailability: HTTP ${response.status} for domain="${domain}" — ${body}`
+        `[SpaceshipClient] checkAvailability: HTTP ${response.status} for domain="${domain}" — ${body}`,
       );
     }
 
@@ -112,7 +112,7 @@ export class SpaceshipClient {
       premiumPricing?: Array<{ price?: string }>;
     };
 
-    const available = data.result === 'available';
+    const available = data.result === "available";
 
     let price: string | undefined;
     if (available && data.premiumPricing && data.premiumPricing.length > 0) {
@@ -120,7 +120,7 @@ export class SpaceshipClient {
     }
 
     console.log(
-      `[SpaceshipClient] checkAvailability: domain="${domain}" result="${data.result}" premium=${!!price}`
+      `[SpaceshipClient] checkAvailability: domain="${domain}" result="${data.result}" premium=${!!price}`,
     );
 
     return { available, ...(price !== undefined ? { price } : {}) };
@@ -138,10 +138,7 @@ export class SpaceshipClient {
    * Poll the returned `operationId` with `pollOperation()` to track completion.
    * Only call `updateNameservers()` after `pollOperation()` returns `'success'`.
    */
-  async registerDomain(
-    domain: string,
-    contactId: string
-  ): Promise<{ operationId: string }> {
+  async registerDomain(domain: string, contactId: string): Promise<{ operationId: string }> {
     console.log(`[SpaceshipClient] registerDomain: domain="${domain}" contactId="${contactId}"`);
 
     const headers = await this.buildHeaders();
@@ -157,7 +154,7 @@ export class SpaceshipClient {
     };
 
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: JSON.stringify(body),
     });
@@ -165,20 +162,20 @@ export class SpaceshipClient {
     if (response.status !== 202) {
       const responseBody = await response.text();
       throw new Error(
-        `[SpaceshipClient] registerDomain: HTTP ${response.status} for domain="${domain}" — ${responseBody}`
+        `[SpaceshipClient] registerDomain: HTTP ${response.status} for domain="${domain}" — ${responseBody}`,
       );
     }
 
-    const operationId = response.headers.get('spaceship-async-operationid');
+    const operationId = response.headers.get("spaceship-async-operationid");
 
     if (!operationId) {
       throw new Error(
-        `[SpaceshipClient] registerDomain: missing spaceship-async-operationid header in 202 response for domain="${domain}"`
+        `[SpaceshipClient] registerDomain: missing spaceship-async-operationid header in 202 response for domain="${domain}"`,
       );
     }
 
     console.log(
-      `[SpaceshipClient] registerDomain: domain="${domain}" operationId="${operationId}"`
+      `[SpaceshipClient] registerDomain: domain="${domain}" operationId="${operationId}"`,
     );
 
     return { operationId };
@@ -194,23 +191,23 @@ export class SpaceshipClient {
    *
    * Rate limit: 60 requests per user per 300s — safe to poll with 2s intervals.
    */
-  async pollOperation(operationId: string): Promise<'pending' | 'success' | 'failed'> {
+  async pollOperation(operationId: string): Promise<"pending" | "success" | "failed"> {
     console.log(`[SpaceshipClient] pollOperation: operationId="${operationId}"`);
 
     const headers = await this.buildHeaders();
     const url = `${SPACESHIP_BASE_URL}/async-operations/${encodeURIComponent(operationId)}`;
 
-    const response = await fetch(url, { method: 'GET', headers });
+    const response = await fetch(url, { method: "GET", headers });
 
     if (!response.ok) {
       const body = await response.text();
       throw new Error(
-        `[SpaceshipClient] pollOperation: HTTP ${response.status} for operationId="${operationId}" — ${body}`
+        `[SpaceshipClient] pollOperation: HTTP ${response.status} for operationId="${operationId}" — ${body}`,
       );
     }
 
     const data = (await response.json()) as {
-      status: 'pending' | 'success' | 'failed';
+      status: "pending" | "success" | "failed";
       type?: string;
       details?: unknown;
       createdAt?: string;
@@ -218,7 +215,7 @@ export class SpaceshipClient {
     };
 
     console.log(
-      `[SpaceshipClient] pollOperation: operationId="${operationId}" status="${data.status}"`
+      `[SpaceshipClient] pollOperation: operationId="${operationId}" status="${data.status}"`,
     );
 
     return data.status;
@@ -237,19 +234,19 @@ export class SpaceshipClient {
    */
   async updateNameservers(domain: string, nameservers: string[]): Promise<void> {
     console.log(
-      `[SpaceshipClient] updateNameservers: domain="${domain}" nameservers=${JSON.stringify(nameservers)}`
+      `[SpaceshipClient] updateNameservers: domain="${domain}" nameservers=${JSON.stringify(nameservers)}`,
     );
 
     const headers = await this.buildHeaders();
     const url = `${SPACESHIP_BASE_URL}/domains/${encodeURIComponent(domain)}/nameservers`;
 
     const body = {
-      provider: 'custom',
+      provider: "custom",
       hosts: nameservers,
     };
 
     const response = await fetch(url, {
-      method: 'PUT',
+      method: "PUT",
       headers,
       body: JSON.stringify(body),
     });
@@ -257,12 +254,10 @@ export class SpaceshipClient {
     if (!response.ok) {
       const responseBody = await response.text();
       throw new Error(
-        `[SpaceshipClient] updateNameservers: HTTP ${response.status} for domain="${domain}" — ${responseBody}`
+        `[SpaceshipClient] updateNameservers: HTTP ${response.status} for domain="${domain}" — ${responseBody}`,
       );
     }
 
-    console.log(
-      `[SpaceshipClient] updateNameservers: domain="${domain}" updated successfully`
-    );
+    console.log(`[SpaceshipClient] updateNameservers: domain="${domain}" updated successfully`);
   }
 }

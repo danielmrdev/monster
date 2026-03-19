@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.76",
-    "marked": "^17.0.4",
     "@anthropic-ai/sdk": "^0.78.0",
     "@monster/db": "workspace:*",
     "@monster/deployment": "workspace:*",
@@ -36,6 +35,7 @@
     "cloudflare": "^5.2.0",
     "dotenv": "^17.3.1",
     "ioredis": "5.9.3",
+    "marked": "^17.0.4",
     "node-ssh": "^13.2.1",
     "p-limit": "^7.3.0",
     "sharp": "^0.33.5",
