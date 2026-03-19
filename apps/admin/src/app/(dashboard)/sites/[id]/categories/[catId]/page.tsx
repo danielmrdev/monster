@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CategoryProductsSection } from './CategoryProductsSection'
+import { GenerateCategorySeoButton } from './GenerateCategorySeoButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,12 +73,15 @@ export default async function CategoryDetailPage({ params }: PageProps) {
             <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
           )}
         </div>
-        <Link
-          href={`/sites/${siteId}/categories/${catId}/edit`}
-          className="shrink-0 inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors"
-        >
-          Edit Category
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href={`/sites/${siteId}/categories/${catId}/edit`}
+            className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors"
+          >
+            Edit Category
+          </Link>
+          <GenerateCategorySeoButton siteId={siteId} categoryId={catId} />
+        </div>
       </div>
 
       {/* Products */}
