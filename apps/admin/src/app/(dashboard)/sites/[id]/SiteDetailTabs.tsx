@@ -18,7 +18,8 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { MarkdownPreview } from "@/components/MarkdownPreview";
-import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { useEffect, useState, useMemo, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -400,73 +401,201 @@ export function SiteDetailTabs({
           </div>
         </Card>
 
-        <Card title="SEO Scores" action={rescoreAction}>
-          {(() => {
-            const visibleScores = (seoScores ?? []).filter(
-              (r) => !r.page_path.startsWith("/go/") && r.page_type !== "legal",
-            );
-            return !visibleScores.length ? (
-              <p className="text-sm text-muted-foreground">
-                No SEO scores yet — generate the site first.
-              </p>
-            ) : (
-              <div className="overflow-x-auto -mx-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="sticky left-0 z-10 bg-card after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px]">
-                        Page
-                      </TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Score</TableHead>
-                      <TableHead>Grade</TableHead>
-                      <TableHead className="text-xs">Content</TableHead>
-                      <TableHead className="text-xs">Meta</TableHead>
-                      <TableHead className="text-xs">Structure</TableHead>
-                      <TableHead className="text-xs">Links</TableHead>
-                      <TableHead className="text-xs">Media</TableHead>
-                      <TableHead className="text-xs">Schema</TableHead>
-                      <TableHead className="text-xs">Technical</TableHead>
-                      <TableHead className="text-xs">Social</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {visibleScores.map((row) => (
-                      <TableRow key={row.page_path}>
-                        <TableCell className="sticky left-0 z-10 bg-card font-mono text-xs after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px] max-w-[280px] truncate">
-                          {row.page_path}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {row.page_type ?? "—"}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`font-semibold ${scoreColor(row.overall_score)}`}>
-                            {row.overall_score ?? "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={gradeBadgeVariant(row.grade)}>{row.grade ?? "—"}</Badge>
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {row.content_quality_score ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">{row.meta_elements_score ?? "—"}</TableCell>
-                        <TableCell className="text-xs">{row.structure_score ?? "—"}</TableCell>
-                        <TableCell className="text-xs">{row.links_score ?? "—"}</TableCell>
-                        <TableCell className="text-xs">{row.media_score ?? "—"}</TableCell>
-                        <TableCell className="text-xs">{row.schema_score ?? "—"}</TableCell>
-                        <TableCell className="text-xs">{row.technical_score ?? "—"}</TableCell>
-                        <TableCell className="text-xs">{row.social_score ?? "—"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            );
-          })()}
-        </Card>
+        <SeoScoresTable seoScores={seoScores} rescoreAction={rescoreAction} />
       </TabsContent>
     </Tabs>
+  );
+}
+
+const SEO_PAGE_SIZE = 25;
+
+function SeoScoresTable({
+  seoScores,
+  rescoreAction,
+}: {
+  seoScores: SeoScore[] | null;
+  rescoreAction?: React.ReactNode;
+}) {
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(query);
+      setPage(1);
+    }, 200);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
+
+  const allScores = useMemo(
+    () =>
+      (seoScores ?? []).filter((r) => !r.page_path.startsWith("/go/") && r.page_type !== "legal"),
+    [seoScores],
+  );
+
+  const filtered = useMemo(() => {
+    let rows = allScores;
+    if (typeFilter !== "all") rows = rows.filter((r) => r.page_type === typeFilter);
+    if (debouncedQuery) {
+      const q = debouncedQuery.toLowerCase();
+      rows = rows.filter((r) => r.page_path.toLowerCase().includes(q));
+    }
+    return rows;
+  }, [allScores, typeFilter, debouncedQuery]);
+
+  const totalPages = Math.ceil(filtered.length / SEO_PAGE_SIZE);
+  const pageRows = filtered.slice((page - 1) * SEO_PAGE_SIZE, page * SEO_PAGE_SIZE);
+
+  const from = filtered.length === 0 ? 0 : (page - 1) * SEO_PAGE_SIZE + 1;
+  const to = Math.min(page * SEO_PAGE_SIZE, filtered.length);
+
+  const types = useMemo(() => {
+    const set = new Set(allScores.map((r) => r.page_type ?? "other"));
+    return ["all", ...Array.from(set).sort()];
+  }, [allScores]);
+
+  if (!allScores.length) {
+    return (
+      <Card title="SEO Scores" action={rescoreAction}>
+        <p className="text-sm text-muted-foreground">
+          No SEO scores yet — generate the site first.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card title="SEO Scores" action={rescoreAction}>
+      {/* Filters row */}
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <Input
+          type="search"
+          placeholder="Filter by path…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="h-8 text-sm w-56"
+        />
+        <div className="flex items-center gap-1">
+          {types.map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                setTypeFilter(t);
+                setPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                typeFilter === t
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-border"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+        <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+          {filtered.length} pages
+        </span>
+      </div>
+
+      {/* Table */}
+      {pageRows.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4">No pages match the filter.</p>
+      ) : (
+        <div className="overflow-x-auto -mx-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="sticky left-0 z-10 bg-card after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px]">
+                  Page
+                </TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Score</TableHead>
+                <TableHead>Grade</TableHead>
+                <TableHead className="text-xs">Content</TableHead>
+                <TableHead className="text-xs">Meta</TableHead>
+                <TableHead className="text-xs">Structure</TableHead>
+                <TableHead className="text-xs">Links</TableHead>
+                <TableHead className="text-xs">Media</TableHead>
+                <TableHead className="text-xs">Schema</TableHead>
+                <TableHead className="text-xs">Technical</TableHead>
+                <TableHead className="text-xs">Social</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageRows.map((row) => (
+                <TableRow key={row.page_path}>
+                  <TableCell className="sticky left-0 z-10 bg-card font-mono text-xs after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px] max-w-[280px] truncate">
+                    {row.page_path}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {row.page_type ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`font-semibold tabular-nums ${scoreColor(row.overall_score)}`}>
+                      {row.overall_score ?? "—"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={gradeBadgeVariant(row.grade)}>{row.grade ?? "—"}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums">
+                    {row.content_quality_score ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums">
+                    {row.meta_elements_score ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums">
+                    {row.structure_score ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums">{row.links_score ?? "—"}</TableCell>
+                  <TableCell className="text-xs tabular-nums">{row.media_score ?? "—"}</TableCell>
+                  <TableCell className="text-xs tabular-nums">{row.schema_score ?? "—"}</TableCell>
+                  <TableCell className="text-xs tabular-nums">
+                    {row.technical_score ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums">{row.social_score ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {from}–{to} of {filtered.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              ← Prev
+            </button>
+            <span className="px-2 text-xs text-muted-foreground tabular-nums">
+              {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 
