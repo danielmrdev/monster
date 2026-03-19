@@ -516,16 +516,16 @@ function SeoScoresTable({
                   Page
                 </TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Score</TableHead>
+                <TableHead className="text-right">Score</TableHead>
                 <TableHead>Grade</TableHead>
-                <TableHead className="text-xs">Content</TableHead>
-                <TableHead className="text-xs">Meta</TableHead>
-                <TableHead className="text-xs">Structure</TableHead>
-                <TableHead className="text-xs">Links</TableHead>
-                <TableHead className="text-xs">Media</TableHead>
-                <TableHead className="text-xs">Schema</TableHead>
-                <TableHead className="text-xs">Technical</TableHead>
-                <TableHead className="text-xs">Social</TableHead>
+                <TableHead className="text-xs text-right">Content</TableHead>
+                <TableHead className="text-xs text-right">Meta</TableHead>
+                <TableHead className="text-xs text-right">Structure</TableHead>
+                <TableHead className="text-xs text-right">Links</TableHead>
+                <TableHead className="text-xs text-right">Media</TableHead>
+                <TableHead className="text-xs text-right">Schema</TableHead>
+                <TableHead className="text-xs text-right">Technical</TableHead>
+                <TableHead className="text-xs text-right">Social</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -537,7 +537,7 @@ function SeoScoresTable({
                   <TableCell className="text-xs text-muted-foreground">
                     {row.page_type ?? "—"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-right">
                     <span className={`font-semibold tabular-nums ${scoreColor(row.overall_score)}`}>
                       {row.overall_score ?? "—"}
                     </span>
@@ -545,22 +545,30 @@ function SeoScoresTable({
                   <TableCell>
                     <Badge variant={gradeBadgeVariant(row.grade)}>{row.grade ?? "—"}</Badge>
                   </TableCell>
-                  <TableCell className="text-xs tabular-nums">
+                  <TableCell className="text-xs tabular-nums text-right">
                     {row.content_quality_score ?? "—"}
                   </TableCell>
-                  <TableCell className="text-xs tabular-nums">
+                  <TableCell className="text-xs tabular-nums text-right">
                     {row.meta_elements_score ?? "—"}
                   </TableCell>
-                  <TableCell className="text-xs tabular-nums">
+                  <TableCell className="text-xs tabular-nums text-right">
                     {row.structure_score ?? "—"}
                   </TableCell>
-                  <TableCell className="text-xs tabular-nums">{row.links_score ?? "—"}</TableCell>
-                  <TableCell className="text-xs tabular-nums">{row.media_score ?? "—"}</TableCell>
-                  <TableCell className="text-xs tabular-nums">{row.schema_score ?? "—"}</TableCell>
-                  <TableCell className="text-xs tabular-nums">
+                  <TableCell className="text-xs tabular-nums text-right">
+                    {row.links_score ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums text-right">
+                    {row.media_score ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums text-right">
+                    {row.schema_score ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs tabular-nums text-right">
                     {row.technical_score ?? "—"}
                   </TableCell>
-                  <TableCell className="text-xs tabular-nums">{row.social_score ?? "—"}</TableCell>
+                  <TableCell className="text-xs tabular-nums text-right">
+                    {row.social_score ?? "—"}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
