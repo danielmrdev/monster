@@ -15,6 +15,13 @@ export interface DataForSEOProduct {
   reviewCount: number;
   isPrime: boolean;
   isBestSeller: boolean;
+  isAmazonChoice: boolean;
+  /** Estimated units bought in the past month. Null if not reported by Amazon. */
+  boughtPastMonth: number | null;
+  /** Active promotions/coupons, e.g. ["Ahorra 10,00 € con un cupón"]. Empty array if none. */
+  specialOffers: string[];
+  /** 1-based position in the organic SERP. Useful for ranking context. */
+  rankPosition: number | null;
 }
 
 interface MarketConfig {
@@ -93,6 +100,7 @@ interface DFSRawDeliveryInfo {
 
 interface DFSRawItem {
   type?: string | null;
+  rank_group?: number | null;
   data_asin?: string | null;
   title?: string | null;
   image_url?: string | null;
@@ -101,6 +109,9 @@ interface DFSRawItem {
   is_prime?: boolean | null;
   delivery_info?: DFSRawDeliveryInfo | null;
   is_best_seller?: boolean | null;
+  is_amazon_choice?: boolean | null;
+  bought_past_month?: number | null;
+  special_offers?: string[] | null;
 }
 
 interface DFSRawResult {
@@ -320,10 +331,14 @@ export class DataForSEOClient {
         imageUrl: item.image_url ?? null,
         price: item.price_from ?? null,
         originalPrice: null, // not available from keyword search — populated by lookupAsin()
-        rating: parseFloat(item.rating?.value ?? "0"),
+        rating: parseFloat(String(item.rating?.value ?? "0")),
         reviewCount: item.rating?.votes_count ?? 0,
         isPrime: item.is_prime ?? item.delivery_info?.is_free_delivery ?? false,
         isBestSeller: item.is_best_seller ?? false,
+        isAmazonChoice: item.is_amazon_choice ?? false,
+        boughtPastMonth: item.bought_past_month ?? null,
+        specialOffers: item.special_offers ?? [],
+        rankPosition: item.rank_group ?? null,
       });
     }
 

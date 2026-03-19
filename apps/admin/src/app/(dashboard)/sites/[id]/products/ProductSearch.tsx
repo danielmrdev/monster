@@ -1,20 +1,24 @@
 "use client";
 
-// ── Search ──────────────────────────────────────────────────────────────
-
-// ── Selection ───────────────────────────────────────────────────────────
-
-// ── Bulk add ────────────────────────────────────────────────────────────
-/* Search bar */ /* Search error */ /* Loading state */ /* Results */ /* Toolbar */ /* Category filter + Add button */ /* Success/error feedback */ /* Result grid */ /* Checkbox */ /* Thumbnail */ /* Info */
-
-// ── Spinner ───────────────────────────────────────────────────────────────────
-
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { SearchResultItem } from "@/app/api/sites/[id]/product-search/route";
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const MIN_RATING = 4.0;
+const MIN_REVIEWS = 10;
+const DEPTH_OPTIONS = [
+  { value: 100, label: "100 results" },
+  { value: 200, label: "200 results" },
+  { value: 300, label: "300 results" },
+  { value: 400, label: "400 results (max)" },
+];
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Category {
   id: string;
@@ -26,6 +30,8 @@ interface Props {
   categories: Category[];
   preselectedCategoryId?: string;
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function StarRating({ rating }: { rating: number }) {
   const full = Math.floor(rating);
@@ -40,22 +46,44 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function ProductSearch({ siteId, categories, preselectedCategoryId }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Search state
   const [query, setQuery] = useState("");
+  const [depth, setDepth] = useState(100);
   const [results, setResults] = useState<SearchResultItem[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [addError, setAddError] = useState<string | null>(null);
-  const [addSuccess, setAddSuccess] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  // Filter state
+  const [filterLowQuality, setFilterLowQuality] = useState(true);
+
+  // Selection state
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     () => new Set(preselectedCategoryId ? [preselectedCategoryId] : []),
   );
 
-  const [searching, setSearching] = useState(false);
+  // Add state
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addSuccess, setAddSuccess] = useState<string | null>(null);
   const [adding, startAdd] = useTransition();
+
+  // ── Filtered results ────────────────────────────────────────────────────────
+
+  const visibleResults = useMemo(() => {
+    if (!results) return null;
+    if (!filterLowQuality) return results;
+    return results.filter((r) => r.rating >= MIN_RATING && r.reviewCount >= MIN_REVIEWS);
+  }, [results, filterLowQuality]);
+
+  const filteredOutCount = results && visibleResults ? results.length - visibleResults.length : 0;
+
+  // ── Actions ─────────────────────────────────────────────────────────────────
 
   function handleSearch(e?: React.FormEvent) {
     e?.preventDefault();
@@ -70,7 +98,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
     setAddError(null);
     setSearching(true);
 
-    fetch(`/api/sites/${siteId}/product-search?q=${encodeURIComponent(q)}`)
+    fetch(`/api/sites/${siteId}/product-search?q=${encodeURIComponent(q)}&depth=${depth}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Search failed");
@@ -92,8 +120,8 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
   }
 
   function toggleAll() {
-    if (!results) return;
-    const addable = results.filter((r) => !r.alreadyAdded);
+    if (!visibleResults) return;
+    const addable = visibleResults.filter((r) => !r.alreadyAdded);
     if (selected.size === addable.length) {
       setSelected(new Set());
     } else {
@@ -111,8 +139,8 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
   }
 
   function handleAdd() {
-    if (!results || selected.size === 0) return;
-    const toAdd = results.filter((r) => selected.has(r.asin));
+    if (!visibleResults || selected.size === 0) return;
+    const toAdd = visibleResults.filter((r) => selected.has(r.asin));
 
     setAddError(null);
     setAddSuccess(null);
@@ -133,20 +161,25 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
           return;
         }
 
-        const { added, skipped } = data as { added: number; skipped: number };
+        const { added, skipped, seoJobsQueued } = data as {
+          added: number;
+          skipped: number;
+          seoJobsQueued: number;
+        };
 
         setResults((prev) =>
           prev ? prev.map((r) => (selected.has(r.asin) ? { ...r, alreadyAdded: true } : r)) : prev,
         );
         setSelected(new Set());
 
-        const msg =
-          skipped > 0
-            ? `${added} product${
-                added !== 1 ? "s" : ""
-              } added (${skipped} skipped — already in site)`
-            : `${added} product${added !== 1 ? "s" : ""} added`;
-        setAddSuccess(msg);
+        const parts: string[] = [];
+        if (added > 0) parts.push(`${added} product${added !== 1 ? "s" : ""} added`);
+        if (skipped > 0) parts.push(`${skipped} skipped (already in site)`);
+        if (seoJobsQueued > 0)
+          parts.push(
+            `SEO generation queued for ${seoJobsQueued} product${seoJobsQueued !== 1 ? "s" : ""}`,
+          );
+        setAddSuccess(parts.join(" · "));
 
         router.refresh();
       } catch (err) {
@@ -155,21 +188,34 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
     });
   }
 
-  const addable = results?.filter((r) => !r.alreadyAdded) ?? [];
+  const addable = visibleResults?.filter((r) => !r.alreadyAdded) ?? [];
   const allSelected = addable.length > 0 && selected.size === addable.length;
+
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-5">
-      {}
-      <form onSubmit={handleSearch} className="flex gap-2">
+      {/* Search bar + depth selector */}
+      <form onSubmit={handleSearch} className="flex gap-2 flex-wrap">
         <Input
           ref={inputRef}
           placeholder="Search Amazon products… e.g. freidoras de aire, camping tent"
           defaultValue=""
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          className="flex-1"
+          className="flex-1 min-w-0"
           autoFocus
         />
+        <select
+          value={depth}
+          onChange={(e) => setDepth(Number(e.target.value))}
+          className="h-9 rounded-md border border-input bg-background px-2.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          {DEPTH_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
         <Button type="submit" disabled={searching}>
           {searching ? (
             <span className="flex items-center gap-2">
@@ -181,14 +227,14 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
         </Button>
       </form>
 
-      {}
+      {/* Search error */}
       {searchError && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {searchError}
         </div>
       )}
 
-      {}
+      {/* Loading skeleton */}
       {searching && (
         <div className="space-y-2">
           {[...Array(6)].map((_, i) => (
@@ -203,22 +249,42 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
         </div>
       )}
 
-      {}
-      {!searching && results !== null && (
+      {/* Results */}
+      {!searching && visibleResults !== null && (
         <>
-          {results.length === 0 ? (
+          {visibleResults.length === 0 && !results?.length ? (
             <p className="text-sm text-muted-foreground">
               No results for <strong>"{query}"</strong>. Try a different keyword.
             </p>
           ) : (
             <>
-              {}
+              {/* Toolbar */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-sm text-muted-foreground">
-                    {results.length} results for{" "}
+                    {visibleResults.length} results for{" "}
                     <strong className="text-foreground">"{query}"</strong>
                   </span>
+                  {/* Quality filter toggle */}
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={filterLowQuality}
+                      onChange={(e) => {
+                        setFilterLowQuality(e.target.checked);
+                        setSelected(new Set()); // reset selection on filter change
+                      }}
+                      className="rounded border-border accent-primary w-3.5 h-3.5"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Hide &lt;{MIN_RATING}★ / &lt;{MIN_REVIEWS} reviews
+                      {filteredOutCount > 0 && (
+                        <span className="ml-1 text-muted-foreground/60">
+                          ({filteredOutCount} hidden)
+                        </span>
+                      )}
+                    </span>
+                  </label>
                   {addable.length > 0 && (
                     <button
                       type="button"
@@ -230,7 +296,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                   )}
                 </div>
 
-                {}
+                {/* Category filter + Add button */}
                 {selected.size > 0 && (
                   <div className="flex items-center gap-3 flex-wrap">
                     {categories.length > 0 && (
@@ -265,7 +331,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                 )}
               </div>
 
-              {}
+              {/* Success/error feedback */}
               {addSuccess && (
                 <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400">
                   ✓ {addSuccess}
@@ -277,96 +343,137 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                 </div>
               )}
 
-              {}
-              <div className="divide-y divide-border border border-border rounded-xl overflow-hidden">
-                {results.map((item) => {
-                  const isSelected = selected.has(item.asin);
-                  const disabled = item.alreadyAdded;
+              {/* Empty after filter */}
+              {visibleResults.length === 0 && filteredOutCount > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  All {filteredOutCount} results were filtered out (low rating or few reviews).{" "}
+                  <button
+                    type="button"
+                    onClick={() => setFilterLowQuality(false)}
+                    className="underline underline-offset-2 hover:text-foreground transition-colors"
+                  >
+                    Show all
+                  </button>
+                </p>
+              )}
 
-                  return (
-                    <label
-                      key={item.asin}
-                      className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors select-none ${
-                        disabled
-                          ? "opacity-50 cursor-not-allowed bg-muted/5"
-                          : isSelected
-                            ? "bg-primary/5 hover:bg-primary/8"
-                            : "hover:bg-muted/10"
-                      }`}
-                    >
-                      {}
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        disabled={disabled}
-                        onChange={() => !disabled && toggleItem(item.asin)}
-                        className="shrink-0 rounded border-border accent-primary w-4 h-4"
-                      />
+              {/* Result list */}
+              {visibleResults.length > 0 && (
+                <div className="divide-y divide-border border border-border rounded-xl overflow-hidden">
+                  {visibleResults.map((item) => {
+                    const isSelected = selected.has(item.asin);
+                    const disabled = item.alreadyAdded;
 
-                      {}
-                      <div className="shrink-0 w-12 h-12 rounded-md border border-border bg-muted/20 overflow-hidden flex items-center justify-center">
-                        {item.imageUrl ? (
-                          <Image
-                            src={item.imageUrl}
-                            alt={item.title}
-                            width={48}
-                            height={48}
-                            className="object-contain w-full h-full"
-                            unoptimized
-                          />
-                        ) : (
-                          <span className="text-lg text-muted-foreground/30">📦</span>
-                        )}
-                      </div>
+                    return (
+                      <label
+                        key={item.asin}
+                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors select-none ${
+                          disabled
+                            ? "opacity-50 cursor-not-allowed bg-muted/5"
+                            : isSelected
+                              ? "bg-primary/5 hover:bg-primary/8"
+                              : "hover:bg-muted/10"
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={disabled}
+                          onChange={() => !disabled && toggleItem(item.asin)}
+                          className="shrink-0 rounded border-border accent-primary w-4 h-4"
+                        />
 
-                      {}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-xs text-muted-foreground bg-muted/40 rounded px-1.5 py-0.5 border border-border shrink-0">
-                            {item.asin}
-                          </span>
-                          {item.isBestSeller && (
-                            <span className="text-xs text-amber-400 font-semibold shrink-0">
-                              Best Seller
-                            </span>
-                          )}
-                          {item.isPrime && (
-                            <span className="text-xs text-blue-400 font-semibold shrink-0">
-                              Prime
-                            </span>
-                          )}
-                          {disabled && (
-                            <span className="text-xs text-muted-foreground/60 shrink-0">
-                              already added
-                            </span>
+                        {/* Thumbnail */}
+                        <div className="shrink-0 w-12 h-12 rounded-md border border-border bg-muted/20 overflow-hidden flex items-center justify-center">
+                          {item.imageUrl ? (
+                            <Image
+                              src={item.imageUrl}
+                              alt={item.title}
+                              width={48}
+                              height={48}
+                              className="object-contain w-full h-full"
+                              unoptimized
+                            />
+                          ) : (
+                            <span className="text-lg text-muted-foreground/30">📦</span>
                           )}
                         </div>
-                        <p className="text-sm text-foreground mt-0.5 line-clamp-1 leading-snug">
-                          {item.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          {item.price != null && (
-                            <span className="text-sm font-medium text-foreground">
-                              {item.price.toFixed(2)}
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono text-xs text-muted-foreground bg-muted/40 rounded px-1.5 py-0.5 border border-border shrink-0">
+                              {item.asin}
                             </span>
-                          )}
-                          {item.rating > 0 && (
-                            <span className="flex items-center gap-1">
-                              <StarRating rating={item.rating} />
-                              <span className="text-xs text-muted-foreground">{item.rating}</span>
-                            </span>
-                          )}
-                          {item.reviewCount > 0 && (
-                            <span className="text-xs text-muted-foreground/60">
-                              ({item.reviewCount.toLocaleString()})
-                            </span>
-                          )}
+                            {item.rankPosition != null && item.rankPosition <= 3 && (
+                              <span className="text-[10px] font-bold text-white bg-amber-500 px-1.5 py-0.5 rounded shrink-0">
+                                #{item.rankPosition}
+                              </span>
+                            )}
+                            {item.isAmazonChoice && (
+                              <span className="text-[10px] font-bold text-white bg-[#FF9900] px-1.5 py-0.5 rounded shrink-0">
+                                Amazon's Choice
+                              </span>
+                            )}
+                            {item.isBestSeller && (
+                              <span className="text-[10px] font-bold text-white bg-amber-600 px-1.5 py-0.5 rounded shrink-0">
+                                Best Seller
+                              </span>
+                            )}
+                            {item.isPrime && (
+                              <span className="text-[10px] font-semibold text-blue-400 border border-blue-400/40 px-1.5 py-0.5 rounded shrink-0">
+                                Prime
+                              </span>
+                            )}
+                            {item.specialOffers.length > 0 && (
+                              <span
+                                className="text-[10px] font-medium text-emerald-400 border border-emerald-400/40 px-1.5 py-0.5 rounded shrink-0"
+                                title={item.specialOffers.join(" · ")}
+                              >
+                                🏷 Oferta
+                              </span>
+                            )}
+                            {disabled && (
+                              <span className="text-xs text-muted-foreground/60 shrink-0">
+                                already added
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-foreground mt-0.5 line-clamp-1 leading-snug">
+                            {item.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {item.price != null && (
+                              <span className="text-sm font-medium text-foreground tabular-nums">
+                                {item.price.toFixed(2)}
+                              </span>
+                            )}
+                            {item.rating > 0 && (
+                              <span className="flex items-center gap-1">
+                                <StarRating rating={item.rating} />
+                                <span className="text-xs text-muted-foreground tabular-nums">
+                                  {item.rating}
+                                </span>
+                              </span>
+                            )}
+                            {item.reviewCount > 0 && (
+                              <span className="text-xs text-muted-foreground/60 tabular-nums">
+                                ({item.reviewCount.toLocaleString()})
+                              </span>
+                            )}
+                            {item.boughtPastMonth != null && (
+                              <span className="text-xs text-muted-foreground/70">
+                                {item.boughtPastMonth.toLocaleString()}+ vendidos/mes
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
         </>
@@ -374,6 +481,8 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
     </div>
   );
 }
+
+// ── Spinner ───────────────────────────────────────────────────────────────────
 
 function Spinner({ size = "default" }: { size?: "sm" | "default" }) {
   const s = size === "sm" ? "w-3 h-3" : "w-4 h-4";

@@ -35,13 +35,17 @@ export declare function enqueueNicheResearch(
 export interface DataForSEOProduct {
   asin: string;
   title: string;
-  price: number;
+  imageUrl: string | null;
+  price: number | null;
+  originalPrice: number | null;
   rating: number;
   reviewCount: number;
-  imageUrl: string;
   isPrime: boolean;
   isBestSeller: boolean;
-  availability: "available" | "limited" | "unavailable";
+  isAmazonChoice: boolean;
+  boughtPastMonth: number | null;
+  specialOffers: string[];
+  rankPosition: number | null;
 }
 export declare class DataForSEOClient {
   searchProducts(keyword: string, market: string, depth?: number): Promise<DataForSEOProduct[]>;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { DataForSEOClient } from "@monster/agents";
+import { enqueueProductSeo } from "@/app/(dashboard)/sites/[id]/seo/actions";
 
 // DataForSEO Merchant API uses async task flow (task_post → poll → task_get).
 // Allow up to 60s for the polling to complete.
@@ -19,22 +20,28 @@ export interface SearchResultItem {
   reviewCount: number;
   isPrime: boolean;
   isBestSeller: boolean;
+  isAmazonChoice: boolean;
+  boughtPastMonth: number | null;
+  specialOffers: string[];
+  rankPosition: number | null;
   /** Whether this ASIN already exists in the site */
   alreadyAdded: boolean;
 }
 
 /**
- * GET /api/sites/[id]/product-search?q=<keyword>
+ * GET /api/sites/[id]/product-search?q=<keyword>&depth=<100|200|300|400>
  *
- * Searches Amazon via DataForSEO Merchant API (depth=100).
- * Returns up to 100 organic results with an `alreadyAdded` flag for ASINs
- * already in tsa_products for this site.
+ * Searches Amazon via DataForSEO Merchant API.
+ * depth controls how many results DFS fetches (100–400, default 100).
+ * Returns results with `alreadyAdded` flag for ASINs already in tsa_products.
  *
  * Uses async task flow (task_post → poll → task_get/advanced) — expect 15-30s.
  */
 export async function GET(request: NextRequest, { params }: Params) {
   const { id: siteId } = await params;
   const q = request.nextUrl.searchParams.get("q")?.trim();
+  const depthParam = parseInt(request.nextUrl.searchParams.get("depth") ?? "100", 10);
+  const depth = Math.min(400, Math.max(100, isNaN(depthParam) ? 100 : depthParam));
 
   if (!q) {
     return NextResponse.json({ error: "q query param required" }, { status: 400 });
@@ -55,7 +62,7 @@ export async function GET(request: NextRequest, { params }: Params) {
 
   try {
     const client = new DataForSEOClient();
-    const products = await client.searchProducts(q, market, 100);
+    const products = await client.searchProducts(q, market, depth);
 
     // Fetch existing ASINs for this site to flag already-added ones
     const { data: existing } = await supabase
@@ -74,13 +81,17 @@ export async function GET(request: NextRequest, { params }: Params) {
       reviewCount: p.reviewCount ?? 0,
       isPrime: p.isPrime,
       isBestSeller: p.isBestSeller,
+      isAmazonChoice: p.isAmazonChoice,
+      boughtPastMonth: p.boughtPastMonth,
+      specialOffers: p.specialOffers,
+      rankPosition: p.rankPosition,
       alreadyAdded: existingAsins.has(p.asin),
     }));
 
     console.log(
-      `[product-search] siteId=${siteId} q="${q}" market=${market} results=${results.length}`,
+      `[product-search] siteId=${siteId} q="${q}" market=${market} depth=${depth} results=${results.length}`,
     );
-    return NextResponse.json({ results, market });
+    return NextResponse.json({ results, market, depth });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[product-search] siteId=${siteId} q="${q}" error=${message}`);
@@ -162,6 +173,10 @@ export async function POST(request: NextRequest, { params }: Params) {
         review_count: p.reviewCount,
         is_prime: p.isPrime,
         source_image_url: p.imageUrl,
+        is_amazon_choice: p.isAmazonChoice,
+        bought_past_month: p.boughtPastMonth,
+        special_offers: p.specialOffers,
+        rank_position: p.rankPosition,
       })
       .select("id")
       .single();
@@ -188,7 +203,22 @@ export async function POST(request: NextRequest, { params }: Params) {
     await supabase.from("category_products").insert(links);
   }
 
-  return NextResponse.json({ added, skipped });
+  // Auto-enqueue SEO content generation for each inserted product.
+  // Fire-and-forget: failures are logged but don't block the response.
+  // Uses the first categoryId for context (or empty string if none selected).
+  const primaryCategoryId = categoryIds[0] ?? "";
+  if (insertedIds.length > 0) {
+    for (const productId of insertedIds) {
+      enqueueProductSeo(siteId, productId, primaryCategoryId).catch((err) => {
+        console.error(
+          `[product-search/bulk-add] SEO enqueue failed productId=${productId}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      });
+    }
+    console.log(`[product-search/bulk-add] enqueued SEO jobs for ${insertedIds.length} products`);
+  }
+
+  return NextResponse.json({ added, skipped, seoJobsQueued: insertedIds.length });
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
