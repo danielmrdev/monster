@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 /**
  * Enqueue a homepage SEO content generation job.
@@ -47,39 +47,30 @@
  * this version accepts currentScore so the worker can surface it in the result.
  */
 
-import { createServiceClient } from "@/lib/supabase/service"
-import { seoContentQueue } from "@monster/agents"
-import type { SeoContentPayload } from "@monster/agents"
+import { createServiceClient } from "@/lib/supabase/service";
+import { seoContentQueue } from "@monster/agents";
+import type { SeoContentPayload } from "@monster/agents";
 export async function enqueueHomepageSeo(
   siteId: string,
   options?: {
-    fields?: "meta_description" | "intro" | "seo_text"[]
+    fields?: Array<"meta_description" | "intro" | "seo_text">;
     currentContent?: {
-      focus_keyword?: string | null
-      meta_description?: string | null
-      intro?: string | null
-      seo_text?: string | null
-    }
-    currentScore?: number | null
+      focus_keyword?: string | null;
+      meta_description?: string | null;
+      intro?: string | null;
+      seo_text?: string | null;
+    };
+    currentScore?: number | null;
   },
-): Promise<{ jobId: string | null error?: string }> {
-  const supabase = createServiceClient()
+): Promise<{ jobId: string | null; error?: string }> {
+  const supabase = createServiceClient();
   const payload: SeoContentPayload = {
     siteId,
     jobType: "seo_homepage",
-    ...(options?.fields &&
-    options.fields.length >
-      0
-      ? { homepageFields: options.fields }
-      : {}),
-    ...(options?.currentContent
-      ? { currentContent: options.currentContent }
-      : {}),
-    ...(options?.currentScore !=
-    null
-      ? { currentScore: options.currentScore }
-      : {}),
-  }
+    ...(options?.fields && options.fields.length > 0 ? { homepageFields: options.fields } : {}),
+    ...(options?.currentContent ? { currentContent: options.currentContent } : {}),
+    ...(options?.currentScore != null ? { currentScore: options.currentScore } : {}),
+  };
 
   const { data: jobRow, error: insertErr } = await supabase
     .from("ai_jobs")
@@ -90,41 +81,33 @@ export async function enqueueHomepageSeo(
       payload: { siteId, jobType: "seo_homepage" },
     })
     .select("id")
-    .single()
+    .single();
 
   if (insertErr || !jobRow) {
     return {
       jobId: null,
-      error:
-        insertErr?.message ??
-        "Failed to create job record",
-    }
+      error: insertErr?.message ?? "Failed to create job record",
+    };
   }
 
   try {
-    const queue = seoContentQueue()
+    const queue = seoContentQueue();
     const bullJob = await queue.add("seo_homepage", payload, {
       jobId: jobRow.id,
       removeOnComplete: false,
       removeOnFail: false,
-    })
+    });
 
     await supabase
       .from("ai_jobs")
       .update({
-        bull_job_id:
-          bullJob.id ??
-          null,
+        bull_job_id: bullJob.id ?? null,
       })
-      .eq("id", jobRow.id)
+      .eq("id", jobRow.id);
 
-    return { jobId: jobRow.id }
+    return { jobId: jobRow.id };
   } catch (err) {
-    const message =
-      err instanceof
-      Error
-        ? err.message
-        : String(err)
+    const message = err instanceof Error ? err.message : String(err);
     await supabase
       .from("ai_jobs")
       .update({
@@ -132,41 +115,32 @@ export async function enqueueHomepageSeo(
         error: message,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", jobRow.id)
-    return { jobId: jobRow.id, error: message }
+      .eq("id", jobRow.id);
+    return { jobId: jobRow.id, error: message };
   }
 }
 export async function enqueueCategorySeo(
   siteId: string,
   categoryId: string,
   options?: {
-    fields?: "focus_keyword" | "description" | "seo_text"[]
+    fields?: Array<"focus_keyword" | "description" | "seo_text">;
     currentContent?: {
-      focus_keyword?: string | null
-      seo_text?: string | null
-      description?: string | null
-    }
-    currentScore?: number | null
+      focus_keyword?: string | null;
+      seo_text?: string | null;
+      description?: string | null;
+    };
+    currentScore?: number | null;
   },
-): Promise<{ jobId: string | null error?: string }> {
-  const supabase = createServiceClient()
+): Promise<{ jobId: string | null; error?: string }> {
+  const supabase = createServiceClient();
   const payload: SeoContentPayload = {
     siteId,
     jobType: "seo_category",
     categoryId,
-    ...(options?.fields &&
-    options.fields.length >
-      0
-      ? { categoryFields: options.fields }
-      : {}),
-    ...(options?.currentContent
-      ? { currentCategoryContent: options.currentContent }
-      : {}),
-    ...(options?.currentScore !=
-    null
-      ? { currentCategoryScore: options.currentScore }
-      : {}),
-  }
+    ...(options?.fields && options.fields.length > 0 ? { categoryFields: options.fields } : {}),
+    ...(options?.currentContent ? { currentCategoryContent: options.currentContent } : {}),
+    ...(options?.currentScore != null ? { currentCategoryScore: options.currentScore } : {}),
+  };
 
   const { data: jobRow, error: insertErr } = await supabase
     .from("ai_jobs")
@@ -177,41 +151,33 @@ export async function enqueueCategorySeo(
       payload: { siteId, jobType: "seo_category", categoryId },
     })
     .select("id")
-    .single()
+    .single();
 
   if (insertErr || !jobRow) {
     return {
       jobId: null,
-      error:
-        insertErr?.message ??
-        "Failed to create job record",
-    }
+      error: insertErr?.message ?? "Failed to create job record",
+    };
   }
 
   try {
-    const queue = seoContentQueue()
+    const queue = seoContentQueue();
     const bullJob = await queue.add("seo_category", payload, {
       jobId: jobRow.id,
       removeOnComplete: false,
       removeOnFail: false,
-    })
+    });
 
     await supabase
       .from("ai_jobs")
       .update({
-        bull_job_id:
-          bullJob.id ??
-          null,
+        bull_job_id: bullJob.id ?? null,
       })
-      .eq("id", jobRow.id)
+      .eq("id", jobRow.id);
 
-    return { jobId: jobRow.id }
+    return { jobId: jobRow.id };
   } catch (err) {
-    const message =
-      err instanceof
-      Error
-        ? err.message
-        : String(err)
+    const message = err instanceof Error ? err.message : String(err);
     await supabase
       .from("ai_jobs")
       .update({
@@ -219,22 +185,22 @@ export async function enqueueCategorySeo(
         error: message,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", jobRow.id)
-    return { jobId: jobRow.id, error: message }
+      .eq("id", jobRow.id);
+    return { jobId: jobRow.id, error: message };
   }
 }
 export async function enqueueProductSeo(
   siteId: string,
   productId: string,
   categoryId: string,
-): Promise<{ jobId: string | null error?: string }> {
-  const supabase = createServiceClient()
+): Promise<{ jobId: string | null; error?: string }> {
+  const supabase = createServiceClient();
   const payload: SeoContentPayload = {
     siteId,
     jobType: "seo_product",
     productId,
     categoryId,
-  }
+  };
 
   const { data: jobRow, error: insertErr } = await supabase
     .from("ai_jobs")
@@ -245,41 +211,33 @@ export async function enqueueProductSeo(
       payload: { siteId, jobType: "seo_product", productId, categoryId },
     })
     .select("id")
-    .single()
+    .single();
 
   if (insertErr || !jobRow) {
     return {
       jobId: null,
-      error:
-        insertErr?.message ??
-        "Failed to create job record",
-    }
+      error: insertErr?.message ?? "Failed to create job record",
+    };
   }
 
   try {
-    const queue = seoContentQueue()
+    const queue = seoContentQueue();
     const bullJob = await queue.add("seo_product", payload, {
       jobId: jobRow.id,
       removeOnComplete: false,
       removeOnFail: false,
-    })
+    });
 
     await supabase
       .from("ai_jobs")
       .update({
-        bull_job_id:
-          bullJob.id ??
-          null,
+        bull_job_id: bullJob.id ?? null,
       })
-      .eq("id", jobRow.id)
+      .eq("id", jobRow.id);
 
-    return { jobId: jobRow.id }
+    return { jobId: jobRow.id };
   } catch (err) {
-    const message =
-      err instanceof
-      Error
-        ? err.message
-        : String(err)
+    const message = err instanceof Error ? err.message : String(err);
     await supabase
       .from("ai_jobs")
       .update({
@@ -287,20 +245,20 @@ export async function enqueueProductSeo(
         error: message,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", jobRow.id)
-    return { jobId: jobRow.id, error: message }
+      .eq("id", jobRow.id);
+    return { jobId: jobRow.id, error: message };
   }
 }
 export async function enqueueAllProductsSeo(
   siteId: string,
   categoryId: string,
-): Promise<{ jobId: string | null error?: string }> {
-  const supabase = createServiceClient()
+): Promise<{ jobId: string | null; error?: string }> {
+  const supabase = createServiceClient();
   const payload: SeoContentPayload = {
     siteId,
     jobType: "seo_products_batch",
     categoryId,
-  }
+  };
 
   const { data: jobRow, error: insertErr } = await supabase
     .from("ai_jobs")
@@ -311,41 +269,33 @@ export async function enqueueAllProductsSeo(
       payload: { siteId, jobType: "seo_products_batch", categoryId },
     })
     .select("id")
-    .single()
+    .single();
 
   if (insertErr || !jobRow) {
     return {
       jobId: null,
-      error:
-        insertErr?.message ??
-        "Failed to create job record",
-    }
+      error: insertErr?.message ?? "Failed to create job record",
+    };
   }
 
   try {
-    const queue = seoContentQueue()
+    const queue = seoContentQueue();
     const bullJob = await queue.add("seo_products_batch", payload, {
       jobId: jobRow.id,
       removeOnComplete: false,
       removeOnFail: false,
-    })
+    });
 
     await supabase
       .from("ai_jobs")
       .update({
-        bull_job_id:
-          bullJob.id ??
-          null,
+        bull_job_id: bullJob.id ?? null,
       })
-      .eq("id", jobRow.id)
+      .eq("id", jobRow.id);
 
-    return { jobId: jobRow.id }
+    return { jobId: jobRow.id };
   } catch (err) {
-    const message =
-      err instanceof
-      Error
-        ? err.message
-        : String(err)
+    const message = err instanceof Error ? err.message : String(err);
     await supabase
       .from("ai_jobs")
       .update({
@@ -353,8 +303,8 @@ export async function enqueueAllProductsSeo(
         error: message,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", jobRow.id)
-    return { jobId: jobRow.id, error: message }
+      .eq("id", jobRow.id);
+    return { jobId: jobRow.id, error: message };
   }
 }
 export async function getLatestSeoJobStatus(
@@ -362,42 +312,39 @@ export async function getLatestSeoJobStatus(
   jobType: "seo_homepage" | "seo_category" | "seo_product" | "seo_products_batch",
   entityId?: string,
 ) {
-  const supabase = createServiceClient()
+  const supabase = createServiceClient();
   let query = supabase
     .from("ai_jobs")
     .select("id, status, started_at, completed_at, error, result, created_at")
     .eq("site_id", siteId)
     .eq("job_type", jobType)
     .order("created_at", { ascending: false })
-    .limit(1)
+    .limit(1);
 
   if (entityId) {
-    if (
-      jobType ===
-      "seo_product"
-    ) {
-      query = query.eq("payload->>productId", entityId)
+    if (jobType === "seo_product") {
+      query = query.eq("payload->>productId", entityId);
     } else {
-      query = query.eq("payload->>categoryId", entityId)
+      query = query.eq("payload->>categoryId", entityId);
     }
   }
 
-  const { data } = await query.maybeSingle()
-  return data
+  const { data } = await query.maybeSingle();
+  return data;
 }
 export async function enqueueProductSeoFromPanel(
   siteId: string,
   productId: string,
   options?: {
-    currentScore?: number | null
+    currentScore?: number | null;
   },
-): Promise<{ jobId: string | null error?: string }> {
-  const supabase = createServiceClient()
+): Promise<{ jobId: string | null; error?: string }> {
+  const supabase = createServiceClient();
   const payload: SeoContentPayload = {
     siteId,
     jobType: "seo_product",
     productId,
-  }
+  };
 
   const { data: jobRow, error: insertErr } = await supabase
     .from("ai_jobs")
@@ -408,31 +355,31 @@ export async function enqueueProductSeoFromPanel(
       payload: { siteId, jobType: "seo_product", productId },
     })
     .select("id")
-    .single()
+    .single();
 
   if (insertErr || !jobRow) {
     return {
       jobId: null,
       error: insertErr?.message ?? "Failed to create job record",
-    }
+    };
   }
 
   try {
-    const queue = seoContentQueue()
+    const queue = seoContentQueue();
     const bullJob = await queue.add("seo_product", payload, {
       jobId: jobRow.id,
       removeOnComplete: false,
       removeOnFail: false,
-    })
+    });
 
     await supabase
       .from("ai_jobs")
       .update({ bull_job_id: bullJob.id ?? null })
-      .eq("id", jobRow.id)
+      .eq("id", jobRow.id);
 
-    return { jobId: jobRow.id }
+    return { jobId: jobRow.id };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
+    const message = err instanceof Error ? err.message : String(err);
     await supabase
       .from("ai_jobs")
       .update({
@@ -440,7 +387,7 @@ export async function enqueueProductSeoFromPanel(
         error: message,
         completed_at: new Date().toISOString(),
       })
-      .eq("id", jobRow.id)
-    return { jobId: jobRow.id, error: message }
+      .eq("id", jobRow.id);
+    return { jobId: jobRow.id, error: message };
   }
 }

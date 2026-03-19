@@ -1,19 +1,17 @@
-"use client" // kept for type reference; actual data comes from DB via props
-
+"use client"; // kept for type reference; actual data comes from DB via props
 // Logo upload state — initialized from current customization value
 
 // Favicon upload state — initialized from current customization value
 /* Basic Info */ /* Active toggle */ /* Name */ /* Domain */ /* Niche */ /* Market */ /* Language */ /* Currency */ /* Affiliate Tag */ /* Template */ /* Refresh Interval */ /* Customization */ /* Primary Color */ /* Accent Color */ /* Font Family */ /* Logo upload */ /* Favicon upload */ /* Homepage SEO */ /* Focus Keyword */ /* Meta Description */ /* Homepage Intro */ /* Homepage SEO Text */ /* Form-level error */ /* Actions */
-
-import { useActionState, useState } from "react"
-import Link from "next/link"
-import { updateSite, type UpdateSiteState } from "../../actions"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import type { SiteCustomization } from "@monster/shared"
+import { useActionState, useState } from "react";
+import Link from "next/link";
+import { updateSite, type UpdateSiteState } from "../../actions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import type { SiteCustomization } from "@monster/shared";
 
 const AMAZON_MARKETS = [
   { value: "ES", label: "Spain (ES)" },
@@ -26,7 +24,7 @@ const AMAZON_MARKETS = [
   { value: "CA", label: "Canada (CA)" },
   { value: "JP", label: "Japan (JP)" },
   { value: "AU", label: "Australia (AU)" },
-]
+];
 
 const LANGUAGES = [
   { value: "es", label: "Spanish (es)" },
@@ -35,7 +33,7 @@ const LANGUAGES = [
   { value: "fr", label: "French (fr)" },
   { value: "it", label: "Italian (it)" },
   { value: "ja", label: "Japanese (ja)" },
-]
+];
 
 const CURRENCIES = [
   { value: "EUR", label: "Euro (EUR)" },
@@ -45,13 +43,13 @@ const CURRENCIES = [
   { value: "CAD", label: "Canadian Dollar (CAD)" },
   { value: "JPY", label: "Japanese Yen (JPY)" },
   { value: "AUD", label: "Australian Dollar (AUD)" },
-]
+];
 
-const TEMPLATES: { value: string label: string }[] = []
+const TEMPLATES: { value: string; label: string }[] = [];
 
 function FieldError({ messages }: { messages?: string[] }) {
-  if (!messages?.length) return null
-  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>
+  if (!messages?.length) return null;
+  return <p className="text-xs text-destructive mt-1">{messages[0]}</p>;
 }
 
 function NativeSelect({
@@ -59,9 +57,9 @@ function NativeSelect({
   defaultValue,
   children,
 }: {
-  name: string
-  defaultValue?: string
-  children: React.ReactNode
+  name: string;
+  defaultValue?: string;
+  children: React.ReactNode;
 }) {
   return (
     <select
@@ -71,120 +69,120 @@ function NativeSelect({
     >
       {children}
     </select>
-  )
+  );
 }
 
 interface EditFormProps {
   site: {
-    id: string
-    name: string
-    domain: string | null
-    niche: string | null
-    market: string | null
-    language: string | null
-    currency: string | null
-    affiliate_tag: string | null
-    template_slug: string | null
-    customization: SiteCustomization | null
-    focus_keyword: string | null
-    homepage_seo_text: string | null
-    homepage_meta_description: string | null
-    homepage_intro: string | null
-    is_active: boolean
-    refresh_interval_hours: number
-  }
-  templates: { value: string label: string }[]
+    id: string;
+    name: string;
+    domain: string | null;
+    niche: string | null;
+    market: string | null;
+    language: string | null;
+    currency: string | null;
+    affiliate_tag: string | null;
+    template_slug: string | null;
+    customization: SiteCustomization | null;
+    focus_keyword: string | null;
+    homepage_seo_text: string | null;
+    homepage_meta_description: string | null;
+    homepage_intro: string | null;
+    is_active: boolean;
+    refresh_interval_hours: number;
+  };
+  templates: { value: string; label: string }[];
 }
 
 export function EditForm({ site, templates }: EditFormProps) {
-  const updateSiteWithId = updateSite.bind(null, site.id)
-  const [state, formAction, isPending] =
-    useActionState<UpdateSiteState, FormData>(updateSiteWithId, null)
+  const updateSiteWithId = updateSite.bind(null, site.id);
+  const [state, formAction, isPending] = useActionState<UpdateSiteState, FormData>(
+    updateSiteWithId,
+    null,
+  );
 
-  const errors = state?.errors
-  const c = site.customization
+  const errors = state?.errors;
+  const c = site.customization;
   const [logoUploadState, setLogoUploadState] = useState<{
-    uploading: boolean
-    path: string | null
-    error: string | null
+    uploading: boolean;
+    path: string | null;
+    error: string | null;
   }>({
     uploading: false,
-    path:
-      c?.logoUrl ??
-      null,
+    path: c?.logoUrl ?? null,
     error: null,
-  })
+  });
   const [faviconUploadState, setFaviconUploadState] = useState<{
-    uploading: boolean
-    path: string | null
-    error: string | null
-  }>({ uploading: false, path: c?.faviconDir ?? null, error: null })
+    uploading: boolean;
+    path: string | null;
+    error: string | null;
+  }>({ uploading: false, path: c?.faviconDir ?? null, error: null });
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setLogoUploadState({ uploading: true, path: null, error: null })
-    const fd = new FormData()
-    fd.append("file", file)
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploadState({ uploading: true, path: null, error: null });
+    const fd = new FormData();
+    fd.append("file", file);
     try {
       const res = await fetch(`/api/sites/${site.id}/upload-logo`, {
         method: "POST",
         body: fd,
-      })
-      const json = await res.json()
+      });
+      const json = await res.json();
       if (!res.ok) {
         setLogoUploadState({
           uploading: false,
           path: null,
           error: json.error ?? "Upload failed",
-        })
+        });
       } else {
         setLogoUploadState({
           uploading: false,
           path: json.logoUrl,
           error: null,
-        })
+        });
       }
     } catch {
       setLogoUploadState({
         uploading: false,
         path: null,
         error: "Upload failed",
-      })
+      });
     }
   }
 
   async function handleFaviconUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setFaviconUploadState({ uploading: true, path: null, error: null })
-    const fd = new FormData()
-    fd.append("file", file)
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFaviconUploadState({ uploading: true, path: null, error: null });
+    const fd = new FormData();
+    fd.append("file", file);
     try {
       const res = await fetch(`/api/sites/${site.id}/upload-favicon`, {
         method: "POST",
         body: fd,
-      })
-      const json = await res.json()
+      });
+      const json = await res.json();
       if (!res.ok) {
         setFaviconUploadState({
           uploading: false,
           path: null,
           error: json.error ?? "Upload failed",
-        })
+        });
       } else {
         setFaviconUploadState({
           uploading: false,
           path: json.faviconDir,
           error: null,
-        })
+        });
       }
     } catch {
       setFaviconUploadState({
         uploading: false,
         path: null,
         error: "Upload failed",
-      })
+      });
     }
   }
 
@@ -201,8 +199,8 @@ export function EditForm({ site, templates }: EditFormProps) {
             <div>
               <p className="text-sm font-medium">Site active</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Inactive sites are excluded from all automated jobs (product
-                refresh, generate, deploy)
+                Inactive sites are excluded from all automated jobs (product refresh, generate,
+                deploy)
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -326,10 +324,7 @@ export function EditForm({ site, templates }: EditFormProps) {
               <Label htmlFor="template_slug">
                 Template <span className="text-destructive">*</span>
               </Label>
-              <NativeSelect
-                name="template_slug"
-                defaultValue={site.template_slug ?? "tsa/classic"}
-              >
+              <NativeSelect name="template_slug" defaultValue={site.template_slug ?? "tsa/classic"}>
                 {templates.map(({ value, label }) => (
                   <option key={value} value={value}>
                     {label}
@@ -343,9 +338,7 @@ export function EditForm({ site, templates }: EditFormProps) {
           {}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
             <div className="space-y-1.5">
-              <Label htmlFor="refresh_interval_days">
-                Refresh Interval (days)
-              </Label>
+              <Label htmlFor="refresh_interval_days">Refresh Interval (days)</Label>
               <Input
                 id="refresh_interval_days"
                 name="refresh_interval_days"
@@ -382,8 +375,8 @@ export function EditForm({ site, templates }: EditFormProps) {
                   onChange={(e) => {
                     const textInput = document.getElementById(
                       "primaryColor",
-                    ) as HTMLInputElement | null
-                    if (textInput) textInput.value = e.target.value
+                    ) as HTMLInputElement | null;
+                    if (textInput) textInput.value = e.target.value;
                   }}
                 />
                 <Input
@@ -410,8 +403,8 @@ export function EditForm({ site, templates }: EditFormProps) {
                   onChange={(e) => {
                     const textInput = document.getElementById(
                       "accentColor",
-                    ) as HTMLInputElement | null
-                    if (textInput) textInput.value = e.target.value
+                    ) as HTMLInputElement | null;
+                    if (textInput) textInput.value = e.target.value;
                   }}
                 />
                 <Input
@@ -455,20 +448,12 @@ export function EditForm({ site, templates }: EditFormProps) {
                 <p className="text-sm text-muted-foreground">Uploading…</p>
               )}
               {logoUploadState.path && !logoUploadState.uploading && (
-                <p className="text-sm text-green-600 truncate">
-                  ✓ {logoUploadState.path}
-                </p>
+                <p className="text-sm text-green-600 truncate">✓ {logoUploadState.path}</p>
               )}
               {logoUploadState.error && (
-                <p className="text-sm text-destructive">
-                  {logoUploadState.error}
-                </p>
+                <p className="text-sm text-destructive">{logoUploadState.error}</p>
               )}
-              <input
-                type="hidden"
-                name="logoUrl"
-                value={logoUploadState.path ?? ""}
-              />
+              <input type="hidden" name="logoUrl" value={logoUploadState.path ?? ""} />
             </div>
 
             {}
@@ -485,20 +470,12 @@ export function EditForm({ site, templates }: EditFormProps) {
                 <p className="text-sm text-muted-foreground">Uploading…</p>
               )}
               {faviconUploadState.path && !faviconUploadState.uploading && (
-                <p className="text-sm text-green-600 truncate">
-                  ✓ {faviconUploadState.path}
-                </p>
+                <p className="text-sm text-green-600 truncate">✓ {faviconUploadState.path}</p>
               )}
               {faviconUploadState.error && (
-                <p className="text-sm text-destructive">
-                  {faviconUploadState.error}
-                </p>
+                <p className="text-sm text-destructive">{faviconUploadState.error}</p>
               )}
-              <input
-                type="hidden"
-                name="faviconDir"
-                value={faviconUploadState.path ?? ""}
-              />
+              <input type="hidden" name="faviconDir" value={faviconUploadState.path ?? ""} />
             </div>
           </div>
         </CardContent>
@@ -537,9 +514,7 @@ export function EditForm({ site, templates }: EditFormProps) {
 
           {}
           <div className="space-y-1.5">
-            <Label htmlFor="homepage_intro">
-              Intro (below H1, above categories)
-            </Label>
+            <Label htmlFor="homepage_intro">Intro (below H1, above categories)</Label>
             <Textarea
               id="homepage_intro"
               name="homepage_intro"
@@ -585,5 +560,5 @@ export function EditForm({ site, templates }: EditFormProps) {
         </Link>
       </div>
     </form>
-  )
+  );
 }

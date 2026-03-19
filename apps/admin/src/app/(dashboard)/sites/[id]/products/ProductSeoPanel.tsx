@@ -1,4 +1,4 @@
-"use client"
+"use client";
 /** Current content used to display a preview and pass score context. */
 
 /**
@@ -11,123 +11,116 @@
  * - router.refresh() on completion so the edit form reflects updated content
  * - Resumes in-progress job state on page navigation (onResume)
  */ /* Header */ /* Fields note */ /* Current content preview */ /* Status bar */ /* Action button */
-
-import { useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import {
-  enqueueProductSeoFromPanel,
-  getLatestSeoJobStatus,
-} from "../seo/actions"
-import { useJobPoller } from "../useJobPoller"
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { enqueueProductSeoFromPanel, getLatestSeoJobStatus } from "../seo/actions";
+import { useJobPoller } from "../useJobPoller";
 
 interface ProductSeoPanelProps {
-  siteId: string
-  productId: string
-  currentScore?: number | null
+  siteId: string;
+  productId: string;
+  currentScore?: number | null;
   currentContent?: {
-    focus_keyword?: string | null
-    meta_description?: string | null
-    detailed_description?: string | null
-  }
+    focus_keyword?: string | null;
+    meta_description?: string | null;
+    detailed_description?: string | null;
+  };
 }
 
-type Phase = "idle" | "enqueueing" | "pending" | "running" | "completed" | "failed"
+type Phase = "idle" | "enqueueing" | "pending" | "running" | "completed" | "failed";
 export function ProductSeoPanel({
   siteId,
   productId,
   currentScore,
   currentContent,
 }: ProductSeoPanelProps) {
-  const router = useRouter()
-  const [phase, setPhase] = useState<Phase>("idle")
-  const [error, setError] = useState<string | null>(null)
-  const [resultScore, setResultScore] = useState<number | null>(null)
-  const [resultAttempts, setResultAttempts] = useState<number | null>(null)
-  const [polling, setPolling] = useState(false)
+  const router = useRouter();
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [resultScore, setResultScore] = useState<number | null>(null);
+  const [resultAttempts, setResultAttempts] = useState<number | null>(null);
+  const [polling, setPolling] = useState(false);
   const [lastJob, setLastJob] = useState<{
-    status: string
-    completed_at?: string | null
-    result?: unknown
-    error?: string | null
-  } | null>(null)
+    status: string;
+    completed_at?: string | null;
+    result?: unknown;
+    error?: string | null;
+  } | null>(null);
 
   const fetchStatus = useCallback(
     () => getLatestSeoJobStatus(siteId, "seo_product", productId),
     [siteId, productId],
-  )
+  );
 
   useJobPoller({
     fetchFn: fetchStatus,
     enabled: polling,
     intervalMs: 2000,
     onResume: (job) => {
-      if (!job) return false
-      setLastJob(job)
+      if (!job) return false;
+      setLastJob(job);
       if (job.status === "pending" || job.status === "running") {
-        setPhase(job.status as Phase)
-        setPolling(true)
-        return true
+        setPhase(job.status as Phase);
+        setPolling(true);
+        return true;
       }
       if (job.status === "completed") {
-        setPhase("completed")
-        const result = job.result as { score?: number attempts?: number } | null
-        setResultScore(result?.score ?? null)
-        setResultAttempts(result?.attempts ?? null)
+        setPhase("completed");
+        const result = job.result as { score?: number; attempts?: number } | null;
+        setResultScore(result?.score ?? null);
+        setResultAttempts(result?.attempts ?? null);
       } else if (job.status === "failed") {
-        setPhase("failed")
-        setError(job.error ?? "Job failed")
+        setPhase("failed");
+        setError(job.error ?? "Job failed");
       }
-      return false
+      return false;
     },
     onComplete: (job) => {
-      setPolling(false)
-      setPhase("completed")
-      setLastJob(job)
-      const result = job.result as { score?: number attempts?: number } | null
-      setResultScore(result?.score ?? null)
-      setResultAttempts(result?.attempts ?? null)
-      router.refresh()
+      setPolling(false);
+      setPhase("completed");
+      setLastJob(job);
+      const result = job.result as { score?: number; attempts?: number } | null;
+      setResultScore(result?.score ?? null);
+      setResultAttempts(result?.attempts ?? null);
+      router.refresh();
     },
     onFail: (job) => {
-      setPolling(false)
-      setPhase("failed")
-      setLastJob(job)
-      setError(job.error ?? "Job failed")
+      setPolling(false);
+      setPhase("failed");
+      setLastJob(job);
+      setError(job.error ?? "Job failed");
     },
-  })
+  });
 
   async function handleGenerate() {
-    setError(null)
-    setResultScore(null)
-    setResultAttempts(null)
-    setPhase("enqueueing")
+    setError(null);
+    setResultScore(null);
+    setResultAttempts(null);
+    setPhase("enqueueing");
 
     const result = await enqueueProductSeoFromPanel(siteId, productId, {
       currentScore,
-    })
+    });
 
     if (result.error) {
-      setPhase("failed")
-      setError(result.error)
-      return
+      setPhase("failed");
+      setError(result.error);
+      return;
     }
 
-    setPhase("pending")
-    setPolling(true)
+    setPhase("pending");
+    setPolling(true);
   }
 
-  const isActive =
-    phase === "enqueueing" || phase === "pending" || phase === "running"
-  const hasContent = !!(
-    currentContent?.detailed_description || currentContent?.meta_description
-  )
+  const isActive = phase === "enqueueing" || phase === "pending" || phase === "running";
+  const hasContent = !!(currentContent?.detailed_description || currentContent?.meta_description);
 
   const buttonLabel = (() => {
-    if (phase === "enqueueing") return "Queuing…"
-    if (phase === "pending") return "Waiting for worker…"
-    if (phase === "running") return "Generating…"
-    return hasContent ? "✦ Regenerate SEO Content" : "✦ Generate SEO Content"
-  })()
+    if (phase === "enqueueing") return "Queuing…";
+    if (phase === "pending") return "Waiting for worker…";
+    if (phase === "running") return "Generating…";
+    return hasContent ? "✦ Regenerate SEO Content" : "✦ Generate SEO Content";
+  })();
 
   return (
     <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4 space-y-3">
@@ -136,8 +129,7 @@ export function ProductSeoPanel({
         <p className="text-sm font-medium text-foreground">Generate with AI</p>
         {currentScore != null && (
           <p className="text-xs text-muted-foreground mt-0.5">
-            Current content quality:{" "}
-            <span className="font-mono">{currentScore}/100</span>
+            Current content quality: <span className="font-mono">{currentScore}/100</span>
             {currentScore < 70
               ? " — AI will try to improve"
               : currentScore >= 80
@@ -149,30 +141,27 @@ export function ProductSeoPanel({
 
       {}
       <p className="text-xs text-muted-foreground">
-        Generates: detailed description (320–400 words with H2s), pros &amp;
-        cons, user opinions, meta description, and focus keyword.
+        Generates: detailed description (320–400 words with H2s), pros &amp; cons, user opinions,
+        meta description, and focus keyword.
       </p>
 
       {}
-      {currentContent &&
-        (currentContent.focus_keyword || currentContent.meta_description) && (
-          <div className="space-y-1 text-xs text-muted-foreground border-t border-border pt-2">
-            {currentContent.focus_keyword && (
-              <p className="truncate">
-                <span className="font-medium text-foreground/60">
-                  Keyword:{" "}
-                </span>
-                {currentContent.focus_keyword}
-              </p>
-            )}
-            {currentContent.meta_description && (
-              <p className="truncate">
-                <span className="font-medium text-foreground/60">Meta: </span>
-                {currentContent.meta_description}
-              </p>
-            )}
-          </div>
-        )}
+      {currentContent && (currentContent.focus_keyword || currentContent.meta_description) && (
+        <div className="space-y-1 text-xs text-muted-foreground border-t border-border pt-2">
+          {currentContent.focus_keyword && (
+            <p className="truncate">
+              <span className="font-medium text-foreground/60">Keyword: </span>
+              {currentContent.focus_keyword}
+            </p>
+          )}
+          {currentContent.meta_description && (
+            <p className="truncate">
+              <span className="font-medium text-foreground/60">Meta: </span>
+              {currentContent.meta_description}
+            </p>
+          )}
+        </div>
+      )}
 
       {}
       {(phase === "pending" || phase === "running") && (
@@ -197,9 +186,7 @@ export function ProductSeoPanel({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          {phase === "pending"
-            ? "Waiting in queue…"
-            : "AI generating content (up to 3 attempts)…"}
+          {phase === "pending" ? "Waiting in queue…" : "AI generating content (up to 3 attempts)…"}
         </div>
       )}
 
@@ -211,15 +198,11 @@ export function ProductSeoPanel({
             {resultScore != null && (
               <>
                 {" "}
-                — content quality:{" "}
-                <span className="font-mono font-medium">{resultScore}/100</span>
+                — content quality: <span className="font-mono font-medium">{resultScore}/100</span>
               </>
             )}
             {resultAttempts != null && resultAttempts > 1 && (
-              <span className="text-green-400/70">
-                {" "}
-                ({resultAttempts} attempts)
-              </span>
+              <span className="text-green-400/70"> ({resultAttempts} attempts)</span>
             )}
             {lastJob?.completed_at && (
               <span className="text-green-400/50 ml-1">
@@ -275,5 +258,5 @@ export function ProductSeoPanel({
         </button>
       </div>
     </div>
-  )
+  );
 }

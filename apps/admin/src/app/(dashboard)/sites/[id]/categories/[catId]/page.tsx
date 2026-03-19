@@ -1,34 +1,33 @@
-import { notFound } from "next/navigation"
-import Link from "next/link"
-import { createServiceClient } from "@/lib/supabase/service"
-import { CategoryProductsSection } from "./CategoryProductsSection"
-import { CategorySeoPanel } from "./CategorySeoPanel"
-import { MarkdownPreview } from "@/components/MarkdownPreview"
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { createServiceClient } from "@/lib/supabase/service";
+import { CategoryProductsSection } from "./CategoryProductsSection";
+import { CategorySeoPanel } from "./CategorySeoPanel";
+import { MarkdownPreview } from "@/components/MarkdownPreview";
 
-export const dynamic = "force-dynamic"
+export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: Promise<{ id: string catId: string }>
+  params: Promise<{ id: string; catId: string }>;
 }
 
 export default async function CategoryDetailPage({ params }: PageProps) {
-  const { id: siteId, catId } = await params
-  const supabase = createServiceClient()
+  const { id: siteId, catId } = await params;
+  const supabase = createServiceClient();
 
   // Fetch site name + category in parallel — both needed for navigation and content
-  const [{ data: site }, { data: category, error: catError }] =
-    await Promise.all([
-      supabase.from("sites").select("id, name").eq("id", siteId).single(),
-      supabase
-        .from("tsa_categories")
-        .select("id, name, slug, description, focus_keyword, seo_text")
-        .eq("id", catId)
-        .eq("site_id", siteId)
-        .single(),
-    ])
+  const [{ data: site }, { data: category, error: catError }] = await Promise.all([
+    supabase.from("sites").select("id, name").eq("id", siteId).single(),
+    supabase
+      .from("tsa_categories")
+      .select("id, name, slug, description, focus_keyword, seo_text")
+      .eq("id", catId)
+      .eq("site_id", siteId)
+      .single(),
+  ]);
 
   if (!site || catError || !category) {
-    notFound()
+    notFound();
   }
 
   // Fetch category SEO score (content_quality_score) for the /category/<slug> path
@@ -37,7 +36,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
     .select("content_quality_score")
     .eq("site_id", siteId)
     .eq("page_path", `/categories/${category.slug}/`)
-    .maybeSingle()
+    .maybeSingle();
 
   // Fetch initial products scoped to this category via !inner join
   // category_products join metadata stripped before passing to client component
@@ -50,30 +49,26 @@ export default async function CategoryDetailPage({ params }: PageProps) {
     .eq("site_id", siteId)
     .eq("category_products.category_id", catId)
     .order("created_at", { ascending: false })
-    .range(0, 24)
+    .range(0, 24);
 
-  const initialTotal = count ?? 0
+  const initialTotal = count ?? 0;
   // Strip join metadata — category_products is internal and not part of the Product shape
-  const initialProducts = (rawProducts ?? []).map(
-    ({ category_products: _cp, ...p }) => p,
-  )
+  const initialProducts = (rawProducts ?? []).map(({ category_products: _cp, ...p }) => p);
 
   // Fetch SEO scores for the initial product batch (keyed by page_path = /products/<slug>/)
-  const productSlugs = initialProducts
-    .map((p) => p.slug)
-    .filter(Boolean) as string[]
-  let initialProductScores: Record<string, number | null> = {}
+  const productSlugs = initialProducts.map((p) => p.slug).filter(Boolean) as string[];
+  let initialProductScores: Record<string, number | null> = {};
   if (productSlugs.length > 0) {
-    const paths = productSlugs.map((s) => `/products/${s}/`)
+    const paths = productSlugs.map((s) => `/products/${s}/`);
     const { data: scoreRows } = await supabase
       .from("seo_scores")
       .select("page_path, content_quality_score, overall_score")
       .eq("site_id", siteId)
-      .in("page_path", paths)
+      .in("page_path", paths);
     if (scoreRows) {
       for (const row of scoreRows) {
-        const slug = row.page_path.replace("/products/", "").replace("/", "")
-        initialProductScores[slug] = row.overall_score ?? null
+        const slug = row.page_path.replace("/products/", "").replace("/", "");
+        initialProductScores[slug] = row.overall_score ?? null;
       }
     }
   }
@@ -89,12 +84,8 @@ export default async function CategoryDetailPage({ params }: PageProps) {
           >
             ← {site.name}
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight truncate">
-            {category.name}
-          </h1>
-          <p className="text-sm text-muted-foreground font-mono shrink-0">
-            /{category.slug}
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight truncate">{category.name}</h1>
+          <p className="text-sm text-muted-foreground font-mono shrink-0">/{category.slug}</p>
         </div>
         <Link
           href={`/sites/${siteId}/categories/${catId}/edit`}
@@ -109,25 +100,15 @@ export default async function CategoryDetailPage({ params }: PageProps) {
         <h2 className="text-sm font-semibold text-foreground">Category SEO</h2>
         <dl className="space-y-4">
           <div>
-            <dt className="text-xs font-medium text-muted-foreground">
-              Focus Keyword
-            </dt>
-            <dd className="mt-1 text-sm text-foreground">
-              {category.focus_keyword ?? "—"}
-            </dd>
+            <dt className="text-xs font-medium text-muted-foreground">Focus Keyword</dt>
+            <dd className="mt-1 text-sm text-foreground">{category.focus_keyword ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground">
-              Description
-            </dt>
-            <dd className="mt-1 text-sm text-foreground">
-              {category.description ?? "—"}
-            </dd>
+            <dt className="text-xs font-medium text-muted-foreground">Description</dt>
+            <dd className="mt-1 text-sm text-foreground">{category.description ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground">
-              SEO Text
-            </dt>
+            <dt className="text-xs font-medium text-muted-foreground">SEO Text</dt>
             <dd className="mt-2">
               <MarkdownPreview content={category.seo_text} />
             </dd>
@@ -155,5 +136,5 @@ export default async function CategoryDetailPage({ params }: PageProps) {
         initialProductScores={initialProductScores}
       />
     </div>
-  )
+  );
 }

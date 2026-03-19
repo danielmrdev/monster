@@ -1,4 +1,4 @@
-"use client"
+"use client";
 /** Map of product slug → overall SEO score (from seo_scores table). Keyed by slug. */
 // Product slug → overall SEO score. Populated from server for initial page, then API for subsequent pages.
 // Fetch SEO scores for these products by slug
@@ -6,62 +6,54 @@
 
 // Debounce search
 /* Header */ /* Search */ /* Empty states */ /* Product list */ /* Thumbnail */ /* Info */ /* Actions — Edit link + SEO score badge */ /* Pagination */
+// Reset scores for new page — only show scores for currently visible products
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Input } from "@/components/ui/input";
+import { GenerateAllProductsSeoButton } from "./GenerateAllProductsSeoButton";
+import SeoJobStatus from "../../SeoJobStatus";
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { Input } from "@/components/ui/input"
-import { GenerateAllProductsSeoButton } from "./GenerateAllProductsSeoButton"
-import SeoJobStatus from "../../SeoJobStatus"
-
-const PAGE_SIZE = 25
+const PAGE_SIZE = 25;
 
 interface Product {
-  id: string
-  asin: string
-  slug?: string | null
-  title: string | null
-  current_price: number | null
-  rating: number | null
-  review_count: number | null
-  is_prime: boolean
-  source_image_url: string | null
-  images: string[] | null
+  id: string;
+  asin: string;
+  slug?: string | null;
+  title: string | null;
+  current_price: number | null;
+  rating: number | null;
+  review_count: number | null;
+  is_prime: boolean;
+  source_image_url: string | null;
+  images: string[] | null;
 }
 
 interface ApiResponse {
-  products: Product[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
+  products: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 interface Props {
-  siteId: string
-  catId: string
-  initialProducts: Product[]
-  initialTotal: number
-  initialProductScores?: Record<string, number | null>
+  siteId: string;
+  catId: string;
+  initialProducts: Product[];
+  initialTotal: number;
+  initialProductScores?: Record<string, number | null>;
 }
 
 function StarRating({ rating }: { rating: number }) {
-  const stars =
-    Math.round(
-      rating *
-        2,
-    ) /
-    2
+  const stars = Math.round(rating * 2) / 2;
   return (
     <span className="text-amber-400 text-xs">
       {"★".repeat(Math.floor(stars))}
       {stars % 1 !== 0 ? "½" : ""}
-      {"☆".repeat(
-        5 -
-          Math.ceil(stars),
-      )}
+      {"☆".repeat(5 - Math.ceil(stars))}
     </span>
-  )
+  );
 }
 
 export function CategoryProductsSection({
@@ -71,106 +63,90 @@ export function CategoryProductsSection({
   initialTotal,
   initialProductScores = {},
 }: Props) {
-  const [products, setProducts] = useState<Product[]>(initialProducts)
-  const [total, setTotal] = useState(initialTotal)
-  const [totalPages, setTotalPages] = useState(
-    Math.ceil(
-      initialTotal /
-        PAGE_SIZE,
-    ),
-  )
-  const [page, setPage] = useState(1)
-  const [query, setQuery] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [total, setTotal] = useState(initialTotal);
+  const [totalPages, setTotalPages] = useState(Math.ceil(initialTotal / PAGE_SIZE));
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
   const [productScores, setProductScores] =
-    useState<Record<string, number | null>>(initialProductScores)
+    useState<Record<string, number | null>>(initialProductScores);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const queryRef = useRef(query)
-  queryRef.current = query
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryRef = useRef(query);
+  queryRef.current = query;
 
   const fetchProducts = useCallback(
     async (q: string, p: number) => {
-      setLoading(true)
+      setLoading(true);
       try {
         const params = new URLSearchParams({
           page: String(p),
           limit: String(PAGE_SIZE),
-        })
-        if (q) params.set("q", q)
-        const res = await fetch(
-          `/api/sites/${siteId}/categories/${catId}/products?${params}`,
-        )
-        if (!res.ok) return
-        const data: ApiResponse = await res.json()
-        setProducts(data.products)
-        setTotal(data.total)
-        setTotalPages(data.totalPages)
-        setPage(data.page)
-        const slugs = data.products
-          .map((p) => p.slug)
-          .filter(Boolean) as string[]
-        if (
-          slugs.length >
-          0
-        ) {
+        });
+        if (q) params.set("q", q);
+        const res = await fetch(`/api/sites/${siteId}/categories/${catId}/products?${params}`);
+        if (!res.ok) return;
+        const data: ApiResponse = await res.json();
+        setProducts(data.products);
+        setTotal(data.total);
+        setTotalPages(data.totalPages);
+        setPage(data.page);
+        const slugs = data.products.map((p) => p.slug).filter(Boolean) as string[];
+        setProductScores({});
+        if (slugs.length > 0) {
           try {
             const scoreRes = await fetch(
               `/api/sites/${siteId}/product-scores?slugs=${slugs.join(",")}`,
-            )
+            );
             if (scoreRes.ok) {
-              const scoreData =
-                (await scoreRes.json()) as Record<string, number | null>
-              setProductScores((prev) => ({ ...prev, ...scoreData }))
+              const scoreData = (await scoreRes.json()) as Record<string, number | null>;
+              setProductScores(scoreData);
             }
           } catch {}
         }
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     },
     [siteId, catId],
-  )
+  );
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      fetchProducts(query, 1)
-    }, 300)
+      fetchProducts(query, 1);
+    }, 300);
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [query, fetchProducts])
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query, fetchProducts]);
 
   function handlePageChange(newPage: number) {
-    fetchProducts(queryRef.current, newPage)
+    fetchProducts(queryRef.current, newPage);
   }
 
-  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
-  const to = Math.min(page * PAGE_SIZE, total)
+  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, total);
 
   return (
-    <div
-      id="category-products"
-      className="rounded-xl border border-border bg-card px-6 py-5"
-    >
+    <div id="category-products" className="rounded-xl border border-border bg-card px-6 py-5">
       {}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Products
           {total > 0 && (
-            <span className="ml-2 font-normal normal-case text-foreground/60">
-              {total}
-            </span>
+            <span className="ml-2 font-normal normal-case text-foreground/60">{total}</span>
           )}
         </h2>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/sites/${siteId}/products/new?categoryId=${catId}`}
+            className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground border border-border hover:bg-muted/40 hover:text-foreground transition-colors"
+          >
+            + Add Products
+          </Link>
           <GenerateAllProductsSeoButton siteId={siteId} categoryId={catId} />
-          <SeoJobStatus
-            siteId={siteId}
-            jobType="seo_products_batch"
-            entityId={catId}
-            compact
-          />
+          <SeoJobStatus siteId={siteId} jobType="seo_products_batch" entityId={catId} compact />
         </div>
       </div>
 
@@ -189,17 +165,12 @@ export function CategoryProductsSection({
 
       {}
       {!loading && products.length === 0 && !query && (
-        <p className="text-sm text-muted-foreground">
-          No products in this category yet.
-        </p>
+        <p className="text-sm text-muted-foreground">No products in this category yet.</p>
       )}
 
       {!loading && products.length === 0 && query && (
         <p className="text-sm text-muted-foreground">
-          No products match{" "}
-          <span className="text-foreground font-medium">
-            &quot;{query}&quot;
-          </span>
+          No products match <span className="text-foreground font-medium">&quot;{query}&quot;</span>
           .
         </p>
       )}
@@ -214,9 +185,7 @@ export function CategoryProductsSection({
           {products.map((product) => {
             const imageUrl =
               product.source_image_url ??
-              (product.images && product.images.length > 0
-                ? product.images[0]
-                : null)
+              (product.images && product.images.length > 0 ? product.images[0] : null);
 
             return (
               <div
@@ -246,9 +215,7 @@ export function CategoryProductsSection({
                       {product.asin}
                     </span>
                     {product.is_prime && (
-                      <span className="text-xs text-blue-400 font-semibold">
-                        Prime
-                      </span>
+                      <span className="text-xs text-blue-400 font-semibold">Prime</span>
                     )}
                     {product.current_price != null && (
                       <span className="text-sm font-medium text-foreground">
@@ -257,16 +224,12 @@ export function CategoryProductsSection({
                     )}
                   </div>
                   {product.title && (
-                    <p className="text-sm text-foreground mt-0.5 line-clamp-1">
-                      {product.title}
-                    </p>
+                    <p className="text-sm text-foreground mt-0.5 line-clamp-1">{product.title}</p>
                   )}
                   {product.rating != null && (
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <StarRating rating={product.rating} />
-                      <span className="text-xs text-muted-foreground">
-                        {product.rating}
-                      </span>
+                      <span className="text-xs text-muted-foreground">{product.rating}</span>
                       {product.review_count != null && (
                         <span className="text-xs text-muted-foreground/60">
                           ({product.review_count.toLocaleString()} reviews)
@@ -300,7 +263,7 @@ export function CategoryProductsSection({
                   </Link>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       )}
@@ -333,5 +296,5 @@ export function CategoryProductsSection({
         </div>
       )}
     </div>
-  )
+  );
 }

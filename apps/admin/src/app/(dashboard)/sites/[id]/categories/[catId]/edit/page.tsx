@@ -1,33 +1,28 @@
-import { notFound } from "next/navigation"
-import Link from "next/link"
-import { createServiceClient } from "@/lib/supabase/service"
-import { CategoryForm } from "../../CategoryForm"
-import { updateCategory } from "../../actions"
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { createServiceClient } from "@/lib/supabase/service";
+import { CategoryForm } from "../../CategoryForm";
+import { updateCategory } from "../../actions";
 
 interface PageProps {
-  params: Promise<{ id: string catId: string }>
+  params: Promise<{ id: string; catId: string }>;
 }
 
 export default async function EditCategoryPage({ params }: PageProps) {
-  const { id: siteId, catId } = await params
-  const supabase = createServiceClient()
+  const { id: siteId, catId } = await params;
+  const supabase = createServiceClient();
 
   const [siteResult, catResult] = await Promise.all([
     supabase.from("sites").select("id, name").eq("id", siteId).single(),
-    supabase
-      .from("tsa_categories")
-      .select("*")
-      .eq("id", catId)
-      .eq("site_id", siteId)
-      .single(),
-  ])
+    supabase.from("tsa_categories").select("*").eq("id", catId).eq("site_id", siteId).single(),
+  ]);
 
-  if (!siteResult.data || !catResult.data) notFound()
+  if (!siteResult.data || !catResult.data) notFound();
 
-  const site = siteResult.data
-  const cat = catResult.data
+  const site = siteResult.data;
+  const cat = catResult.data;
 
-  const action = updateCategory.bind(null, siteId, catId)
+  const action = updateCategory.bind(null, siteId, catId);
 
   return (
     <div className="space-y-6">
@@ -59,5 +54,5 @@ export default async function EditCategoryPage({ params }: PageProps) {
         />
       </div>
     </div>
-  )
+  );
 }

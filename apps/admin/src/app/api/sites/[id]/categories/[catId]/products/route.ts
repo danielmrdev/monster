@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createServiceClient } from "@/lib/supabase/service"
+import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 25;
 
 interface Params {
-  params: Promise<{ id: string catId: string }>
+  params: Promise<{ id: string; catId: string }>;
 }
 
 /**
@@ -21,19 +21,19 @@ interface Params {
  * Structured error message is logged by Next.js and visible in server logs.
  */
 export async function GET(request: NextRequest, { params }: Params) {
-  const { id: siteId, catId } = await params
-  const { searchParams } = request.nextUrl
+  const { id: siteId, catId } = await params;
+  const { searchParams } = request.nextUrl;
 
-  const q = searchParams.get("q")?.trim() ?? ""
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
+  const q = searchParams.get("q")?.trim() ?? "";
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(
     100,
     Math.max(1, parseInt(searchParams.get("limit") ?? String(PAGE_SIZE), 10)),
-  )
-  const from = (page - 1) * limit
-  const to = from + limit - 1
+  );
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
 
-  const supabase = createServiceClient()
+  const supabase = createServiceClient();
 
   let query = supabase
     .from("tsa_products")
@@ -44,28 +44,27 @@ export async function GET(request: NextRequest, { params }: Params) {
     .eq("site_id", siteId)
     .eq("category_products.category_id", catId)
     .order("created_at", { ascending: false })
-    .range(from, to)
+    .range(from, to);
 
   if (q) {
-    query = query.or(`title.ilike.%${q}%,asin.ilike.%${q}%`)
+    query = query.or(`title.ilike.%${q}%,asin.ilike.%${q}%`);
   }
 
-  const { data, error, count } = await query
+  const { data, error, count } = await query;
 
   if (error) {
-    console.error(
-      "[API /categories/[catId]/products] Supabase error:",
-      error.message,
-      { siteId, catId },
-    )
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[API /categories/[catId]/products] Supabase error:", error.message, {
+      siteId,
+      catId,
+    });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const total = count ?? 0
-  const totalPages = Math.ceil(total / limit)
+  const total = count ?? 0;
+  const totalPages = Math.ceil(total / limit);
 
   // Strip category_products join metadata — internal only, not part of the Product shape
-  const products = (data ?? []).map(({ category_products: _cp, ...p }) => p)
+  const products = (data ?? []).map(({ category_products: _cp, ...p }) => p);
 
   return NextResponse.json({
     products,
@@ -73,5 +72,5 @@ export async function GET(request: NextRequest, { params }: Params) {
     page,
     pageSize: limit,
     totalPages,
-  })
+  });
 }

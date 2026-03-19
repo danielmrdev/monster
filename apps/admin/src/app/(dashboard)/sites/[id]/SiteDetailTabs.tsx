@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 // ── Score helpers ─────────────────────────────────────────────────────────────
 
@@ -15,10 +15,10 @@
 
 // ── Local layout helpers ──────────────────────────────────────────────────────
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { MarkdownPreview } from "@/components/MarkdownPreview"
-import { useEffect, useState } from "react"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { MarkdownPreview } from "@/components/MarkdownPreview";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -26,26 +26,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { SiteCustomization } from "@monster/shared"
+} from "@/components/ui/table";
+import type { SiteCustomization } from "@monster/shared";
 
 function scoreColor(score: number | null): string {
-  if (
-    score ===
-    null
-  )
-    return "text-muted-foreground"
-  if (
-    score >=
-    70
-  )
-    return "text-green-400"
-  if (
-    score >=
-    50
-  )
-    return "text-amber-400"
-  return "text-red-400"
+  if (score === null) return "text-muted-foreground";
+  if (score >= 70) return "text-green-400";
+  if (score >= 50) return "text-amber-400";
+  return "text-red-400";
 }
 
 function gradeBadgeVariant(
@@ -54,82 +42,78 @@ function gradeBadgeVariant(
   switch (grade) {
     case "A":
     case "B":
-      return "default"
+      return "default";
     case "C":
-      return "secondary"
+      return "secondary";
     case "D":
     case "F":
-      return "destructive"
+      return "destructive";
     default:
-      return "outline"
+      return "outline";
   }
 }
 
 interface SeoScore {
-  page_path: string
-  page_type: string | null
-  overall_score: number | null
-  grade: string | null
-  content_quality_score: number | null
-  meta_elements_score: number | null
-  structure_score: number | null
-  links_score: number | null
-  media_score: number | null
-  schema_score: number | null
-  technical_score: number | null
-  social_score: number | null
+  page_path: string;
+  page_type: string | null;
+  overall_score: number | null;
+  grade: string | null;
+  content_quality_score: number | null;
+  meta_elements_score: number | null;
+  structure_score: number | null;
+  links_score: number | null;
+  media_score: number | null;
+  schema_score: number | null;
+  technical_score: number | null;
+  social_score: number | null;
 }
 
 interface Alert {
-  id: string
-  alert_type: string
-  status: string
-  created_at: string
-  tsa_products: { asin: string title: string | null } | null
+  id: string;
+  alert_type: string;
+  status: string;
+  created_at: string;
+  tsa_products: { asin: string; title: string | null } | null;
 }
 
 interface TabsProps {
   site: {
-    domain: string | null
-    niche: string | null
-    market: string | null
-    language: string | null
-    currency: string | null
-    affiliate_tag: string | null
-    template_slug: string | null
-    site_type_slug: string | null
-    created_at: string | null
-    updated_at: string | null
-    customization: unknown
-    focus_keyword: string | null
-    homepage_seo_text: string | null
-    homepage_meta_description: string | null
-    homepage_intro: string | null
-  }
-  categoriesSlot: React.ReactNode | null
-  deploySlot: React.ReactNode
-  generationSlot: React.ReactNode
-  generationAction: React.ReactNode
-  refreshSlot: React.ReactNode | null
-  refreshAction: React.ReactNode | null
-  deployAction: React.ReactNode
-  seoScores: SeoScore[] | null
-  alerts: Alert[]
-  homepageSeoSlot?: React.ReactNode
-  rescoreAction?: React.ReactNode
+    domain: string | null;
+    niche: string | null;
+    market: string | null;
+    language: string | null;
+    currency: string | null;
+    affiliate_tag: string | null;
+    template_slug: string | null;
+    site_type_slug: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+    customization: unknown;
+    focus_keyword: string | null;
+    homepage_seo_text: string | null;
+    homepage_meta_description: string | null;
+    homepage_intro: string | null;
+  };
+  categoriesSlot: React.ReactNode | null;
+  deploySlot: React.ReactNode;
+  generationSlot: React.ReactNode;
+  generationAction: React.ReactNode;
+  refreshSlot: React.ReactNode | null;
+  refreshAction: React.ReactNode | null;
+  deployAction: React.ReactNode;
+  seoScores: SeoScore[] | null;
+  alerts: Alert[];
+  homepageSeoSlot?: React.ReactNode;
+  rescoreAction?: React.ReactNode;
 }
 
-const VALID_TABS = ["overview", "deploy", "seo", "categories"] as const
-type TabValue = typeof VALID_TABS[number]
+const VALID_TABS = ["overview", "deploy", "seo", "categories"] as const;
+type TabValue = (typeof VALID_TABS)[number];
 
 function getInitialTab(): TabValue {
-  if (
-    typeof window ===
-    "undefined"
-  )
-    return "overview"
-  const hash = window.location.hash.replace("#", "") as TabValue
-  return VALID_TABS.includes(hash) ? hash : "overview"
+  if (typeof window === "undefined") return "overview";
+  const hash = window.location.hash.replace("#", "") as TabValue;
+  return VALID_TABS.includes(hash) ? hash : "overview";
 }
 
 export function SiteDetailTabs({
@@ -146,31 +130,23 @@ export function SiteDetailTabs({
   homepageSeoSlot,
   rescoreAction,
 }: TabsProps) {
-  const customization = site.customization as SiteCustomization | null
-  const isTsa =
-    site.site_type_slug ===
-    "tsa"
+  const customization = site.customization as SiteCustomization | null;
+  const isTsa = site.site_type_slug === "tsa";
 
-  const [activeTab, setActiveTab] = useState<TabValue>("overview")
+  const [activeTab, setActiveTab] = useState<TabValue>("overview");
   useEffect(() => {
-    setActiveTab(getInitialTab())
-  }, [])
+    setActiveTab(getInitialTab());
+  }, []);
 
   function handleTabChange(value: string) {
-    const tab = value as TabValue
-    setActiveTab(tab)
-    window.history.replaceState(null, "", `#${tab}`)
+    const tab = value as TabValue;
+    setActiveTab(tab);
+    window.history.replaceState(null, "", `#${tab}`);
   }
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={handleTabChange}
-      className="space-y-6"
-    >
-      <TabsList
-        className={`grid w-full ${isTsa ? "grid-cols-4" : "grid-cols-3"}`}
-      >
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+      <TabsList className={`grid w-full ${isTsa ? "grid-cols-4" : "grid-cols-3"}`}>
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="deploy">Deploy</TabsTrigger>
         <TabsTrigger value="seo">SEO &amp; Alerts</TabsTrigger>
@@ -182,24 +158,21 @@ export function SiteDetailTabs({
         <div className="rounded-xl border border-border bg-card divide-y divide-border">
           <Section title="Site Info">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-              {([
-                ["Domain", site.domain],
-                ["Niche", site.niche],
-                ["Market", site.market],
-                ["Language", site.language],
-                ["Currency", site.currency],
-                ["Affiliate Tag", site.affiliate_tag],
-                ["Template", site.template_slug],
-                ["Site Type", site.site_type_slug],
-              ] as [string, string | null][]).map(([label, value]) => (
+              {(
+                [
+                  ["Domain", site.domain],
+                  ["Niche", site.niche],
+                  ["Market", site.market],
+                  ["Language", site.language],
+                  ["Currency", site.currency],
+                  ["Affiliate Tag", site.affiliate_tag],
+                  ["Template", site.template_slug],
+                  ["Site Type", site.site_type_slug],
+                ] as [string, string | null][]
+              ).map(([label, value]) => (
                 <div key={label}>
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    {label}
-                  </dt>
-                  <dd className="mt-1 text-sm text-foreground">
-                    {value ??
-                      "—"}
-                  </dd>
+                  <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+                  <dd className="mt-1 text-sm text-foreground">{value ?? "—"}</dd>
                 </div>
               ))}
             </dl>
@@ -209,9 +182,7 @@ export function SiteDetailTabs({
             {customization ? (
               <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    Primary Color
-                  </dt>
+                  <dt className="text-xs font-medium text-muted-foreground">Primary Color</dt>
                   <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
                     {customization.primaryColor ? (
                       <>
@@ -229,9 +200,7 @@ export function SiteDetailTabs({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    Accent Color
-                  </dt>
+                  <dt className="text-xs font-medium text-muted-foreground">Accent Color</dt>
                   <dd className="mt-1 flex items-center gap-2 text-sm text-foreground">
                     {customization.accentColor ? (
                       <>
@@ -246,25 +215,18 @@ export function SiteDetailTabs({
                     )}
                   </dd>
                 </div>
-                {([
-                  ["Font Family", customization.fontFamily],
-                ] as [string, string | undefined][]).map(([label, value]) => (
+                {(
+                  [["Font Family", customization.fontFamily]] as [string, string | undefined][]
+                ).map(([label, value]) => (
                   <div key={label}>
-                    <dt className="text-xs font-medium text-muted-foreground">
-                      {label}
-                    </dt>
-                    <dd className="mt-1 text-sm text-foreground truncate">
-                      {value ??
-                        "—"}
-                    </dd>
+                    <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+                    <dd className="mt-1 text-sm text-foreground truncate">{value ?? "—"}</dd>
                   </div>
                 ))}
 
                 {}
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    Logo
-                  </dt>
+                  <dt className="text-xs font-medium text-muted-foreground">Logo</dt>
                   <dd className="mt-1">
                     {customization.logoUrl ? (
                       <img
@@ -275,9 +237,7 @@ export function SiteDetailTabs({
                       />
                     ) : (
                       <div className="h-10 w-20 rounded border border-dashed border-border bg-muted/20 flex items-center justify-center">
-                        <span className="text-xs text-muted-foreground">
-                          No logo
-                        </span>
+                        <span className="text-xs text-muted-foreground">No logo</span>
                       </div>
                     )}
                   </dd>
@@ -285,9 +245,7 @@ export function SiteDetailTabs({
 
                 {}
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    Favicon
-                  </dt>
+                  <dt className="text-xs font-medium text-muted-foreground">Favicon</dt>
                   <dd className="mt-1">
                     {customization.faviconUrl ? (
                       <img
@@ -297,31 +255,27 @@ export function SiteDetailTabs({
                       />
                     ) : (
                       <div className="h-8 w-8 rounded border border-dashed border-border bg-muted/20 flex items-center justify-center">
-                        <span className="text-[10px] text-muted-foreground">
-                          —
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">—</span>
                       </div>
                     )}
                   </dd>
                 </div>
               </dl>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                No customization set.
-              </p>
+              <p className="text-sm text-muted-foreground">No customization set.</p>
             )}
           </Section>
 
           <Section title="Metadata">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
-              {([
-                ["Created", site.created_at],
-                ["Updated", site.updated_at],
-              ] as [string, string | null][]).map(([label, value]) => (
+              {(
+                [
+                  ["Created", site.created_at],
+                  ["Updated", site.updated_at],
+                ] as [string, string | null][]
+              ).map(([label, value]) => (
                 <div key={label}>
-                  <dt className="text-xs font-medium text-muted-foreground">
-                    {label}
-                  </dt>
+                  <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
                   <dd className="mt-1 text-sm text-foreground">
                     {value ? new Date(value).toLocaleString() : "—"}
                   </dd>
@@ -345,13 +299,11 @@ export function SiteDetailTabs({
         <Card title="Deployment" action={deployAction}>
           {deploySlot}
         </Card>
-        {isTsa &&
-          refreshSlot !==
-            null && (
-            <Card title="Product Refresh" action={refreshAction}>
-              {refreshSlot}
-            </Card>
-          )}
+        {isTsa && refreshSlot !== null && (
+          <Card title="Product Refresh" action={refreshAction}>
+            {refreshSlot}
+          </Card>
+        )}
       </TabsContent>
 
       {}
@@ -359,36 +311,21 @@ export function SiteDetailTabs({
         <Card title="Homepage SEO">
           <dl className="space-y-4">
             <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Focus Keyword
-              </dt>
+              <dt className="text-xs font-medium text-muted-foreground">Focus Keyword</dt>
+              <dd className="mt-1 text-sm text-foreground">{site.focus_keyword ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium text-muted-foreground">Meta Description</dt>
               <dd className="mt-1 text-sm text-foreground">
-                {site.focus_keyword ??
-                  "—"}
+                {site.homepage_meta_description ?? "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Meta Description
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">
-                {site.homepage_meta_description ??
-                  "—"}
-              </dd>
+              <dt className="text-xs font-medium text-muted-foreground">Intro</dt>
+              <dd className="mt-1 text-sm text-foreground">{site.homepage_intro ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                Intro
-              </dt>
-              <dd className="mt-1 text-sm text-foreground">
-                {site.homepage_intro ??
-                  "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-muted-foreground">
-                SEO Text
-              </dt>
+              <dt className="text-xs font-medium text-muted-foreground">SEO Text</dt>
               <dd className="mt-2">
                 <MarkdownPreview content={site.homepage_seo_text} />
               </dd>
@@ -399,8 +336,7 @@ export function SiteDetailTabs({
 
         {isTsa && (
           <Card title="Product Alerts">
-            {alerts.length ===
-            0 ? (
+            {alerts.length === 0 ? (
               <p className="text-sm text-muted-foreground">No open alerts.</p>
             ) : (
               <div className="space-y-2">
@@ -457,9 +393,7 @@ export function SiteDetailTabs({
               { name: "Social", desc: "Open Graph and Twitter Card tags" },
             ].map(({ name, desc }) => (
               <div key={name} className="flex gap-2 text-sm">
-                <span className="font-medium text-foreground shrink-0">
-                  {name}:
-                </span>
+                <span className="font-medium text-foreground shrink-0">{name}:</span>
                 <span className="text-muted-foreground">{desc}</span>
               </div>
             ))}
@@ -468,15 +402,9 @@ export function SiteDetailTabs({
 
         <Card title="SEO Scores" action={rescoreAction}>
           {(() => {
-            const visibleScores = (
-              seoScores ??
-              []
-            ).filter(
-              (r) =>
-                !r.page_path.startsWith("/go/") &&
-                r.page_type !==
-                  "legal",
-            )
+            const visibleScores = (seoScores ?? []).filter(
+              (r) => !r.page_path.startsWith("/go/") && r.page_type !== "legal",
+            );
             return !visibleScores.length ? (
               <p className="text-sm text-muted-foreground">
                 No SEO scores yet — generate the site first.
@@ -509,75 +437,40 @@ export function SiteDetailTabs({
                           {row.page_path}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {row.page_type ??
-                            "—"}
+                          {row.page_type ?? "—"}
                         </TableCell>
                         <TableCell>
-                          <span
-                            className={`font-semibold ${scoreColor(row.overall_score)}`}
-                          >
-                            {row.overall_score ??
-                              "—"}
+                          <span className={`font-semibold ${scoreColor(row.overall_score)}`}>
+                            {row.overall_score ?? "—"}
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={gradeBadgeVariant(row.grade)}>
-                            {row.grade ??
-                              "—"}
-                          </Badge>
+                          <Badge variant={gradeBadgeVariant(row.grade)}>{row.grade ?? "—"}</Badge>
                         </TableCell>
                         <TableCell className="text-xs">
-                          {row.content_quality_score ??
-                            "—"}
+                          {row.content_quality_score ?? "—"}
                         </TableCell>
-                        <TableCell className="text-xs">
-                          {row.meta_elements_score ??
-                            "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {row.structure_score ??
-                            "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {row.links_score ??
-                            "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {row.media_score ??
-                            "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {row.schema_score ??
-                            "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {row.technical_score ??
-                            "—"}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {row.social_score ??
-                            "—"}
-                        </TableCell>
+                        <TableCell className="text-xs">{row.meta_elements_score ?? "—"}</TableCell>
+                        <TableCell className="text-xs">{row.structure_score ?? "—"}</TableCell>
+                        <TableCell className="text-xs">{row.links_score ?? "—"}</TableCell>
+                        <TableCell className="text-xs">{row.media_score ?? "—"}</TableCell>
+                        <TableCell className="text-xs">{row.schema_score ?? "—"}</TableCell>
+                        <TableCell className="text-xs">{row.technical_score ?? "—"}</TableCell>
+                        <TableCell className="text-xs">{row.social_score ?? "—"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
-            )
+            );
           })()}
         </Card>
       </TabsContent>
     </Tabs>
-  )
+  );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string
-  children: React.ReactNode
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="px-6 py-5">
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
@@ -585,7 +478,7 @@ function Section({
       </h2>
       {children}
     </div>
-  )
+  );
 }
 
 function Card({
@@ -593,9 +486,9 @@ function Card({
   children,
   action,
 }: {
-  title: string
-  children: React.ReactNode
-  action?: React.ReactNode
+  title: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-border bg-card px-6 py-5">
@@ -607,5 +500,5 @@ function Card({
       </div>
       {children}
     </div>
-  )
+  );
 }
