@@ -29,7 +29,7 @@ export default async function MonsterPage({ searchParams }: MonsterPageProps) {
   ]);
 
   return (
-    <div className="flex h-full -m-8 overflow-hidden">
+    <div className="flex -m-8 overflow-hidden h-screen">
       {/* Sidebar */}
       <ConversationList conversations={conversations} activeId={activeId} />
 

@@ -35,6 +35,9 @@ importers:
       '@monster/domains':
         specifier: workspace:*
         version: link:../../packages/domains
+      '@monster/seo-scorer':
+        specifier: workspace:*
+        version: link:../../packages/seo-scorer
       '@monster/shared':
         specifier: workspace:*
         version: link:../../packages/shared

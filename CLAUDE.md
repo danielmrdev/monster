@@ -135,3 +135,13 @@ Phase 1 implements ONLY TSA (Amazon Affiliate) sites. Architecture must be exten
 
 - PRD + Vision: `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/DM/01 PROYECTOS/BuilderMonster/`
 - Previous project: `danielmrdev/tsa-monster` (Laravel, validated TSA sites in production)
+
+## Operational Notes
+
+- **Admin app** runs on port 3004 as a PM2-managed standalone Next.js server (`monster-admin`). It does **not** hot-reload — always build first, then restart.
+- **After any build:** restart ONLY the specific PM2 process — NEVER `pm2 restart all` (other unrelated services are managed by PM2 and must not be touched):
+  ```bash
+  pm2 restart monster-admin
+  pm2 restart monster-worker  # only if worker code changed
+  ```
+- **Build command:** `pnpm --filter @monster/admin build` from the monorepo root.

@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { createServiceClient } from '@/lib/supabase/service'
 import { enqueueSiteDeploy, getDeploymentCard } from './actions'
-import { RefreshCard } from './RefreshCard'
+import { RefreshButton, RefreshInfo } from './RefreshCard'
 import JobStatus from './JobStatus'
 import { GenerateSiteButton } from './GenerateSiteButton'
 import { GenerateHomepageSeoButton } from './GenerateHomepageSeoButton'
@@ -12,6 +12,7 @@ import SeoJobStatus from './SeoJobStatus'
 import DeployStatus from './DeployStatus'
 import { CategoriesSection } from './CategoriesSection'
 import { SiteDetailTabs } from './SiteDetailTabs'
+import { RescoreSiteButton } from './RescoreSiteButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +39,8 @@ export default async function SiteDetailPage({ params }: PageProps) {
     ? existsSync(join(GENERATOR_ROOT, '.generated-sites', siteSlug, 'dist', 'index.html'))
     : false
 
+  const isTsa = site.site_type_slug === 'tsa'
+
   const [seoScoresResult, deployCard, siteAlertsResult, categoriesResult] =
     await Promise.all([
       supabase
@@ -48,17 +51,21 @@ export default async function SiteDetailPage({ params }: PageProps) {
         .eq('site_id', id)
         .order('page_path', { ascending: true }),
       getDeploymentCard(id),
-      supabase
-        .from('product_alerts')
-        .select('*, tsa_products(asin, title)')
-        .eq('site_id', id)
-        .eq('status', 'open')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('tsa_categories')
-        .select('id, name, slug, focus_keyword, keywords, seo_text, description, category_products(count)')
-        .eq('site_id', id)
-        .order('name', { ascending: true }),
+      isTsa
+        ? supabase
+            .from('product_alerts')
+            .select('*, tsa_products(asin, title)')
+            .eq('site_id', id)
+            .eq('status', 'open')
+            .order('created_at', { ascending: false })
+        : Promise.resolve({ data: [], error: null }),
+      isTsa
+        ? supabase
+            .from('tsa_categories')
+            .select('id, name, slug, focus_keyword, keywords, seo_text, description, category_products(count)')
+            .eq('site_id', id)
+            .order('name', { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
     ])
 
   if (siteAlertsResult.error) throw siteAlertsResult.error
@@ -87,6 +94,31 @@ export default async function SiteDetailPage({ params }: PageProps) {
   }
 
   // ── Deploy tab content (server-rendered) ────────────────────────────────────
+  const deployAction = site.domain ? (
+    <form
+      action={async () => {
+        'use server'
+        await enqueueSiteDeploy(site.id)
+      }}
+    >
+      <button
+        type="submit"
+        className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+      >
+        Deploy
+      </button>
+    </form>
+  ) : (
+    <button
+      type="button"
+      disabled
+      title="Set a domain first"
+      className="inline-flex items-center rounded-md bg-primary/30 px-4 py-2 text-sm font-medium text-primary-foreground/50 cursor-not-allowed"
+    >
+      Deploy
+    </button>
+  )
+
   const deploySlot = (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -147,39 +179,12 @@ export default async function SiteDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        {site.domain ? (
-          <form
-            action={async () => {
-              'use server'
-              await enqueueSiteDeploy(site.id)
-            }}
-          >
-            <button
-              type="submit"
-              className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-            >
-              Deploy
-            </button>
-          </form>
-        ) : (
-          <button
-            type="button"
-            disabled
-            title="Set a domain first"
-            className="inline-flex items-center rounded-md bg-primary/30 px-4 py-2 text-sm font-medium text-primary-foreground/50 cursor-not-allowed"
-          >
-            Deploy
-          </button>
-        )}
-      </div>
-
       <DeployStatus siteId={site.id} />
     </div>
   )
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -266,19 +271,16 @@ export default async function SiteDetailPage({ params }: PageProps) {
           focus_keyword: site.focus_keyword,
           homepage_seo_text: site.homepage_seo_text,
         }}
-        categoriesSlot={<CategoriesSection siteId={id} categories={categories} />}
-        generationSlot={
-          <>
-            <GenerateSiteButton siteId={site.id} />
-            <JobStatus siteId={site.id} />
-          </>
-        }
+        categoriesSlot={isTsa ? <CategoriesSection siteId={id} categories={categories} /> : null}
+        generationAction={<GenerateSiteButton siteId={site.id} />}
+        generationSlot={<JobStatus siteId={site.id} />}
+        deployAction={deployAction}
         deploySlot={deploySlot}
-        refreshSlot={
-          <RefreshCard siteId={site.id} lastRefreshedAt={site.last_refreshed_at ?? null} />
-        }
+        refreshAction={isTsa ? <RefreshButton siteId={site.id} /> : null}
+        refreshSlot={isTsa ? <RefreshInfo lastRefreshedAt={site.last_refreshed_at ?? null} /> : null}
         seoScores={seoScoresResult.data ?? null}
         alerts={siteAlertsResult.data ?? []}
+        rescoreAction={<RescoreSiteButton siteId={site.id} />}
         homepageSeoSlot={
           <>
             <GenerateHomepageSeoButton siteId={site.id} />

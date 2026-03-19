@@ -73,7 +73,7 @@ export default async function EditSitePage({ params }: PageProps) {
   }
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="space-y-8">
       <div className="flex items-center gap-3">
         <Link
           href={`/sites/${site.id}`}

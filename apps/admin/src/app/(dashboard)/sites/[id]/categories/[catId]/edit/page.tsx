@@ -25,7 +25,7 @@ export default async function EditCategoryPage({ params }: PageProps) {
   const action = updateCategory.bind(null, siteId, catId)
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link
           href={`/sites/${siteId}`}

@@ -33,7 +33,7 @@ export function GenerateSiteButton({ siteId, onEnqueued }: GenerateSiteButtonPro
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col gap-1">
       <button
         type="button"
         onClick={handleClick}

@@ -45,7 +45,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
   const initialProducts = (rawProducts ?? []).map(({ category_products: _cp, ...p }) => p)
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link

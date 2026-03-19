@@ -80,16 +80,20 @@ interface TabsProps {
     focus_keyword: string | null
     homepage_seo_text: string | null
   }
-  // Content
-  categoriesSlot: React.ReactNode
+  // Content — TSA only
+  categoriesSlot: React.ReactNode | null
   // Deploy
   deploySlot: React.ReactNode
   generationSlot: React.ReactNode
-  refreshSlot: React.ReactNode
+  generationAction: React.ReactNode
+  refreshSlot: React.ReactNode | null
+  refreshAction: React.ReactNode | null
+  deployAction: React.ReactNode
   // SEO & Alerts
   seoScores: SeoScore[] | null
   alerts: Alert[]
   homepageSeoSlot?: React.ReactNode
+  rescoreAction?: React.ReactNode
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -98,21 +102,26 @@ export function SiteDetailTabs({
   site,
   categoriesSlot,
   deploySlot,
+  deployAction,
   generationSlot,
+  generationAction,
   refreshSlot,
+  refreshAction,
   seoScores,
   alerts,
   homepageSeoSlot,
+  rescoreAction,
 }: TabsProps) {
   const customization = site.customization as SiteCustomization | null
+  const isTsa = site.site_type_slug === 'tsa'
 
   return (
     <Tabs defaultValue="overview" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className={`grid w-full ${isTsa ? 'grid-cols-4' : 'grid-cols-3'}`}>
         <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="categories">Categories</TabsTrigger>
         <TabsTrigger value="deploy">Deploy</TabsTrigger>
         <TabsTrigger value="seo">SEO &amp; Alerts</TabsTrigger>
+        {isTsa && <TabsTrigger value="categories">Categories</TabsTrigger>}
       </TabsList>
 
       {/* ── Overview ────────────────────────────────────────────────────────── */}
@@ -178,8 +187,6 @@ export function SiteDetailTabs({
                 {(
                   [
                     ['Font Family', customization.fontFamily],
-                    ['Logo URL', customization.logoUrl],
-                    ['Favicon URL', customization.faviconUrl],
                   ] as [string, string | undefined][]
                 ).map(([label, value]) => (
                   <div key={label}>
@@ -187,6 +194,42 @@ export function SiteDetailTabs({
                     <dd className="mt-1 text-sm text-foreground truncate">{value ?? '—'}</dd>
                   </div>
                 ))}
+
+                {/* Logo */}
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Logo</dt>
+                  <dd className="mt-1">
+                    {customization.logoUrl ? (
+                      <img
+                        src={customization.logoUrl}
+                        alt="Site logo"
+                        className="h-10 max-w-[160px] object-contain rounded border border-border bg-muted/30 p-1"
+                      />
+                    ) : (
+                      <div className="h-10 w-20 rounded border border-dashed border-border bg-muted/20 flex items-center justify-center">
+                        <span className="text-xs text-muted-foreground">No logo</span>
+                      </div>
+                    )}
+                  </dd>
+                </div>
+
+                {/* Favicon */}
+                <div>
+                  <dt className="text-xs font-medium text-muted-foreground">Favicon</dt>
+                  <dd className="mt-1">
+                    {customization.faviconUrl ? (
+                      <img
+                        src={customization.faviconUrl}
+                        alt="Site favicon"
+                        className="h-8 w-8 object-contain rounded border border-border bg-muted/30 p-1"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded border border-dashed border-border bg-muted/20 flex items-center justify-center">
+                        <span className="text-[10px] text-muted-foreground">—</span>
+                      </div>
+                    )}
+                  </dd>
+                </div>
               </dl>
             ) : (
               <p className="text-sm text-muted-foreground">No customization set.</p>
@@ -213,16 +256,20 @@ export function SiteDetailTabs({
         </div>
       </TabsContent>
 
-      {/* ── Categories ──────────────────────────────────────────────────────── */}
-      <TabsContent value="categories" className="space-y-6">
-        {categoriesSlot}
-      </TabsContent>
+      {/* ── Categories — TSA only ────────────────────────────────────────────── */}
+      {isTsa && (
+        <TabsContent value="categories" className="space-y-6">
+          {categoriesSlot}
+        </TabsContent>
+      )}
 
       {/* ── Deploy ──────────────────────────────────────────────────────────── */}
       <TabsContent value="deploy" className="space-y-6">
-        <Card title="Site Generation">{generationSlot}</Card>
-        <Card title="Deployment">{deploySlot}</Card>
-        <Card title="Product Refresh">{refreshSlot}</Card>
+        <Card title="Site Generation" action={generationAction}>{generationSlot}</Card>
+        <Card title="Deployment" action={deployAction}>{deploySlot}</Card>
+        {isTsa && refreshSlot !== null && (
+          <Card title="Product Refresh" action={refreshAction}>{refreshSlot}</Card>
+        )}
       </TabsContent>
 
       {/* ── SEO & Alerts ────────────────────────────────────────────────────── */}
@@ -243,40 +290,42 @@ export function SiteDetailTabs({
           {homepageSeoSlot}
         </Card>
 
-        <Card title="Product Alerts">
-          {alerts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No open alerts.</p>
-          ) : (
-            <div className="space-y-2">
-              {alerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm"
-                >
-                  <span className="mt-0.5 text-amber-400">⚠</span>
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium text-foreground capitalize">
-                      {alert.alert_type.replace(/_/g, ' ')}
-                    </span>
-                    {alert.tsa_products && (
-                      <span className="ml-2 font-mono text-xs text-muted-foreground">
-                        {alert.tsa_products.asin}
+        {isTsa && (
+          <Card title="Product Alerts">
+            {alerts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No open alerts.</p>
+            ) : (
+              <div className="space-y-2">
+                {alerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm"
+                  >
+                    <span className="mt-0.5 text-amber-400">⚠</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-foreground capitalize">
+                        {alert.alert_type.replace(/_/g, ' ')}
                       </span>
-                    )}
-                    {alert.tsa_products?.title && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                        {alert.tsa_products.title}
-                      </p>
-                    )}
+                      {alert.tsa_products && (
+                        <span className="ml-2 font-mono text-xs text-muted-foreground">
+                          {alert.tsa_products.asin}
+                        </span>
+                      )}
+                      {alert.tsa_products?.title && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                          {alert.tsa_products.title}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {new Date(alert.created_at).toLocaleDateString()}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {new Date(alert.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
 
         <Card title="SEO Score Dimensions">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -298,8 +347,12 @@ export function SiteDetailTabs({
           </div>
         </Card>
 
-        <Card title="SEO Scores">
-          {!seoScores || seoScores.length === 0 ? (
+        <Card title="SEO Scores" action={rescoreAction}>
+          {(() => {
+            const visibleScores = (seoScores ?? []).filter(
+              (r) => !r.page_path.startsWith('/go/') && r.page_type !== 'legal'
+            )
+            return !visibleScores.length ? (
             <p className="text-sm text-muted-foreground">
               No SEO scores yet — generate the site first.
             </p>
@@ -308,7 +361,7 @@ export function SiteDetailTabs({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Page</TableHead>
+                    <TableHead className="sticky left-0 z-10 bg-card after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px]">Page</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Score</TableHead>
                     <TableHead>Grade</TableHead>
@@ -323,9 +376,9 @@ export function SiteDetailTabs({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {seoScores.map((row) => (
+                  {visibleScores.map((row) => (
                     <TableRow key={row.page_path}>
-                      <TableCell className="font-mono text-xs">{row.page_path}</TableCell>
+                      <TableCell className="sticky left-0 z-10 bg-card font-mono text-xs after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border min-w-[200px] max-w-[280px] truncate">{row.page_path}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {row.page_type ?? '—'}
                       </TableCell>
@@ -350,7 +403,8 @@ export function SiteDetailTabs({
                 </TableBody>
               </Table>
             </div>
-          )}
+          )
+          })()}
         </Card>
       </TabsContent>
     </Tabs>
@@ -370,12 +424,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-card px-6 py-5">
-      <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-        {title}
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          {title}
+        </h2>
+        {action}
+      </div>
       {children}
     </div>
   )
