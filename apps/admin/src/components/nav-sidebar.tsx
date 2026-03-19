@@ -14,6 +14,7 @@ import {
   Server,
   Zap,
   FileText,
+  Activity,
 } from "lucide-react";
 
 const navItems = [
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/research", label: "Research Lab", icon: FlaskConical },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/finances", label: "Finances", icon: DollarSign },
+  { href: "/jobs", label: "Jobs", icon: Activity },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/monster", label: "Monster Chat", icon: MessageSquare },
   { href: "/infra", label: "Infrastructure", icon: Server },
