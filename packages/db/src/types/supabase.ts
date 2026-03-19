@@ -269,6 +269,36 @@ export type Database = {
           },
         ];
       };
+      dfs_search_cache: {
+        Row: {
+          id: string;
+          keyword: string;
+          market: string;
+          depth: number;
+          results: Json;
+          created_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          keyword: string;
+          market: string;
+          depth?: number;
+          results?: Json;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Update: {
+          id?: string;
+          keyword?: string;
+          market?: string;
+          depth?: number;
+          results?: Json;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Relationships: [];
+      };
       cost_categories: {
         Row: {
           name: string;

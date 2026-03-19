@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && (tsc --declaration --emitDeclarationOnly --outDir dist --skipLibCheck --noEmitOnError false; exit 0)",
     "typecheck": "tsc --noEmit",
     "dev": "tsup --watch"
   },

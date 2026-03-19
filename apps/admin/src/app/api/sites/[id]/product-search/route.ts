@@ -7,6 +7,9 @@ import { enqueueProductSeo } from "@/app/(dashboard)/sites/[id]/seo/actions";
 // Allow up to 60s for the polling to complete.
 export const maxDuration = 60;
 
+// Cache TTL: 7 days
+const CACHE_TTL_DAYS = 7;
+
 interface Params {
   params: Promise<{ id: string }>;
 }
@@ -28,20 +31,27 @@ export interface SearchResultItem {
   alreadyAdded: boolean;
 }
 
+// Shape stored in dfs_search_cache.results (without alreadyAdded — that's per-site)
+type CachedProduct = Omit<SearchResultItem, "alreadyAdded">;
+
 /**
  * GET /api/sites/[id]/product-search?q=<keyword>&depth=<100|200|300|400>
  *
- * Searches Amazon via DataForSEO Merchant API.
- * depth controls how many results DFS fetches (100–400, default 100).
- * Returns results with `alreadyAdded` flag for ASINs already in tsa_products.
+ * Searches Amazon via DataForSEO Merchant API with a 7-day cache keyed by
+ * (keyword, market). If the cache has >= requested depth, returns immediately
+ * without hitting DFS. Otherwise calls DFS and updates the cache.
  *
- * Uses async task flow (task_post → poll → task_get/advanced) — expect 15-30s.
+ * depth is 100–400 in steps of 100 (default 100).
+ * Returns { results, market, depth, fromCache: boolean }.
  */
 export async function GET(request: NextRequest, { params }: Params) {
   const { id: siteId } = await params;
   const q = request.nextUrl.searchParams.get("q")?.trim();
   const depthParam = parseInt(request.nextUrl.searchParams.get("depth") ?? "100", 10);
-  const depth = Math.min(400, Math.max(100, isNaN(depthParam) ? 100 : depthParam));
+  const depth = Math.min(
+    400,
+    Math.max(100, isNaN(depthParam) ? 100 : Math.ceil(depthParam / 100) * 100),
+  );
 
   if (!q) {
     return NextResponse.json({ error: "q query param required" }, { status: 400 });
@@ -58,45 +68,93 @@ export async function GET(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Site not found" }, { status: 404 });
   }
 
-  const market = site.market ?? "ES";
+  const market = (site.market ?? "ES").toUpperCase();
 
-  try {
-    const client = new DataForSEOClient();
-    const products = await client.searchProducts(q, market, depth);
+  // ── Cache lookup ────────────────────────────────────────────────────────────
+  const { data: cacheRow } = await supabase
+    .from("dfs_search_cache")
+    .select("depth, results, expires_at")
+    .eq("keyword", q.toLowerCase())
+    .eq("market", market)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
 
-    // Fetch existing ASINs for this site to flag already-added ones
-    const { data: existing } = await supabase
-      .from("tsa_products")
-      .select("asin")
-      .eq("site_id", siteId);
+  let cachedProducts: CachedProduct[] | null = null;
+  let fromCache = false;
 
-    const existingAsins = new Set((existing ?? []).map((r) => r.asin));
-
-    const results: SearchResultItem[] = products.map((p) => ({
-      asin: p.asin,
-      title: p.title,
-      imageUrl: p.imageUrl,
-      price: p.price,
-      rating: p.rating ?? 0,
-      reviewCount: p.reviewCount ?? 0,
-      isPrime: p.isPrime,
-      isBestSeller: p.isBestSeller,
-      isAmazonChoice: p.isAmazonChoice,
-      boughtPastMonth: p.boughtPastMonth,
-      specialOffers: p.specialOffers,
-      rankPosition: p.rankPosition,
-      alreadyAdded: existingAsins.has(p.asin),
-    }));
-
+  if (cacheRow && cacheRow.depth >= depth) {
+    // Cache hit — slice to requested depth
+    cachedProducts = (cacheRow.results as CachedProduct[]).slice(0, depth);
+    fromCache = true;
     console.log(
-      `[product-search] siteId=${siteId} q="${q}" market=${market} depth=${depth} results=${results.length}`,
+      `[product-search] CACHE HIT siteId=${siteId} q="${q}" market=${market} depth=${depth} cached_depth=${cacheRow.depth}`,
     );
-    return NextResponse.json({ results, market, depth });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`[product-search] siteId=${siteId} q="${q}" error=${message}`);
-    return NextResponse.json({ error: message }, { status: 500 });
   }
+
+  // ── DFS fetch (cache miss or stale) ────────────────────────────────────────
+  if (!cachedProducts) {
+    try {
+      const client = new DataForSEOClient();
+      const dfsProducts = await client.searchProducts(q, market, depth);
+
+      cachedProducts = dfsProducts.map((p) => ({
+        asin: p.asin,
+        title: p.title,
+        imageUrl: p.imageUrl,
+        price: p.price,
+        rating: p.rating ?? 0,
+        reviewCount: p.reviewCount ?? 0,
+        isPrime: p.isPrime,
+        isBestSeller: p.isBestSeller,
+        isAmazonChoice: p.isAmazonChoice,
+        boughtPastMonth: p.boughtPastMonth,
+        specialOffers: p.specialOffers,
+        rankPosition: p.rankPosition,
+      }));
+
+      // Upsert cache (update if keyword+market exists with more depth, insert otherwise)
+      const expiresAt = new Date(Date.now() + CACHE_TTL_DAYS * 86_400_000).toISOString();
+      if (cacheRow) {
+        // Existing row but stale/shallower — replace results and reset TTL
+        await supabase
+          .from("dfs_search_cache")
+          .update({ depth, results: cachedProducts, expires_at: expiresAt })
+          .eq("keyword", q.toLowerCase())
+          .eq("market", market);
+      } else {
+        await supabase.from("dfs_search_cache").insert({
+          keyword: q.toLowerCase(),
+          market,
+          depth,
+          results: cachedProducts,
+          expires_at: expiresAt,
+        });
+      }
+
+      console.log(
+        `[product-search] DFS FETCH siteId=${siteId} q="${q}" market=${market} depth=${depth} results=${cachedProducts.length}`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[product-search] siteId=${siteId} q="${q}" error=${message}`);
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  }
+
+  // ── Merge alreadyAdded (always per-site, never cached) ─────────────────────
+  const { data: existing } = await supabase
+    .from("tsa_products")
+    .select("asin")
+    .eq("site_id", siteId);
+
+  const existingAsins = new Set((existing ?? []).map((r) => r.asin));
+
+  const results: SearchResultItem[] = cachedProducts.map((p) => ({
+    ...p,
+    alreadyAdded: existingAsins.has(p.asin),
+  }));
+
+  return NextResponse.json({ results, market, depth, fromCache });
 }
 
 // ── Bulk add ──────────────────────────────────────────────────────────────────
@@ -112,9 +170,10 @@ interface BulkAddBody {
  * Bulk-inserts an array of products from search results.
  * Skips ASINs that already exist (no error — idempotent).
  * Optionally links to categories via category_products.
+ * Auto-enqueues seo_product BullMQ job for each inserted product.
  *
  * Body: { products: SearchResultItem[], categoryIds: string[] }
- * Returns: { added: number, skipped: number }
+ * Returns: { added: number, skipped: number, seoJobsQueued: number }
  */
 export async function POST(request: NextRequest, { params }: Params) {
   const { id: siteId } = await params;
@@ -132,7 +191,6 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "products array required" }, { status: 400 });
   }
 
-  // Verify site exists
   const supabase = createServiceClient();
   const { data: site } = await supabase.from("sites").select("id").eq("id", siteId).single();
 
@@ -140,23 +198,20 @@ export async function POST(request: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Site not found" }, { status: 404 });
   }
 
-  // Fetch existing ASINs to skip duplicates
   const { data: existing } = await supabase
     .from("tsa_products")
     .select("asin")
     .eq("site_id", siteId);
 
   const existingAsins = new Set((existing ?? []).map((r) => r.asin));
-
   const toInsert = products.filter((p) => !existingAsins.has(p.asin));
   let added = 0;
   const skipped = products.length - toInsert.length;
 
   if (toInsert.length === 0) {
-    return NextResponse.json({ added: 0, skipped });
+    return NextResponse.json({ added: 0, skipped, seoJobsQueued: 0 });
   }
 
-  // Insert products one by one to collect IDs for category linking
   const insertedIds: string[] = [];
 
   for (const p of toInsert) {
@@ -185,13 +240,12 @@ export async function POST(request: NextRequest, { params }: Params) {
       insertedIds.push(row.id);
       added++;
     } else if (error?.code === "23505") {
-      // Race condition — already exists, skip silently
+      // Race condition — skip silently
     } else if (error) {
       console.error(`[product-search/bulk-add] ASIN=${p.asin} error=${error.message}`);
     }
   }
 
-  // Link to categories
   if (categoryIds.length > 0 && insertedIds.length > 0) {
     const links = insertedIds.flatMap((productId, pIdx) =>
       categoryIds.map((categoryId, cIdx) => ({
@@ -203,9 +257,6 @@ export async function POST(request: NextRequest, { params }: Params) {
     await supabase.from("category_products").insert(links);
   }
 
-  // Auto-enqueue SEO content generation for each inserted product.
-  // Fire-and-forget: failures are logged but don't block the response.
-  // Uses the first categoryId for context (or empty string if none selected).
   const primaryCategoryId = categoryIds[0] ?? "";
   if (insertedIds.length > 0) {
     for (const productId of insertedIds) {

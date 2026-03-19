@@ -11,12 +11,8 @@ import type { SearchResultItem } from "@/app/api/sites/[id]/product-search/route
 
 const MIN_RATING = 4.0;
 const MIN_REVIEWS = 10;
-const DEPTH_OPTIONS = [
-  { value: 100, label: "100 results" },
-  { value: 200, label: "200 results" },
-  { value: 300, label: "300 results" },
-  { value: 400, label: "400 results (max)" },
-];
+const DEPTH_STEP = 100;
+const DEPTH_MAX = 400;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -54,10 +50,12 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
 
   // Search state
   const [query, setQuery] = useState("");
-  const [depth, setDepth] = useState(100);
+  const [depth, setDepth] = useState(DEPTH_STEP);
   const [results, setResults] = useState<SearchResultItem[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
 
   // Filter state
   const [filterLowQuality, setFilterLowQuality] = useState(true);
@@ -96,18 +94,41 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
     setSelected(new Set());
     setAddSuccess(null);
     setAddError(null);
+    setDepth(DEPTH_STEP);
+    setFromCache(false);
     setSearching(true);
 
-    fetch(`/api/sites/${siteId}/product-search?q=${encodeURIComponent(q)}&depth=${depth}`)
+    fetch(`/api/sites/${siteId}/product-search?q=${encodeURIComponent(q)}&depth=${DEPTH_STEP}`)
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Search failed");
         setResults(data.results ?? []);
+        setFromCache(data.fromCache ?? false);
       })
       .catch((err) => {
         setSearchError(err instanceof Error ? err.message : "Unknown error");
       })
       .finally(() => setSearching(false));
+  }
+
+  function handleLoadMore() {
+    if (!query || loadingMore) return;
+    const nextDepth = depth + DEPTH_STEP;
+    if (nextDepth > DEPTH_MAX) return;
+
+    setLoadingMore(true);
+    fetch(`/api/sites/${siteId}/product-search?q=${encodeURIComponent(query)}&depth=${nextDepth}`)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Load more failed");
+        setResults(data.results ?? []);
+        setDepth(nextDepth);
+        setFromCache(data.fromCache ?? false);
+      })
+      .catch((err) => {
+        setSearchError(err instanceof Error ? err.message : "Unknown error");
+      })
+      .finally(() => setLoadingMore(false));
   }
 
   function toggleItem(asin: string) {
@@ -195,8 +216,8 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
 
   return (
     <div className="space-y-5">
-      {/* Search bar + depth selector */}
-      <form onSubmit={handleSearch} className="flex gap-2 flex-wrap">
+      {/* Search bar */}
+      <form onSubmit={handleSearch} className="flex gap-2">
         <Input
           ref={inputRef}
           placeholder="Search Amazon products… e.g. freidoras de aire, camping tent"
@@ -205,17 +226,6 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
           className="flex-1 min-w-0"
           autoFocus
         />
-        <select
-          value={depth}
-          onChange={(e) => setDepth(Number(e.target.value))}
-          className="h-9 rounded-md border border-input bg-background px-2.5 text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          {DEPTH_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
         <Button type="submit" disabled={searching}>
           {searching ? (
             <span className="flex items-center gap-2">
@@ -264,6 +274,14 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                   <span className="text-sm text-muted-foreground">
                     {visibleResults.length} results for{" "}
                     <strong className="text-foreground">"{query}"</strong>
+                    {fromCache && (
+                      <span
+                        className="ml-1.5 text-xs text-muted-foreground/50"
+                        title="Served from cache — no DFS charge"
+                      >
+                        · cached
+                      </span>
+                    )}
                   </span>
                   {/* Quality filter toggle */}
                   <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -472,6 +490,27 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                       </label>
                     );
                   })}
+                </div>
+              )}
+              {/* Load more */}
+              {visibleResults.length > 0 && depth < DEPTH_MAX && (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore || searching}
+                  >
+                    {loadingMore ? (
+                      <span className="flex items-center gap-1.5">
+                        <Spinner size="sm" />
+                        {fromCache ? "Loading…" : "Fetching from Amazon…"}
+                      </span>
+                    ) : (
+                      `Load ${DEPTH_STEP} more results`
+                    )}
+                  </Button>
                 </div>
               )}
             </>
