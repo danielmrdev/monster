@@ -139,6 +139,21 @@ export async function rescoreSite(
     return { scored: 0, total, error: "No scoreable pages found in dist" };
   }
 
+  // Delete stale scores for pages no longer in the current build.
+  // This handles deleted categories/products — their rows would otherwise
+  // persist indefinitely since upsert only overwrites existing matches.
+  const currentPaths = scoreRows.map((r) => r.page_path);
+  const { error: deleteErr } = await supabase
+    .from("seo_scores")
+    .delete()
+    .eq("site_id", siteId)
+    .not("page_path", "in", `(${currentPaths.map((p) => `"${p}"`).join(",")})`);
+
+  if (deleteErr) {
+    console.warn("[rescoreSite] Failed to delete stale scores:", deleteErr.message);
+    // Non-fatal — proceed with upsert
+  }
+
   const { error: upsertErr } = await supabase
     .from("seo_scores")
     .upsert(scoreRows, { onConflict: "site_id,page_path" });

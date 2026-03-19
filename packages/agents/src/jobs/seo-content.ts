@@ -422,7 +422,7 @@ async function handleCategory(job: import("bullmq").Job<SeoContentPayload>): Pro
     }
     if (score >= THRESHOLD) break;
 
-    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) The focus keyword must appear in the FIRST sentence and at least 4 times total — density ~1%. (2) Use 2-3 H2 subheadings, one every ~150 words. (3) Each section must be 100-150 words. (4) Do not just pad or repeat keywords robotically — vary phrasing.`;
+    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) The focus keyword must appear in the FIRST sentence and at least 4 times total — density ~1%. (2) Use 2-3 H2 subheadings, one every ~150 words. (3) Each section must be 100-150 words. (4) Do not just pad or repeat keywords robotically — vary phrasing. (5) The description field MUST start with the exact focus keyword phrase verbatim.`;
   }
 
   if (!bestResult) {
@@ -916,9 +916,13 @@ function buildCategoryPrompt(
 
   // Prefer existing keyword from currentContent, then from category row, to keep it stable across regenerations
   const existingKeyword = (currentContent?.focus_keyword ?? category.focus_keyword)?.trim();
+  // When no keyword exists, anchor to the category name (lowercased) — this guarantees
+  // the keyword appears in the page <title> which is built as "${category.name} — ${site.name}".
+  // A keyword that is a substring of the category name gets +15 pts in meta_elements scoring.
+  const fallbackKeyword = category.name?.toLowerCase().trim() ?? "";
   const keywordInstruction = existingKeyword
     ? `- Use "${existingKeyword}" as the focus keyword (already established for this category)`
-    : `- Choose the most effective focus keyword for this category in ${lang} (3-5 words)`;
+    : `- Use "${fallbackKeyword}" as the focus keyword — it must match the category name exactly (in lowercase)`;
 
   // Current content reference block
   const hasCurrentContent =
@@ -955,7 +959,7 @@ Fields to regenerate: ${fieldsToGenerate.join(", ")} — generate ALL JSON keys 
 Requirements for seo_text (400-500 words):
 - ${keywordInstruction}
 - The focus keyword MUST appear in the very first sentence of the first paragraph
-- The focus keyword MUST appear at least 4 times total (density ~1%) — vary phrasing naturally
+- The focus keyword MUST appear at least 6 times total (density ~1.5% in the prose) — vary phrasing naturally
 - Structure: use 2-3 H2 subheadings to break the text into sections (one subheading every ~150 words)
 - Each section must be 120-160 words of flowing prose
 - Clear value proposition: why explore this category, what products the user will find
@@ -963,15 +967,13 @@ Requirements for seo_text (400-500 words):
     : `
 Requirements for seo_text: reuse existing or write a brief placeholder (this field is NOT being regenerated).`;
 
+  const descKeyword = existingKeyword ?? fallbackKeyword;
   const descReq = fieldsToGenerate.includes("description")
     ? `
-Requirements for description (1-2 sentences, ~100 characters):
+Requirements for description (1-2 sentences, 100-140 characters):
 - Concise summary of the category in ${lang}
-- Include the focus keyword naturally${
-        site.focus_keyword
-          ? `\n- Also reference the site topic ("${site.focus_keyword}") if it fits naturally`
-          : ""
-      }
+- MUST start with the exact focus keyword phrase: "${descKeyword}: ..."
+- The focus keyword must appear verbatim at the very beginning — not a variation, not split
 - Should encourage clicks from the category grid on the homepage`
     : `
 Requirements for description: reuse existing or write a brief placeholder (this field is NOT being regenerated).`;
