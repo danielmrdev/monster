@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Input } from '@/components/ui/input'
+import { GenerateProductSeoButton } from './GenerateProductSeoButton'
+import { GenerateAllProductsSeoButton } from './GenerateAllProductsSeoButton'
 
 const PAGE_SIZE = 25
 
@@ -102,6 +104,7 @@ export function CategoryProductsSection({ siteId, catId, initialProducts, initia
             <span className="ml-2 font-normal normal-case text-foreground/60">{total}</span>
           )}
         </h2>
+        <GenerateAllProductsSeoButton siteId={siteId} categoryId={catId} />
       </div>
 
       {/* Search */}
@@ -198,6 +201,7 @@ export function CategoryProductsSection({ siteId, catId, initialProducts, initia
                   >
                     Edit
                   </Link>
+                  <GenerateProductSeoButton siteId={siteId} productId={product.id} categoryId={catId} />
                 </div>
               </div>
             )
