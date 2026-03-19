@@ -76,14 +76,6 @@ const relatedCategories = categories.filter((c) => c.slug !== category.slug).sli
     <h1 class="text-2xl sm:text-3xl font-bold mb-2 text-center" style="color: var(--color-primary)">
       {toTitleCase(category.name)}
     </h1>
-    {category.category_image && (
-      <img
-        src={category.category_image}
-        alt={category.focus_keyword ?? category.name}
-        class="mx-auto mb-3 h-40 w-auto object-contain"
-        loading="eager"
-      />
-    )}
     {category.description && (
       <p class="text-gray-500 max-w-3xl leading-relaxed text-sm sm:text-base">
         {category.description}

@@ -23,6 +23,13 @@ interface Props {
 
 const { title, site, categories, metaDescription, canonicalUrl, ogData, schemaData } = Astro.props;
 const logoUrl = site.customization?.logoUrl ?? null;
+// The generator job rewrites logoUrl to '/logo.webp' in the in-memory JSON,
+// but the on-disk site.json keeps the original /uploads/... path.
+// Normalize: any logoUrl that isn't already a simple filename maps to /logo.webp
+// (the job always copies the logo there during build step 5b).
+const logoSrc = logoUrl
+  ? logoUrl.startsWith("/uploads/") ? "/logo.webp" : logoUrl
+  : null;
 
 const LEGAL_LINKS = [
   { href: "/privacidad/", label: "Privacidad" },
@@ -50,9 +57,9 @@ const LEGAL_LINKS = [
     <div class="mx-auto max-w-4xl px-4">
       <!-- Row 1: logo centered -->
       <div class="flex items-center justify-center py-4">
-        {logoUrl ? (
+        {logoSrc ? (
           <a href="/" class="shrink-0">
-            <img src={logoUrl} alt={site.name} class="h-20" />
+            <img src={logoSrc} alt={site.name} class="h-20" />
           </a>
         ) : (
           <a href="/" class="text-2xl font-bold" style="color: var(--color-primary)">

@@ -220,7 +220,7 @@ async function handleHomepage(job: import("bullmq").Job<SeoContentPayload>): Pro
     }
     if (score >= THRESHOLD) break;
 
-    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) The focus keyword must appear in the FIRST sentence and at least 4 times total — density ~1%. (2) Use 2-3 H2 subheadings, one every ~150 words. (3) Each section must be 100-150 words. (4) Vary phrasing — do not just repeat the keyword robotically.`;
+    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) seo_text MUST start with a ## H2 heading. (2) The focus keyword must appear in the first paragraph and at least 4 times total — density ~1%. (3) Use 2-3 H2 subheadings, one every ~150 words. (4) Each section must be 100-150 words. (5) Vary phrasing — do not just repeat the keyword robotically.`;
   }
 
   if (!bestResult) {
@@ -422,7 +422,7 @@ async function handleCategory(job: import("bullmq").Job<SeoContentPayload>): Pro
     }
     if (score >= THRESHOLD) break;
 
-    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) The focus keyword must appear in the FIRST sentence and at least 4 times total — density ~1%. (2) Use 2-3 H2 subheadings, one every ~150 words. (3) Each section must be 100-150 words. (4) Do not just pad or repeat keywords robotically — vary phrasing. (5) The description field MUST start with the exact focus keyword phrase verbatim.`;
+    scoreFeedback = `Previous attempt scored ${score}/100. Critical issues to fix: (1) seo_text MUST start with a ## H2 heading. (2) The focus keyword must appear in the first paragraph and at least 4 times total — density ~1%. (3) Use 2-3 H2 subheadings, one every ~150 words. (4) Each section must be 100-150 words. (5) Do not just pad or repeat keywords robotically — vary phrasing. (6) The description field MUST start with the exact focus keyword phrase verbatim.`;
   }
 
   if (!bestResult) {
@@ -958,7 +958,8 @@ Fields to regenerate: ${fieldsToGenerate.join(", ")} — generate ALL JSON keys 
     ? `
 Requirements for seo_text (400-500 words):
 - ${keywordInstruction}
-- The focus keyword MUST appear in the very first sentence of the first paragraph
+- MUST start with a ## H2 heading that introduces the category topic (not a generic title — make it specific and engaging)
+- The focus keyword MUST appear in the very first paragraph (immediately after the opening H2)
 - The focus keyword MUST appear at least 6 times total (density ~1.5% in the prose) — vary phrasing naturally
 - Structure: use 2-3 H2 subheadings to break the text into sections (one subheading every ~150 words)
 - Each section must be 120-160 words of flowing prose
@@ -1156,7 +1157,8 @@ Fields to regenerate: ${fieldsToGenerate.join(", ")} — generate ALL JSON keys 
     ? `
 Requirements for seo_text (400-500 words):
 - ${keywordInstruction}
-- The focus keyword MUST appear in the very first sentence of the first paragraph
+- MUST start with a ## H2 heading that introduces the site/niche topic (specific and engaging, not generic)
+- The focus keyword MUST appear in the very first paragraph (immediately after the opening H2)
 - The focus keyword MUST appear at least 4 times total (density ~1%) — vary phrasing naturally
 - Structure: use 2-3 H2 subheadings to break the text into sections (one subheading every ~150 words)
 - Each section must be 120-160 words of flowing prose
