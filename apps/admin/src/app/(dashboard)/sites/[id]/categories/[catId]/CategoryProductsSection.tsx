@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Input } from '@/components/ui/input'
 import { GenerateProductSeoButton } from './GenerateProductSeoButton'
 import { GenerateAllProductsSeoButton } from './GenerateAllProductsSeoButton'
+import SeoJobStatus from '../../SeoJobStatus'
 
 const PAGE_SIZE = 25
 
@@ -104,7 +105,10 @@ export function CategoryProductsSection({ siteId, catId, initialProducts, initia
             <span className="ml-2 font-normal normal-case text-foreground/60">{total}</span>
           )}
         </h2>
-        <GenerateAllProductsSeoButton siteId={siteId} categoryId={catId} />
+        <div className="flex items-center gap-2">
+          <GenerateAllProductsSeoButton siteId={siteId} categoryId={catId} />
+          <SeoJobStatus siteId={siteId} jobType="seo_products_batch" entityId={catId} compact />
+        </div>
       </div>
 
       {/* Search */}
@@ -202,6 +206,7 @@ export function CategoryProductsSection({ siteId, catId, initialProducts, initia
                     Edit
                   </Link>
                   <GenerateProductSeoButton siteId={siteId} productId={product.id} categoryId={catId} />
+                  <SeoJobStatus siteId={siteId} jobType="seo_product" entityId={product.id} compact />
                 </div>
               </div>
             )

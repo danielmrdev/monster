@@ -199,3 +199,41 @@ export async function enqueueAllProductsSeo(siteId: string, categoryId: string):
     return { jobId: jobRow.id, error: message };
   }
 }
+
+/**
+ * Fetch the latest ai_jobs row for a SEO content job.
+ * Used by SeoJobStatus client component on each poll cycle.
+ * - For seo_homepage: filter by site_id + job_type only
+ * - For seo_category / seo_products_batch: also filter payload->>categoryId
+ * - For seo_product: also filter payload->>productId
+ *
+ * Observability: returns null when no job exists (compact SeoJobStatus renders nothing),
+ * returns the row with status/result/error when a job exists. The ->> JSON path operator
+ * extracts JSONB fields as text for equality comparison.
+ */
+export async function getLatestSeoJobStatus(
+  siteId: string,
+  jobType: 'seo_homepage' | 'seo_category' | 'seo_product' | 'seo_products_batch',
+  entityId?: string,
+) {
+  const supabase = createServiceClient();
+  let query = supabase
+    .from('ai_jobs')
+    .select('id, status, started_at, completed_at, error, result, created_at')
+    .eq('site_id', siteId)
+    .eq('job_type', jobType)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (entityId) {
+    if (jobType === 'seo_product') {
+      query = query.eq('payload->>productId', entityId);
+    } else {
+      // seo_category, seo_products_batch
+      query = query.eq('payload->>categoryId', entityId);
+    }
+  }
+
+  const { data } = await query.maybeSingle();
+  return data;
+}
