@@ -607,8 +607,26 @@ async function handleProduct(job: import("bullmq").Job<SeoContentPayload>): Prom
       continue; // try again
     }
 
-    // Only score detailed_description — pros_cons and meta_description are structured/short
-    const score = scoreMarkdown(detailedDescription, keyword, "product", lang);
+    // Score the full product content: detailed_description + pros/cons flattened + meta_description.
+    // All three are AI-generated and together represent the real content quality of the product page.
+    // pros_cons is structured (arrays) so we flatten it to prose for the scorer.
+    const prosConsText =
+      prosCons.pros.length || prosCons.cons.length
+        ? [
+            prosCons.pros.length
+              ? `## Ventajas\n${prosCons.pros.map((p) => `- ${p}`).join("\n")}`
+              : "",
+            prosCons.cons.length
+              ? `## Inconvenientes\n${prosCons.cons.map((c) => `- ${c}`).join("\n")}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("\n\n")
+        : "";
+    const fullContent = [detailedDescription, prosConsText, metaDescription]
+      .filter(Boolean)
+      .join("\n\n");
+    const score = scoreMarkdown(fullContent, keyword, "product", lang);
     console.log(
       `[seo-content] jobId=${job.id} jobType=seo_product siteId=${siteId} productId=${productId} attempt=${attempt} score=${score}`,
     );

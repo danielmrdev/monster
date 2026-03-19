@@ -567,7 +567,7 @@ export class GenerateSiteJob {
             const pageType = inferPageType(relPath);
             const pagePath = filePathToPagePath(relPath);
             const focusKeyword = keywordMap.get(pagePath) ?? "";
-            const score = scorePage(html, focusKeyword, pageType);
+            const score = scorePage(html, focusKeyword, pageType, siteData.site.language);
             console.log(
               `[GenerateSiteJob] score_pages: ${pagePath} → ${score.overall} (${score.grade})`,
             );

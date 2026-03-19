@@ -77,11 +77,12 @@ function scoreContentQuality(
     if (firstParaText && containsKeyword(firstParaText, keyword)) {
       score += 20;
     }
-  } else {
-    // Legal page — allocate those sub-scores to word count bonus
-    score += 30; // keyword density exempted → full marks
-    if (!keyword || isLegal) score += 20; // first para exempted → full marks
+  } else if (isLegal) {
+    // Legal page — keyword is not expected, grant full marks for these sub-scores
+    score += 30; // keyword density exempted
+    score += 20; // first para keyword exempted
   }
+  // Non-legal page without keyword: 0 pts for density and first para — missing keyword is a real SEO gap
 
   // Flesch reading ease sub-score (0–20 pts)
   // Only meaningful for English — for other languages grant full marks
@@ -390,6 +391,8 @@ function buildSuggestions(scores: {
     suggestions.push(
       "Increase body content length and ensure keyword is used naturally throughout.",
     );
+  if (scores.content_quality < 80 && scores.content_quality >= 50)
+    suggestions.push("Add a focus keyword to improve keyword density and first-paragraph signals.");
   if (scores.meta_elements < 50)
     suggestions.push(
       "Add or optimise the <title> tag (50–60 chars) and meta description (120–157 chars).",
