@@ -7,6 +7,7 @@ import { enqueueSiteDeploy, getDeploymentCard } from './actions'
 import { RefreshCard } from './RefreshCard'
 import JobStatus from './JobStatus'
 import { GenerateSiteButton } from './GenerateSiteButton'
+import { GenerateHomepageSeoButton } from './GenerateHomepageSeoButton'
 import DeployStatus from './DeployStatus'
 import { CategoriesSection } from './CategoriesSection'
 import { SiteDetailTabs } from './SiteDetailTabs'
@@ -273,6 +274,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
         }
         seoScores={seoScoresResult.data ?? null}
         alerts={siteAlertsResult.data ?? []}
+        homepageSeoSlot={<GenerateHomepageSeoButton siteId={site.id} />}
       />
     </div>
   )

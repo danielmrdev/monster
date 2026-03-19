@@ -89,6 +89,7 @@ interface TabsProps {
   // SEO & Alerts
   seoScores: SeoScore[] | null
   alerts: Alert[]
+  homepageSeoSlot?: React.ReactNode
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -101,6 +102,7 @@ export function SiteDetailTabs({
   refreshSlot,
   seoScores,
   alerts,
+  homepageSeoSlot,
 }: TabsProps) {
   const customization = site.customization as SiteCustomization | null
 
@@ -238,6 +240,7 @@ export function SiteDetailTabs({
               </dd>
             </div>
           </dl>
+          {homepageSeoSlot}
         </Card>
 
         <Card title="Product Alerts">
