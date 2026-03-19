@@ -113,6 +113,19 @@ Phase 1 implements ONLY TSA (Amazon Affiliate) sites. Architecture must be exten
 - Target cost per site: ~$4/month (domain + hosting + DataForSEO product refresh)
 - **Version:** Root `package.json` is single source of truth. On milestone completion, run `./scripts/bump-version.sh <patch|minor|major>`. Criteria: `patch` = bug fixes, infra, polish; `minor` = new features/screens/integrations; `major` = breaking changes, rewrites.
 
+## Code Quality
+
+- **Linter:** oxlint (Rust, 50-100x faster than ESLint). Config: `oxlint.json`
+- **Formatter:** oxfmt (Rust, 30x faster than Prettier, 100% compatible). No extra config needed (defaults).
+- **Pre-commit hook:** husky + lint-staged. On every `git commit`:
+  1. oxlint --fix on staged files (.js/.jsx/.ts/.tsx)
+  2. oxfmt --write on staged files
+  3. If oxlint fails → commit blocked
+- **Commits:** Conventional Commits (`type(scope): description`). Hook runs automatically — NEVER use `--no-verify`.
+- **Version bump:** `./scripts/bump-version.sh <patch|minor|major>` on milestone completion.
+- **Skill `/commit`:** Assisted commit with conventional commits + optional version bump.
+- **Scripts:** `pnpm lint`, `pnpm format`, `pnpm lint:fix`, `pnpm format:check`
+
 ## Decisions Made
 
 - Sites separated by type (one site = one monetization model)

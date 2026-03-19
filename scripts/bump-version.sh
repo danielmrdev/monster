@@ -61,19 +61,32 @@ if $DRY_RUN; then
   exit 0
 fi
 
-# Update root package.json (preserves formatting via node)
-node -e "
-const fs = require('fs');
-const pkg = JSON.parse(fs.readFileSync('$PKG', 'utf-8'));
-pkg.version = '$NEW_VERSION';
-fs.writeFileSync('$PKG', JSON.stringify(pkg, null, 2) + '\n');
-"
+# Sub-packages that mirror the root version (for PM2 version display)
+SUB_PKGS=(
+  "$ROOT_DIR/apps/admin/package.json"
+  "$ROOT_DIR/packages/agents/package.json"
+)
 
-echo "Updated $PKG → $NEW_VERSION"
+# Update a package.json file (preserves formatting via node)
+update_pkg() {
+  local file="$1"
+  node -e "
+const fs = require('fs');
+const pkg = JSON.parse(fs.readFileSync('$file', 'utf-8'));
+pkg.version = '$NEW_VERSION';
+fs.writeFileSync('$file', JSON.stringify(pkg, null, 2) + '\n');
+"
+  echo "Updated $file → $NEW_VERSION"
+}
+
+update_pkg "$PKG"
+for sub in "${SUB_PKGS[@]}"; do
+  update_pkg "$sub"
+done
 
 # Git commit if in a repo
 if git -C "$ROOT_DIR" rev-parse --git-dir &>/dev/null; then
-  git -C "$ROOT_DIR" add "$PKG"
+  git -C "$ROOT_DIR" add "$PKG" "${SUB_PKGS[@]}"
   git -C "$ROOT_DIR" commit -m "chore: bump version to $NEW_VERSION" --no-verify
   echo "Committed: chore: bump version to $NEW_VERSION"
 fi
