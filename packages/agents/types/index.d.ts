@@ -14,6 +14,8 @@ export declare function productRefreshQueue(): import('bullmq').Queue;
 export declare function createProductRefreshQueue(): import('bullmq').Queue;
 export declare function nicheResearchQueue(): import('bullmq').Queue;
 export declare function createNicheResearchQueue(): import('bullmq').Queue;
+export declare function seoContentQueue(): import('bullmq').Queue;
+export declare function createSeoContentQueue(): import('bullmq').Queue;
 export declare function createRedisOptions(): object;
 export declare function createRedisConnection(): import('ioredis').Redis;
 
@@ -93,3 +95,19 @@ export declare class AmazonBlockedError extends Error {
 export declare class AmazonScraper {
   search(keyword: string, market?: string, page?: number): Promise<ScrapedProduct[]>;
 }
+
+// SEO Content Job
+export interface SeoContentPayload {
+  siteId: string;
+  jobType: 'seo_homepage' | 'seo_category' | 'seo_product' | 'seo_products_batch';
+  categoryId?: string;
+  productId?: string;
+}
+export declare function enqueueSeoContent(
+  siteId: string,
+  jobType: SeoContentPayload['jobType'],
+  opts?: { categoryId?: string; productId?: string },
+): Promise<string | undefined>;
+
+// SEO Scorer wrapper
+export declare function scoreMarkdown(text: string, keyword: string, pageType: string): number;
