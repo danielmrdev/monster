@@ -142,12 +142,15 @@ export async function rescoreSite(
   // Delete stale scores for pages no longer in the current build.
   // This handles deleted categories/products — their rows would otherwise
   // persist indefinitely since upsert only overwrites existing matches.
+  // NOTE: pass the array directly to .not("page_path", "in", [...]) — the Supabase
+  // JS client serialises it correctly. The manual string approach with quoted paths
+  // produces invalid PostgREST syntax and silently deletes nothing.
   const currentPaths = scoreRows.map((r) => r.page_path);
   const { error: deleteErr } = await supabase
     .from("seo_scores")
     .delete()
     .eq("site_id", siteId)
-    .not("page_path", "in", `(${currentPaths.map((p) => `"${p}"`).join(",")})`);
+    .not("page_path", "in", currentPaths);
 
   if (deleteErr) {
     console.warn("[rescoreSite] Failed to delete stale scores:", deleteErr.message);
