@@ -190,7 +190,7 @@ export function ChatSidebar({ open, onClose, pageContext }: ChatSidebarProps) {
   if (!open) return null;
 
   return (
-    <aside className="w-[340px] shrink-0 flex flex-col h-full border-l border-border bg-sidebar">
+    <aside className="fixed inset-y-0 right-0 z-50 w-[340px] flex flex-col h-full border-l border-border bg-sidebar">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
