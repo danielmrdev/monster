@@ -24,7 +24,7 @@ const { site, categories, product } = Astro.props as {
   categories: CategoryData[];
   product: ProductData;
 };
-const title = `${product.title} — ${site.name}`;
+const title = `${product.optimized_title ?? product.title} — ${site.name}`;
 const CURRENCY = site.currency;
 const cloakUrl = buildCloakUrl(product.slug);
 const prosCons = product.pros_cons as ProsCons | null;
@@ -145,7 +145,7 @@ const parentCategory = categories.find((c) => c.slug === product.category_slug) 
       <!-- Title + badges -->
       <div>
         <h1 class="text-xl sm:text-2xl font-bold text-gray-800 leading-snug mb-3">
-          {product.title}
+          {product.optimized_title ?? product.title}
         </h1>
         <div class="flex flex-wrap items-center gap-2">
           {product.is_prime && (

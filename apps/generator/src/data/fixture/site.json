@@ -29,7 +29,11 @@
       "description": "Las mejores freidoras de aire para cocinar sano y delicioso con mínimo aceite.",
       "seo_text": "Las freidoras de aire son el electrodoméstico estrella de los últimos años. Con tecnología de aire caliente circulante, permiten cocinar alimentos crujientes con muy poco aceite. Descubre nuestra selección de las mejores freidoras de aire del mercado, con análisis detallados, comparativas de precios y opiniones reales de usuarios. Desde modelos compactos para una persona hasta grandes capacidades para familias, tenemos la freidora perfecta para cada necesidad y presupuesto.",
       "category_image": null,
-      "keywords": ["freidora de aire", "airfryer", "freidora sin aceite"],
+      "keywords": [
+        "freidora de aire",
+        "airfryer",
+        "freidora sin aceite"
+      ],
       "focus_keyword": null,
       "meta_description": null
     },
@@ -40,7 +44,10 @@
       "description": "Accesorios compatibles con las principales marcas de freidoras de aire del mercado.",
       "seo_text": "Amplía las posibilidades de tu freidora de aire con los accesorios adecuados. Rejillas, moldes, bandejas perforadas y kits completos que transforman tu freidora en un horno versátil. Compatibles con las principales marcas del mercado: Philips, Tefal, Cosori y muchas más.",
       "category_image": null,
-      "keywords": ["accesorios freidora de aire", "moldes airfryer"],
+      "keywords": [
+        "accesorios freidora de aire",
+        "moldes airfryer"
+      ],
       "focus_keyword": null,
       "meta_description": null
     }
@@ -61,7 +68,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": "Philips HD9252/90 Airfryer Compact — Freidora de Aire Sin Aceite"
     },
     {
       "id": "prod-002",
@@ -75,13 +83,20 @@
       "is_prime": true,
       "detailed_description": null,
       "pros_cons": {
-        "pros": ["Gran capacidad", "Fácil limpieza", "App WiFi"],
-        "cons": ["Algo ruidosa"]
+        "pros": [
+          "Gran capacidad",
+          "Fácil limpieza",
+          "App WiFi"
+        ],
+        "cons": [
+          "Algo ruidosa"
+        ]
       },
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-003",
@@ -98,7 +113,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-004",
@@ -115,7 +131,8 @@
       "category_slug": "accesorios-freidora",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-005",
@@ -132,7 +149,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-006",
@@ -149,7 +167,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-007",
@@ -166,7 +185,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-008",
@@ -183,7 +203,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-009",
@@ -200,7 +221,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-010",
@@ -217,7 +239,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-011",
@@ -234,7 +257,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-012",
@@ -251,7 +275,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-013",
@@ -268,7 +293,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     },
     {
       "id": "prod-014",
@@ -285,7 +311,8 @@
       "category_slug": "freidoras-de-aire",
       "focus_keyword": null,
       "user_opinions_summary": null,
-      "meta_description": null
+      "meta_description": null,
+      "optimized_title": null
     }
   ]
 }

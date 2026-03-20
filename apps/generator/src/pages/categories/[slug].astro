@@ -129,7 +129,7 @@ const relatedCategories = categories.filter((c) => c.slug !== category.slug).sli
                   href={`/products/${p.slug}/`}
                   class="text-sm font-semibold text-gray-800 line-clamp-2 hover:text-[var(--color-primary)] transition-colors leading-snug"
                 >
-                  {p.title}
+                  {p.optimized_title ?? p.title}
                 </a>
                 <!-- Price row -->
                 <div class="flex items-baseline gap-2 mt-auto">

@@ -74,6 +74,7 @@ export interface ProductData {
   focus_keyword: string | null;
   user_opinions_summary: string | null;
   meta_description: string | null;
+  optimized_title?: string | null;
 }
 
 export interface SiteData {
