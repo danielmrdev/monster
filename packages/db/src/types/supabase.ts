@@ -1071,6 +1071,7 @@ export type Database = {
         Row: {
           asin: string;
           availability: string | null;
+          bought_past_month: number | null;
           condition: string | null;
           created_at: string;
           current_price: number | null;
@@ -1078,17 +1079,21 @@ export type Database = {
           focus_keyword: string | null;
           id: string;
           images: string[] | null;
+          is_amazon_choice: boolean | null;
           is_prime: boolean;
           last_checked_at: string | null;
           meta_description: string | null;
+          optimized_title: string | null;
           original_price: number | null;
           price_history: Json | null;
           pros_cons: Json | null;
+          rank_position: number | null;
           rating: number | null;
           review_count: number | null;
           site_id: string;
           slug: string | null;
           source_image_url: string | null;
+          special_offers: string[] | null;
           title: string | null;
           updated_at: string;
           user_opinions_summary: string | null;
@@ -1096,6 +1101,7 @@ export type Database = {
         Insert: {
           asin: string;
           availability?: string | null;
+          bought_past_month?: number | null;
           condition?: string | null;
           created_at?: string;
           current_price?: number | null;
@@ -1103,17 +1109,21 @@ export type Database = {
           focus_keyword?: string | null;
           id?: string;
           images?: string[] | null;
+          is_amazon_choice?: boolean | null;
           is_prime?: boolean;
           last_checked_at?: string | null;
           meta_description?: string | null;
+          optimized_title?: string | null;
           original_price?: number | null;
           price_history?: Json | null;
           pros_cons?: Json | null;
+          rank_position?: number | null;
           rating?: number | null;
           review_count?: number | null;
           site_id: string;
           slug?: string | null;
           source_image_url?: string | null;
+          special_offers?: string[] | null;
           title?: string | null;
           updated_at?: string;
           user_opinions_summary?: string | null;
@@ -1121,6 +1131,7 @@ export type Database = {
         Update: {
           asin?: string;
           availability?: string | null;
+          bought_past_month?: number | null;
           condition?: string | null;
           created_at?: string;
           current_price?: number | null;
@@ -1128,17 +1139,21 @@ export type Database = {
           focus_keyword?: string | null;
           id?: string;
           images?: string[] | null;
+          is_amazon_choice?: boolean | null;
           is_prime?: boolean;
           last_checked_at?: string | null;
           meta_description?: string | null;
+          optimized_title?: string | null;
           original_price?: number | null;
           price_history?: Json | null;
           pros_cons?: Json | null;
+          rank_position?: number | null;
           rating?: number | null;
           review_count?: number | null;
           site_id?: string;
           slug?: string | null;
           source_image_url?: string | null;
+          special_offers?: string[] | null;
           title?: string | null;
           updated_at?: string;
           user_opinions_summary?: string | null;
