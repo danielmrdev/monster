@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { NavSidebar } from "@/components/nav-sidebar";
 import { ChatSidebar } from "@/components/chat-sidebar";
+import { AlertsBell } from "@/components/alerts-bell";
 
 const SIDEBAR_KEY = "chat-sidebar-open";
 
@@ -73,6 +74,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
       <header className="flex h-12 shrink-0 items-center justify-between px-4 border-b border-border bg-background">
         <div />
         <div className="flex items-center gap-2">
+          <AlertsBell />
           <button
             onClick={toggleSidebar}
             className={[
