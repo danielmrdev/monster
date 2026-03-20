@@ -5,10 +5,18 @@ import { AGENT_KEYS } from "@monster/agents";
 
 export const dynamic = "force-dynamic";
 
+interface Template {
+  id: string;
+  title: string;
+  type: string;
+  language: string;
+  updated_at: string;
+}
+
 export default async function SettingsPage() {
   const supabase = createServiceClient();
 
-  const [settingsResult, agentPromptsResult] = await Promise.all([
+  const [settingsResult, agentPromptsResult, legalTemplatesResult] = await Promise.all([
     supabase
       .from("settings")
       .select("key, value")
@@ -18,6 +26,12 @@ export default async function SettingsPage() {
       .from("agent_prompts")
       .select("agent_key, prompt_type, content")
       .eq("prompt_type", "system"),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("legal_templates")
+      .select("id, title, type, language, updated_at")
+      .order("type", { ascending: true })
+      .order("language", { ascending: true }),
   ]);
 
   if (settingsResult.error) {
@@ -42,6 +56,9 @@ export default async function SettingsPage() {
   }
 
   console.log(`[settings] agentPrompts loaded: ${Object.keys(agentPrompts).length} overrides`);
+
+  const legalTemplates: Template[] = legalTemplatesResult.data ?? [];
+  console.log(`[settings] legalTemplates loaded: ${legalTemplates.length} templates`);
 
   const agentKeys = [
     {
@@ -75,6 +92,7 @@ export default async function SettingsPage() {
         agentPrompts={agentPrompts}
         agentKeys={agentKeys}
         defaultPrompts={DEFAULT_PROMPTS}
+        legalTemplates={legalTemplates}
       />
     </div>
   );

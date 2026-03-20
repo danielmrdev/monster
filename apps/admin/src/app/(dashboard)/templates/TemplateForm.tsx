@@ -187,7 +187,7 @@ export function TemplateForm({ action, defaultValues, mode }: TemplateFormProps)
           {isPending ? "Saving…" : mode === "create" ? "Create Template" : "Save Changes"}
         </Button>
         <Link
-          href="/templates"
+          href="/settings"
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           Cancel

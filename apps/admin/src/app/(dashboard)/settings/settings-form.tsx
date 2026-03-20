@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import {
   saveSettings,
   saveAgentPrompts,
@@ -13,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { DeleteTemplateButton } from "@/app/(dashboard)/templates/DeleteTemplateButton";
 
 interface AgentKeyConfig {
   key: string;
@@ -20,11 +22,27 @@ interface AgentKeyConfig {
   hint: string;
 }
 
+interface Template {
+  id: string;
+  title: string;
+  type: string;
+  language: string;
+  updated_at: string;
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  privacy: "Privacy Policy",
+  terms: "Terms of Use",
+  cookies: "Cookie Policy",
+  contact: "Contact",
+};
+
 interface SettingsFormProps {
   maskedDisplay: Record<string, string>;
   agentPrompts: Record<string, string>;
   agentKeys: AgentKeyConfig[];
   defaultPrompts: Record<string, string>;
+  legalTemplates: Template[];
 }
 
 function MaskedIndicator({ last4 }: { last4?: string }) {
@@ -46,6 +64,7 @@ export function SettingsForm({
   agentPrompts,
   agentKeys,
   defaultPrompts,
+  legalTemplates,
 }: SettingsFormProps) {
   const [state, formAction, isPending] = useActionState<SaveSettingsState, FormData>(
     saveSettings,
@@ -60,9 +79,10 @@ export function SettingsForm({
 
   return (
     <Tabs defaultValue="api-keys" className="space-y-6">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="api-keys">API Keys</TabsTrigger>
         <TabsTrigger value="ai-prompts">AI Prompts</TabsTrigger>
+        <TabsTrigger value="legal-templates">Plantillas Legales</TabsTrigger>
       </TabsList>
 
       {/* ── Tab: API Keys ─────────────────────────────────────────────────── */}
@@ -308,6 +328,79 @@ export function SettingsForm({
             </p>
           </div>
         </form>
+      </TabsContent>
+
+      {/* ── Tab: Plantillas Legales ───────────────────────────────────────── */}
+      <TabsContent value="legal-templates">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold">Plantillas Legales</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Reusable legal page templates. Assign them to sites in the site edit page.
+              </p>
+            </div>
+            <Link
+              href="/templates/new"
+              className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              + New Template
+            </Link>
+          </div>
+
+          {legalTemplates.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card p-8 text-center">
+              <p className="text-sm text-muted-foreground">No templates yet.</p>
+              <Link href="/templates/new" className="text-sm text-primary hover:underline mt-2 block">
+                Create your first template →
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {["privacy", "terms", "cookies", "contact"].map((type) => {
+                const byType = legalTemplates.filter((t) => t.type === type);
+                return (
+                  <div
+                    key={type}
+                    className="rounded-xl border border-border bg-card divide-y divide-border"
+                  >
+                    <div className="px-5 py-3">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {TYPE_LABELS[type] ?? type}
+                      </h3>
+                    </div>
+                    {byType.length === 0 ? (
+                      <div className="px-5 py-4">
+                        <p className="text-xs text-muted-foreground">No templates for this type.</p>
+                      </div>
+                    ) : (
+                      byType.map((t) => (
+                        <div key={t.id} className="px-5 py-3 flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{t.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Language: <span className="font-mono">{t.language}</span>
+                              {" · "}Updated {new Date(t.updated_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Link
+                              href={`/templates/${t.id}/edit`}
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              Edit
+                            </Link>
+                            <DeleteTemplateButton id={t.id} title={t.title} />
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </TabsContent>
     </Tabs>
   );

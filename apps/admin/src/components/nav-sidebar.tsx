@@ -13,14 +13,12 @@ import {
   Settings,
   Server,
   Zap,
-  FileText,
   Activity,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/sites", label: "Sites", icon: Globe },
-  { href: "/templates", label: "Templates", icon: FileText },
   { href: "/research", label: "Research Lab", icon: FlaskConical },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/finances", label: "Finances", icon: DollarSign },

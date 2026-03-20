@@ -47,7 +47,8 @@ export async function createTemplate(
   if (error) return { errors: { _form: [error.message] } };
 
   revalidatePath("/templates");
-  redirect("/templates");
+  revalidatePath("/settings");
+  redirect("/settings");
 }
 
 export async function updateTemplate(
@@ -73,10 +74,12 @@ export async function updateTemplate(
   if (error) return { errors: { _form: [error.message] } };
 
   revalidatePath("/templates");
-  redirect("/templates");
+  revalidatePath("/settings");
+  redirect("/settings");
 }
 
 export async function deleteTemplate(id: string): Promise<void> {
   await db().from("legal_templates").delete().eq("id", id);
   revalidatePath("/templates");
+  revalidatePath("/settings");
 }

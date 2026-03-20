@@ -26,7 +26,7 @@ function getPageContext(pathname: string): string {
   if (pathname.startsWith("/alerts")) return "Alerts";
   if (pathname.startsWith("/jobs")) return "Jobs";
   if (pathname.startsWith("/settings")) return "Settings";
-  if (pathname.startsWith("/templates")) return "Templates";
+  if (pathname.startsWith("/templates")) return "Settings";
   return "Admin Panel";
 }
 
