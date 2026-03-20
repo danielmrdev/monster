@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertList } from "../alerts/AlertList";
+import type { AlertRow } from "../alerts/AlertList";
+import { getAlerts } from "../alerts/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +42,7 @@ export default async function DashboardPage() {
     monthRevenueAmazonResult,
     monthRevenueManualResult,
     sitesForNameResult,
+    recentAlerts,
   ] = await Promise.all([
     supabase.from("sites").select("*", { count: "exact", head: true }),
     supabase.from("sites").select("*", { count: "exact", head: true }).eq("status", "live"),
@@ -67,6 +71,8 @@ export default async function DashboardPage() {
     supabase.from("revenue_manual").select("amount").gte("date", from).lte("date", to),
     // Sites for name lookup in top sites
     supabase.from("sites").select("id, name"),
+    // All alerts (all statuses), last 50 — for the dashboard history table
+    getAlerts(),
   ]);
 
   if (e1) throw new Error("Failed to fetch dashboard KPIs (total sites): " + e1.message);
@@ -271,6 +277,15 @@ export default async function DashboardPage() {
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+      {/* Recent alerts */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Alertas recientes</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <AlertList alerts={recentAlerts as AlertRow[]} />
         </CardContent>
       </Card>
     </div>
