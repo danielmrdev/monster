@@ -87,13 +87,19 @@ const relatedCategories = categories.filter((c) => c.slug !== category.slug).sli
   {products.length > 0 ? (
     <section class="mb-14">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {products.map((p) => {
+        {products.map((p, index) => {
           const hasDiscount = p.original_price !== null && p.original_price > p.current_price;
           const discountPct = hasDiscount
             ? Math.round(((p.original_price! - p.current_price) / p.original_price!) * 100)
             : 0;
           return (
-            <div class="flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow duration-150">
+            <div
+              class:list={[
+                "flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow duration-150",
+                { hidden: index >= 12 },
+              ]}
+              data-more-card={index >= 12 ? "" : undefined}
+            >
               <!-- Fixed height image — object-contain so full product visible -->
               <a href={`/products/${p.slug}/`} class="block relative">
                 {p.images[0] ? (
@@ -159,6 +165,34 @@ const relatedCategories = categories.filter((c) => c.slug !== category.slug).sli
           );
         })}
       </div>
+
+      {products.length > 12 && (
+        <div class="mt-8 flex justify-center">
+          <button
+            id="load-more-btn"
+            class="px-6 py-2 text-sm font-medium border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cargar más
+          </button>
+        </div>
+      )}
+
+      <script is:inline>
+        (function () {
+          var btn = document.getElementById('load-more-btn');
+          if (!btn) return;
+          btn.addEventListener('click', function () {
+            var hidden = document.querySelectorAll('[data-more-card][hidden], [data-more-card].hidden');
+            var toShow = Array.prototype.slice.call(hidden, 0, 12);
+            toShow.forEach(function (el) {
+              el.removeAttribute('hidden');
+              el.classList.remove('hidden');
+            });
+            var remaining = document.querySelectorAll('[data-more-card][hidden], [data-more-card].hidden');
+            if (remaining.length === 0) btn.style.display = 'none';
+          });
+        })();
+      </script>
     </section>
   ) : (
     <p class="text-gray-500 text-sm mb-14">No hay productos en esta categoría aún.</p>
