@@ -210,6 +210,65 @@ export class DataForSEOClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  // ── Cost tracking ─────────────────────────────────────────────────────────
+
+  /**
+   * Inserts a cost row into the `costs` table for a DataForSEO API call.
+   * Errors are swallowed — cost tracking never interrupts the main flow.
+   * Redaction: credentials are never logged; only the error message is.
+   *
+   * @param operation - Human-readable label, e.g. "searchProducts:freidoras:ES"
+   * @param amountUsd - Cost in USD (D134: $0.006 per searchProducts / lookupAsin call)
+   * @param siteId    - Optional site UUID; null for portfolio-wide operations
+   */
+  private async trackCost(
+    operation: string,
+    amountUsd: number,
+    siteId?: string | null,
+  ): Promise<void> {
+    try {
+      const db = createServiceClient();
+      await db.from("costs").insert({
+        category_slug: "dataforseo",
+        description: operation,
+        amount: amountUsd,
+        currency: "USD",
+        date: new Date().toISOString().slice(0, 10),
+        site_id: siteId ?? null,
+        period: "one-time",
+      });
+    } catch (err) {
+      console.error(
+        "[DataForSEO] trackCost failed:",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  }
+
+  // ── Account balance ───────────────────────────────────────────────────────
+
+  /**
+   * Fetches the DataForSEO account balance from `/v3/appendix/user_data`.
+   * Returns the balance in USD as a number, or null on any error (never throws).
+   * Used by the Finances page to display available credit.
+   */
+  async getAccountBalance(): Promise<number | null> {
+    try {
+      const auth = await this.fetchAuthHeader();
+      const response = await this.apiGet<unknown>("/appendix/user_data", auth);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const balance = (response as any)?.tasks?.[0]?.result?.[0]?.money?.balance;
+      if (typeof balance === "number") return balance;
+      return null;
+    } catch (err) {
+      console.error(
+        "[DataForSEO] getAccountBalance error:",
+        err instanceof Error ? err.message : String(err),
+      );
+      return null;
+    }
+  }
+
   // ── Poll tasks_ready until taskId appears ─────────────────────────────────
 
   /**
@@ -256,7 +315,12 @@ export class DataForSEOClient {
    * @param market  - AMAZON_MARKETS slug (e.g. "ES", "US")
    * @returns Array of mapped DataForSEOProduct. Throws if zero usable results.
    */
-  async searchProducts(keyword: string, market: string, depth = 30): Promise<DataForSEOProduct[]> {
+  async searchProducts(
+    keyword: string,
+    market: string,
+    depth = 30,
+    siteId?: string | null,
+  ): Promise<DataForSEOProduct[]> {
     const config = MARKET_CONFIG[market];
     if (!config) {
       throw new Error(
@@ -346,6 +410,7 @@ export class DataForSEOClient {
       throw new Error(`DataForSEO returned zero usable products for keyword: "${keyword}"`);
     }
 
+    void this.trackCost(`searchProducts:${keyword}:${market}`, 0.006, siteId);
     return products;
   }
 
@@ -364,6 +429,7 @@ export class DataForSEOClient {
   async lookupAsin(
     asin: string,
     market: string,
+    siteId?: string | null,
   ): Promise<{ price: number | null; originalPrice: number | null } | null> {
     const config = MARKET_CONFIG[market];
     if (!config) {
@@ -424,6 +490,7 @@ export class DataForSEOClient {
       originalPrice = Math.round((price / (1 - pct / 100)) * 100) / 100;
     }
 
+    void this.trackCost(`lookupAsin:${asin}:${market}`, 0.006, siteId);
     return { price, originalPrice };
   }
 

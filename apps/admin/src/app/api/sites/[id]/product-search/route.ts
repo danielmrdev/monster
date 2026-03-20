@@ -95,7 +95,7 @@ export async function GET(request: NextRequest, { params }: Params) {
   if (!cachedProducts) {
     try {
       const client = new DataForSEOClient();
-      const dfsProducts = await client.searchProducts(q, market, depth);
+      const dfsProducts = await client.searchProducts(q, market, depth, siteId);
 
       cachedProducts = dfsProducts.map((p) => ({
         asin: p.asin,

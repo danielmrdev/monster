@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: Params) {
   try {
     const client = new DataForSEOClient();
     // Search by ASIN directly — DataForSEO Merchant API supports ASIN as keyword
-    const products = await client.searchProducts(asin, market);
+    const products = await client.searchProducts(asin, market, undefined, siteId);
 
     // Find exact ASIN match first, then fall back to first result
     const match = products.find((p) => p.asin === asin) ?? products[0];

@@ -134,7 +134,7 @@ async function handler(job: import("bullmq").Job<ProductRefreshPayload>): Promis
   let products: Awaited<ReturnType<DataForSEOClient["searchProducts"]>>;
 
   try {
-    products = await client.searchProducts(niche, market);
+    products = await client.searchProducts(niche, market, 30, siteId);
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error(`[ProductRefreshJob] site ${siteId} DataForSEO fetch failed: ${errMsg}`);
@@ -233,7 +233,7 @@ async function handler(job: import("bullmq").Job<ProductRefreshPayload>): Promis
 
     for (const prod of missingDiscount) {
       try {
-        const detail = await client.lookupAsin(prod.asin, market);
+        const detail = await client.lookupAsin(prod.asin, market, siteId);
         if (detail?.originalPrice !== null && detail?.originalPrice !== undefined) {
           await supabase
             .from("tsa_products")

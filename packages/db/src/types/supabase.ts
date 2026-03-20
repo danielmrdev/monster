@@ -1025,6 +1025,7 @@ export type Database = {
           focus_keyword: string | null;
           id: string;
           keywords: string[] | null;
+          meta_description: string | null;
           name: string;
           seo_text: string | null;
           site_id: string;
@@ -1038,6 +1039,7 @@ export type Database = {
           focus_keyword?: string | null;
           id?: string;
           keywords?: string[] | null;
+          meta_description?: string | null;
           name: string;
           seo_text?: string | null;
           site_id: string;
@@ -1051,6 +1053,7 @@ export type Database = {
           focus_keyword?: string | null;
           id?: string;
           keywords?: string[] | null;
+          meta_description?: string | null;
           name?: string;
           seo_text?: string | null;
           site_id?: string;
