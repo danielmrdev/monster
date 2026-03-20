@@ -394,6 +394,7 @@ export class GenerateSiteJob {
               focus_keyword: p.focus_keyword ?? null,
               user_opinions_summary: p.user_opinions_summary ?? null,
               meta_description: p.meta_description ?? null,
+              optimized_title: p.optimized_title ?? null,
             })),
         };
 

@@ -552,6 +552,7 @@ async function handleProduct(job: import("bullmq").Job<SeoContentPayload>): Prom
     prosCons: { pros: string[]; cons: string[] };
     userOpinionsSummary: string;
     metaDescription: string;
+    optimizedTitle: string;
     score: number;
   } | null = null;
   let attempts = 0;
@@ -579,12 +580,13 @@ async function handleProduct(job: import("bullmq").Job<SeoContentPayload>): Prom
       }
     }
 
-    // Parse JSON response: { focus_keyword, detailed_description, pros_cons, user_opinions_summary, meta_description }
+    // Parse JSON response: { focus_keyword, detailed_description, pros_cons, user_opinions_summary, meta_description, optimized_title }
     let keyword = "";
     let detailedDescription = "";
     let prosCons: { pros: string[]; cons: string[] } = { pros: [], cons: [] };
     let userOpinionsSummary = "";
     let metaDescription = "";
+    let optimizedTitle = "";
     try {
       const stripped = resultStr
         .replace(/^```(?:json)?\s*/i, "")
@@ -600,6 +602,7 @@ async function handleProduct(job: import("bullmq").Job<SeoContentPayload>): Prom
       };
       userOpinionsSummary = String(parsed.user_opinions_summary ?? "").trim();
       metaDescription = String(parsed.meta_description ?? "").trim();
+      optimizedTitle = String(parsed.optimized_title ?? "").trim();
     } catch {
       console.warn(
         `[seo-content] jobId=${job.id} jobType=seo_product attempt=${attempt} JSON parse failed — raw: ${resultStr.slice(0, 200)}`,
@@ -638,6 +641,7 @@ async function handleProduct(job: import("bullmq").Job<SeoContentPayload>): Prom
         prosCons,
         userOpinionsSummary,
         metaDescription,
+        optimizedTitle,
         score,
       };
     }
@@ -659,7 +663,7 @@ async function handleProduct(job: import("bullmq").Job<SeoContentPayload>): Prom
     throw new Error(msg);
   }
 
-  // Step D: write 5 fields to tsa_products (KN024: double-cast pros_cons to satisfy Json type)
+  // Step D: write 6 fields to tsa_products (KN024: double-cast pros_cons to satisfy Json type)
   const { error: productUpdateErr } = await supabase
     .from("tsa_products")
     .update({
@@ -668,6 +672,7 @@ async function handleProduct(job: import("bullmq").Job<SeoContentPayload>): Prom
       user_opinions_summary: bestResult.userOpinionsSummary,
       meta_description: bestResult.metaDescription,
       focus_keyword: bestResult.keyword,
+      optimized_title: bestResult.optimizedTitle || null,
     })
     .eq("id", productId!);
 
@@ -780,6 +785,7 @@ async function handleProductsBatch(job: import("bullmq").Job<SeoContentPayload>)
         prosCons: { pros: string[]; cons: string[] };
         userOpinionsSummary: string;
         metaDescription: string;
+        optimizedTitle: string;
         score: number;
       } | null = null;
       let scoreFeedback = "";
@@ -810,6 +816,7 @@ async function handleProductsBatch(job: import("bullmq").Job<SeoContentPayload>)
         let prosCons: { pros: string[]; cons: string[] } = { pros: [], cons: [] };
         let userOpinionsSummary = "";
         let metaDescription = "";
+        let optimizedTitle = "";
         try {
           const stripped = resultStr
             .replace(/^```(?:json)?\s*/i, "")
@@ -825,6 +832,7 @@ async function handleProductsBatch(job: import("bullmq").Job<SeoContentPayload>)
           };
           userOpinionsSummary = String(parsed.user_opinions_summary ?? "").trim();
           metaDescription = String(parsed.meta_description ?? "").trim();
+          optimizedTitle = String(parsed.optimized_title ?? "").trim();
         } catch {
           console.warn(
             `[seo-content] jobId=${job.id} jobType=seo_products_batch productId=${product.id} asin=${product.asin} attempt=${attempt} JSON parse failed`,
@@ -845,6 +853,7 @@ async function handleProductsBatch(job: import("bullmq").Job<SeoContentPayload>)
             prosCons,
             userOpinionsSummary,
             metaDescription,
+            optimizedTitle,
             score,
           };
         }
@@ -862,6 +871,7 @@ async function handleProductsBatch(job: import("bullmq").Job<SeoContentPayload>)
             user_opinions_summary: bestResult.userOpinionsSummary,
             meta_description: bestResult.metaDescription,
             focus_keyword: bestResult.keyword,
+            optimized_title: bestResult.optimizedTitle || null,
           })
           .eq("id", product.id);
 
@@ -1089,6 +1099,7 @@ Requirements:
 - List 3-5 pros and 2-4 cons for this product
 - Write a ~100 word summary of what users typically say about this product
 - Write a meta description under 155 characters including the focus keyword
+- Write an optimized SEO title for this product: 50-80 characters, format "[Brand] [Product] [Key Feature] — [Key Differentiator]", in ${lang}
 - All content must be in ${lang} language
 ${scoreFeedback ? `\nImprovement feedback from previous attempt:\n${scoreFeedback}` : ""}
 
@@ -1099,7 +1110,8 @@ Respond ONLY with a valid JSON object — no prose, no markdown fences before or
   "detailed_description": "<320-400 word product description in ${lang}, with ## subheadings>",
   "pros_cons": { "pros": ["<pro 1>", "<pro 2>", "<pro 3>"], "cons": ["<con 1>", "<con 2>", "<con 3>"] },
   "user_opinions_summary": "<~100 word summary of what users typically say in ${lang}>",
-  "meta_description": "<155-char meta description in ${lang}>"
+  "meta_description": "<155-char meta description in ${lang}>",
+  "optimized_title": "<50-80 char SEO title for this product in ${lang}>"
 }`;
 }
 
