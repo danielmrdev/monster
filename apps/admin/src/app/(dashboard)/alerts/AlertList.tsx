@@ -47,9 +47,11 @@ function formatDate(iso: string): string {
 
 interface AlertRowActionsProps {
   alertId: string;
+  /** Called after a successful action so parent components (e.g. AlertsBell) can re-fetch. */
+  onActionComplete?: () => void;
 }
 
-function AlertRowActions({ alertId }: AlertRowActionsProps) {
+function AlertRowActions({ alertId, onActionComplete }: AlertRowActionsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -60,6 +62,7 @@ function AlertRowActions({ alertId }: AlertRowActionsProps) {
         console.error("[AlertList] acknowledgeAlert failed:", result.error);
       }
       router.refresh();
+      onActionComplete?.();
     });
   }
 
@@ -70,6 +73,7 @@ function AlertRowActions({ alertId }: AlertRowActionsProps) {
         console.error("[AlertList] resolveAlert failed:", result.error);
       }
       router.refresh();
+      onActionComplete?.();
     });
   }
 
@@ -87,9 +91,11 @@ function AlertRowActions({ alertId }: AlertRowActionsProps) {
 
 interface AlertListProps {
   alerts: AlertRow[];
+  /** Called after any alert action completes so parent components can re-fetch counts/lists. */
+  onActionComplete?: () => void;
 }
 
-export function AlertList({ alerts }: AlertListProps) {
+export function AlertList({ alerts, onActionComplete }: AlertListProps) {
   return (
     <Table>
       <TableHeader>
@@ -130,7 +136,7 @@ export function AlertList({ alerts }: AlertListProps) {
                 {formatDate(alert.created_at)}
               </TableCell>
               <TableCell>
-                <AlertRowActions alertId={alert.id} />
+                <AlertRowActions alertId={alert.id} onActionComplete={onActionComplete} />
               </TableCell>
             </TableRow>
           ))
