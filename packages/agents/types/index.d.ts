@@ -48,7 +48,9 @@ export interface DataForSEOProduct {
   rankPosition: number | null;
 }
 export declare class DataForSEOClient {
-  searchProducts(keyword: string, market: string, depth?: number): Promise<DataForSEOProduct[]>;
+  searchProducts(keyword: string, market: string, depth?: number, siteId?: string): Promise<DataForSEOProduct[]>;
+  lookupAsin(asin: string, market: string, siteId?: string): Promise<{ price: number; originalPrice: number | null } | null>;
+  getAccountBalance(): Promise<number | null>;
   fetchAuthHeader(): Promise<string>;
 }
 

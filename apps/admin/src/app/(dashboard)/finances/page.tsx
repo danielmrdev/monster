@@ -1,3 +1,4 @@
+import { DataForSEOClient } from "@monster/agents";
 import { createServiceClient } from "@/lib/supabase/service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -86,6 +87,17 @@ export default async function FinancesPage({
   const revenueAmazon = revenueAmazonResult.data;
   const revenueManual = revenueManualResult.data;
 
+  // DataForSEO account balance — fetched outside Promise.all so a DFS error
+  // never throws the entire Finances page. getAccountBalance() never throws by
+  // contract (T01), but we guard defensively anyway.
+  let dfsBalance: number | null = null;
+  try {
+    const dfsClient = new DataForSEOClient();
+    dfsBalance = await dfsClient.getAccountBalance();
+  } catch {
+    // getAccountBalance should never throw, but guard defensively
+  }
+
   // Compute P&L aggregation (pure in-memory)
   const pnlResult = computePnL(costs, revenueAmazon, revenueManual, sites);
 
@@ -143,6 +155,7 @@ export default async function FinancesPage({
 
   // Formatters
   const fmtEUR = (n: number) => n.toLocaleString("en", { style: "currency", currency: "EUR" });
+  const fmtUSD = (n: number) => n.toLocaleString("en", { style: "currency", currency: "USD" });
 
   const profitColor = (n: number) =>
     n >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
@@ -164,6 +177,26 @@ export default async function FinancesPage({
 
       {/* Date range filter */}
       <FinancesFilters defaultFrom={dateRange.from} defaultTo={dateRange.to} />
+
+      {/* ── DataForSEO Balance card ─────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle>DataForSEO Balance (USD)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {dfsBalance !== null ? (
+            <div className="space-y-1">
+              <p className="text-3xl font-bold font-mono">{fmtUSD(dfsBalance)}</p>
+              <p className="text-sm text-muted-foreground">Available balance in your DataForSEO account</p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Not configured — add DataForSEO credentials in{" "}
+              <a href="/settings" className="underline">Settings</a>.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ── P&L Summary card ───────────────────────────────────────────────── */}
       <Card>
