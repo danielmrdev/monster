@@ -537,6 +537,24 @@ export class GenerateSiteJob {
           }
         }
 
+        // ── 5c. Copy custom category images (admin-uploaded) → dist/ ─────
+        for (const cat of siteData.categories) {
+          const img = cat.category_image;
+          if (img && img.startsWith("/uploads/sites/")) {
+            const srcPath = join(adminPublicRoot, img);
+            const destPath = join(distDir, img);
+            if (existsSync(srcPath)) {
+              mkdirSync(dirname(destPath), { recursive: true });
+              copyFileSync(srcPath, destPath);
+              console.log(`[GenerateSiteJob] Copied category image → dist${img}`);
+            } else {
+              console.warn(
+                `[GenerateSiteJob] category image source not found: ${srcPath} — skipping`,
+              );
+            }
+          }
+        }
+
         // ── 6. Score pages ────────────────────────────────────────────────
         await supabase
           .from("ai_jobs")
