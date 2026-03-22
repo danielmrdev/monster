@@ -439,7 +439,7 @@ async function handleCategory(job: import("bullmq").Job<SeoContentPayload>): Pro
   }
 
   // Step D: write only the requested fields to tsa_categories
-  const catUpdatePayload: Record<string, string | null> = {};
+  const catUpdatePayload: Record<string, unknown> = {};
   if (fieldsToGenerate.includes("focus_keyword")) {
     catUpdatePayload.focus_keyword = bestResult.keyword || null;
   }
@@ -449,11 +449,11 @@ async function handleCategory(job: import("bullmq").Job<SeoContentPayload>): Pro
   if (fieldsToGenerate.includes("description")) {
     catUpdatePayload.description = bestResult.description || null;
   }
+  catUpdatePayload.manually_edited_fields = [];
 
-  catUpdatePayload.manually_edited_fields = [] as unknown as string;
   const { error: catUpdateErr } = await supabase
     .from("tsa_categories")
-    .update(catUpdatePayload)
+    .update(catUpdatePayload as Record<string, string | null>)
     .eq("id", categoryId!);
 
   if (catUpdateErr) {
@@ -674,6 +674,7 @@ async function handleProduct(job: import("bullmq").Job<SeoContentPayload>): Prom
       meta_description: bestResult.metaDescription,
       focus_keyword: bestResult.keyword,
       optimized_title: bestResult.optimizedTitle || null,
+      manually_edited_fields: [] as unknown as string[],
     })
     .eq("id", productId!);
 
@@ -873,6 +874,7 @@ async function handleProductsBatch(job: import("bullmq").Job<SeoContentPayload>)
             meta_description: bestResult.metaDescription,
             focus_keyword: bestResult.keyword,
             optimized_title: bestResult.optimizedTitle || null,
+            manually_edited_fields: [] as unknown as string[],
           })
           .eq("id", product.id);
 

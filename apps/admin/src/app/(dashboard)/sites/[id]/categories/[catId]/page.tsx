@@ -20,7 +20,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
     supabase.from("sites").select("id, name").eq("id", siteId).single(),
     supabase
       .from("tsa_categories")
-      .select("id, name, slug, description, focus_keyword, seo_text")
+      .select("id, name, slug, description, focus_keyword, seo_text, manually_edited_fields")
       .eq("id", catId)
       .eq("site_id", siteId)
       .single(),
@@ -100,22 +100,42 @@ export default async function CategoryDetailPage({ params }: PageProps) {
       {/* SEO Content */}
       <div className="rounded-lg border border-border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Category SEO</h2>
-        <dl className="space-y-4">
-          <div>
-            <dt className="text-xs font-medium text-muted-foreground">Focus Keyword</dt>
-            <dd className="mt-1 text-sm text-foreground">{category.focus_keyword ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium text-muted-foreground">Description</dt>
-            <dd className="mt-1 text-sm text-foreground">{category.description ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium text-muted-foreground">SEO Text</dt>
-            <dd className="mt-2">
-              <MarkdownPreview content={category.seo_text} />
-            </dd>
-          </div>
-        </dl>
+        {(() => {
+          const editedFields = new Set<string>((category.manually_edited_fields as string[]) ?? []);
+          return (
+            <dl className="space-y-4">
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                  Focus Keyword
+                  {editedFields.has("focus_keyword") && (
+                    <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                  )}
+                </dt>
+                <dd className="mt-1 text-sm text-foreground">{category.focus_keyword ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                  Description
+                  {editedFields.has("description") && (
+                    <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                  )}
+                </dt>
+                <dd className="mt-1 text-sm text-foreground">{category.description ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                  SEO Text
+                  {editedFields.has("seo_text") && (
+                    <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                  )}
+                </dt>
+                <dd className="mt-2">
+                  <MarkdownPreview content={category.seo_text} />
+                </dd>
+              </div>
+            </dl>
+          );
+        })()}
 
         <CategorySeoPanel
           siteId={siteId}

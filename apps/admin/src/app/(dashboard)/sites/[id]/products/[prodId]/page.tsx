@@ -23,7 +23,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
     supabase
       .from("tsa_products")
       .select(
-        "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, focus_keyword, meta_description, detailed_description, pros_cons, user_opinions_summary",
+        "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, focus_keyword, meta_description, detailed_description, pros_cons, user_opinions_summary, manually_edited_fields",
       )
       .eq("id", prodId)
       .eq("site_id", siteId)
@@ -67,6 +67,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
       : null);
 
   const prosCons = product.pros_cons as { pros?: string[]; cons?: string[] } | null;
+  const editedFields = new Set<string>((product.manually_edited_fields as string[]) ?? []);
 
   // Determine back navigation: category detail (if from=category) or site products tab
   const fromCategory = from === "category" && fromCatId
@@ -181,22 +182,42 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
         </h2>
         <dl className="space-y-4">
           <div>
-            <dt className="text-xs font-medium text-muted-foreground">Focus Keyword</dt>
+            <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              Focus Keyword
+              {editedFields.has("focus_keyword") && (
+                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+              )}
+            </dt>
             <dd className="mt-1 text-sm text-foreground">{product.focus_keyword ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground">Meta Description</dt>
+            <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              Meta Description
+              {editedFields.has("meta_description") && (
+                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+              )}
+            </dt>
             <dd className="mt-1 text-sm text-foreground">{product.meta_description ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-muted-foreground">Detailed Description</dt>
+            <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              Detailed Description
+              {editedFields.has("detailed_description") && (
+                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+              )}
+            </dt>
             <dd className="mt-2">
               <MarkdownPreview content={product.detailed_description} />
             </dd>
           </div>
           {prosCons?.pros && prosCons.pros.length > 0 && (
             <div>
-              <dt className="text-xs font-medium text-muted-foreground">Pros</dt>
+              <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                Pros
+                {editedFields.has("pros_cons") && (
+                  <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                )}
+              </dt>
               <dd className="mt-1 space-y-0.5">
                 {prosCons.pros.map((pro, i) => (
                   <p key={i} className="text-sm text-foreground">
@@ -208,7 +229,12 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
           )}
           {prosCons?.cons && prosCons.cons.length > 0 && (
             <div>
-              <dt className="text-xs font-medium text-muted-foreground">Cons</dt>
+              <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                Cons
+                {editedFields.has("pros_cons") && !prosCons?.pros?.length && (
+                  <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                )}
+              </dt>
               <dd className="mt-1 space-y-0.5">
                 {prosCons.cons.map((con, i) => (
                   <p key={i} className="text-sm text-foreground">
@@ -220,7 +246,12 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
           )}
           {product.user_opinions_summary && (
             <div>
-              <dt className="text-xs font-medium text-muted-foreground">User Opinions Summary</dt>
+              <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                User Opinions Summary
+                {editedFields.has("user_opinions_summary") && (
+                  <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                )}
+              </dt>
               <dd className="mt-1 text-sm text-foreground">{product.user_opinions_summary}</dd>
             </div>
           )}
