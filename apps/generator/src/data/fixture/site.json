@@ -11,9 +11,10 @@
     "customization": {
       "primaryColor": "#4f46e5",
       "accentColor": "#7c3aed",
-      "fontFamily": "sans-serif",
       "logoUrl": "/uploads/sites/e73839d8-bf90-4abe-9e33-f53fa4cdd6bb/logo.webp",
-      "faviconDir": "/uploads/sites/e73839d8-bf90-4abe-9e33-f53fa4cdd6bb/favicon"
+      "faviconDir": "/uploads/sites/e73839d8-bf90-4abe-9e33-f53fa4cdd6bb/favicon",
+      "headingFont": "Playfair Display",
+      "bodyFont": "Inter"
     },
     "focus_keyword": "freidoras de aire",
     "homepage_seo_text": "<p>Las <strong>freidoras de aire</strong> han revolucionado la cocina saludable. Con tecnología de aire caliente circulante, permiten obtener resultados crujientes con hasta un 80% menos de aceite que una freidora tradicional. En <strong>Airfryer Pro ES</strong> encontrarás análisis independientes, comparativas de precios y guías de compra para elegir la freidora de aire perfecta según tu presupuesto y necesidades. Descubre los modelos más valorados por miles de usuarios en Amazon España.</p>",

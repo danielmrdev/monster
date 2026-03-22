@@ -19,7 +19,8 @@ interface Props {
   customization?: {
     primaryColor?: string;
     accentColor?: string;
-    fontFamily?: string;
+    headingFont?: string;
+    bodyFont?: string;
   };
   /** When set, four standard favicon <link> tags are emitted in <head>. The value is a presence signal only — hrefs use the standard filenames favicon.io generates. */
   faviconDir?: string;
@@ -40,7 +41,19 @@ interface Props {
 const { title, lang = "es", metaDescription, customization, faviconDir, siteId, supabaseUrl, supabaseAnonKey, canonicalUrl, ogData, schemaData } = Astro.props;
 const primary = customization?.primaryColor ?? "#4f46e5";
 const accent = customization?.accentColor ?? "#7c3aed";
-const font = customization?.fontFamily ?? "sans-serif";
+const headingFont = customization?.headingFont ?? "";
+const bodyFont = customization?.bodyFont ?? "";
+
+// Build Google Fonts URL for non-system fonts.
+const systemFonts = new Set(["sans-serif", "serif", "monospace", "cursive", "fantasy"]);
+const fontsToLoad = [
+  bodyFont && !systemFonts.has(bodyFont) ? bodyFont : null,
+  headingFont && headingFont !== bodyFont && !systemFonts.has(headingFont) ? headingFont : null,
+].filter((f): f is string => f !== null);
+const googleFontsUrl =
+  fontsToLoad.length > 0
+    ? `https://fonts.googleapis.com/css2?${fontsToLoad.map((f) => `family=${f.replace(/ /g, "+")}:wght@400;500;600;700`).join("&")}&display=swap`
+    : null;
 
 // Load the pre-built tracker and substitute build-time placeholders.
 // The path is relative to the monorepo root — process.cwd() during `astro build`
@@ -86,6 +99,13 @@ try {
         <link rel="manifest" href="/site.webmanifest" />
       </>
     )}
+    {googleFontsUrl && (
+      <>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href={googleFontsUrl} rel="stylesheet" />
+      </>
+    )}
     <style>
       @import "tailwindcss";
       @plugin "@tailwindcss/typography";
@@ -97,12 +117,16 @@ try {
         text-decoration: none;
         color: inherit;
       }
+      h1, h2, h3, h4, h5, h6 {
+        font-family: var(--font-heading);
+      }
     </style>
-    <style define:vars={{ primary, accent, font }}>
+    <style define:vars={{ primary, accent, headingFont, bodyFont }}>
       :root {
         --color-primary: var(--primary);
         --color-accent: var(--accent);
-        --font-body: var(--font);
+        --font-body: var(--bodyFont, sans-serif);
+        --font-heading: var(--headingFont, var(--font-body));
       }
       body {
         font-family: var(--font-body, sans-serif);

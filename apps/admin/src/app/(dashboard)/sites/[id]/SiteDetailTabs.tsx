@@ -416,6 +416,7 @@ function SeoScoresTable({
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [gradeFilter, setGradeFilter] = useState<string>("all");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
@@ -439,12 +440,21 @@ function SeoScoresTable({
   const filtered = useMemo(() => {
     let rows = allScores;
     if (typeFilter !== "all") rows = rows.filter((r) => r.page_type === typeFilter);
+    if (gradeFilter !== "all") {
+      const belowGrades: Record<string, Set<string>> = {
+        "<A": new Set(["B", "C", "D", "F"]),
+        "<B": new Set(["C", "D", "F"]),
+        "<C": new Set(["D", "F"]),
+      };
+      const allowed = belowGrades[gradeFilter];
+      if (allowed) rows = rows.filter((r) => r.grade !== null && allowed.has(r.grade));
+    }
     if (debouncedQuery) {
       const q = debouncedQuery.toLowerCase();
       rows = rows.filter((r) => r.page_path.toLowerCase().includes(q));
     }
     return rows;
-  }, [allScores, typeFilter, debouncedQuery]);
+  }, [allScores, typeFilter, gradeFilter, debouncedQuery]);
 
   const totalPages = Math.ceil(filtered.length / SEO_PAGE_SIZE);
   const pageRows = filtered.slice((page - 1) * SEO_PAGE_SIZE, page * SEO_PAGE_SIZE);
@@ -493,6 +503,24 @@ function SeoScoresTable({
               }`}
             >
               {t}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1">
+          {["all", "<A", "<B", "<C"].map((g) => (
+            <button
+              key={g}
+              onClick={() => {
+                setGradeFilter(g);
+                setPage(1);
+              }}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                gradeFilter === g
+                  ? "bg-amber-500 text-white"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-border"
+              }`}
+            >
+              {g === "all" ? "All grades" : g}
             </button>
           ))}
         </div>

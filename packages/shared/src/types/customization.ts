@@ -8,7 +8,10 @@ import { z } from "zod";
 export const SiteCustomizationSchema = z.object({
   primaryColor: z.string().optional(),
   accentColor: z.string().optional(),
+  /** @deprecated use bodyFont instead */
   fontFamily: z.string().optional(),
+  headingFont: z.string().optional(),
+  bodyFont: z.string().optional(),
   logoUrl: z.string().optional(),
   faviconUrl: z.string().optional(),
   faviconDir: z.string().optional(),
