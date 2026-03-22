@@ -414,6 +414,65 @@ export class DataForSEOClient {
     return products;
   }
 
+  /**
+   * Fire-and-forget search: task_post with postback_url.
+   * DFS will POST results to the Cloudflare Worker when ready.
+   * Returns the taskId for tracking.
+   */
+  async searchProductsAsync(
+    keyword: string,
+    market: string,
+    depth: number,
+    postbackUrl: string,
+    tag?: string,
+  ): Promise<string> {
+    const config = MARKET_CONFIG[market];
+    if (!config) {
+      throw new Error(
+        `DataForSEO: unknown market "${market}". Supported: ${Object.keys(MARKET_CONFIG).join(", ")}`,
+      );
+    }
+
+    const auth = await this.fetchAuthHeader();
+
+    const postBody = [
+      {
+        keyword,
+        location_code: config.location_code,
+        language_code: config.language_code,
+        se_domain: config.se_domain,
+        depth,
+        postback_url: postbackUrl,
+        postback_data: "advanced",
+        tag: tag ?? "",
+      },
+    ];
+
+    const postResponse = await this.apiPost<DFSRawResponse>(
+      "/merchant/amazon/products/task_post",
+      auth,
+      postBody,
+    );
+
+    const taskId = postResponse?.tasks?.[0]?.id;
+    if (!taskId) {
+      throw new Error(`DataForSEO task_post did not return a task ID for keyword: "${keyword}"`);
+    }
+
+    console.log(
+      `[DataForSEO] async task_post id=${taskId} keyword="${keyword}" postback=${postbackUrl}`,
+    );
+
+    // Track cost using existing private method (D028 pattern)
+    void this.trackCost(
+      `searchProductsAsync:"${keyword}" market=${market} depth=${depth}`,
+      0.006,
+      tag,
+    );
+
+    return taskId;
+  }
+
   // ── ASIN lookup (individual product detail) ──────────────────────────────
 
   /**
