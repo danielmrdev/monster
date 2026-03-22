@@ -150,7 +150,8 @@ export class GenerateSiteJob {
         const { data: dbCategoriesRaw, error: catReadErr } = await supabase
           .from("tsa_categories")
           .select("*")
-          .eq("site_id", siteId);
+          .eq("site_id", siteId)
+          .order("sort_order", { ascending: true });
 
         if (catReadErr || !dbCategoriesRaw) {
           throw new Error(
@@ -270,7 +271,8 @@ export class GenerateSiteJob {
         const { data: dbCategories, error: catFetchErr } = await supabase
           .from("tsa_categories")
           .select("*")
-          .eq("site_id", siteId);
+          .eq("site_id", siteId)
+          .order("sort_order", { ascending: true });
 
         if (catFetchErr || !dbCategories) {
           throw new Error(

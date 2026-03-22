@@ -1,0 +1,1 @@
+ALTER TABLE tsa_categories ADD COLUMN IF NOT EXISTS sort_order int NOT NULL DEFAULT 0;

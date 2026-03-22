@@ -1030,6 +1030,7 @@ export type Database = {
           seo_text: string | null;
           site_id: string;
           slug: string;
+          sort_order: number;
           updated_at: string;
         };
         Insert: {
@@ -1044,6 +1045,7 @@ export type Database = {
           seo_text?: string | null;
           site_id: string;
           slug: string;
+          sort_order?: number;
           updated_at?: string;
         };
         Update: {
@@ -1058,6 +1060,7 @@ export type Database = {
           seo_text?: string | null;
           site_id?: string;
           slug?: string;
+          sort_order?: number;
           updated_at?: string;
         };
         Relationships: [
