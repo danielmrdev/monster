@@ -38,12 +38,12 @@ export async function GET(request: NextRequest, { params }: Params) {
   let query = supabase
     .from("tsa_products")
     .select(
-      "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id)",
+      "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id, position)",
       { count: "exact" },
     )
     .eq("site_id", siteId)
     .eq("category_products.category_id", catId)
-    .order("created_at", { ascending: false })
+    .order("position", { foreignTable: "category_products" })
     .range(from, to);
 
   if (q) {
@@ -63,8 +63,11 @@ export async function GET(request: NextRequest, { params }: Params) {
   const total = count ?? 0;
   const totalPages = Math.ceil(total / limit);
 
-  // Strip category_products join metadata — internal only, not part of the Product shape
-  const products = (data ?? []).map(({ category_products: _cp, ...p }) => p);
+  // Strip category_products join metadata — expose position as a top-level field
+  const products = (data ?? []).map(({ category_products, ...p }) => ({
+    ...p,
+    position: Array.isArray(category_products) ? (category_products[0]?.position ?? null) : null,
+  }));
 
   return NextResponse.json({
     products,

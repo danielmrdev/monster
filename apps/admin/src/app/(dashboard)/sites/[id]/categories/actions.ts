@@ -132,6 +132,107 @@ export async function deleteCategory(siteId: string, categoryId: string) {
   revalidatePath(`/sites/${siteId}`);
 }
 
+// ── Product Reorder ───────────────────────────────────────────────────────────
+
+/**
+ * Swap the `position` value of a product in `category_products` with its
+ * adjacent neighbour (up = lower index, down = higher index).
+ *
+ * Algorithm:
+ *   1. Fetch all rows for `catId` ordered by position ASC
+ *   2. If all positions are identical → normalize to 0, 1, 2…
+ *   3. Find the target product row, compute adjacent index
+ *   4. If out of bounds → noop return {}
+ *   5. Swap the two position values and update both rows
+ *   6. revalidatePath for the category detail page
+ *
+ * Diagnostics: all error paths emit [reorderProduct] prefix for pm2 grep-ability.
+ * Returns { error: string } on Supabase failure so the caller can surface it.
+ */
+export async function reorderProduct(
+  siteId: string,
+  catId: string,
+  productId: string,
+  direction: "up" | "down",
+): Promise<{ error?: string }> {
+  const supabase = createServiceClient();
+
+  // 1. Fetch all rows ordered by position
+  const { data: rows, error: fetchErr } = await supabase
+    .from("category_products")
+    .select("product_id, position")
+    .eq("category_id", catId)
+    .order("position", { ascending: true });
+
+  if (fetchErr) {
+    console.error("[reorderProduct] fetch error:", fetchErr.message, { siteId, catId, productId });
+    return { error: fetchErr.message };
+  }
+  if (!rows || rows.length === 0) return {};
+
+  // 2. Normalize if all positions are identical (initial DEFAULT 0 state)
+  const allSame = rows.every((r) => r.position === rows[0].position);
+  if (allSame) {
+    for (let i = 0; i < rows.length; i++) {
+      const { error: normErr } = await supabase
+        .from("category_products")
+        .update({ position: i })
+        .eq("category_id", catId)
+        .eq("product_id", rows[i].product_id);
+      if (normErr) {
+        console.error("[reorderProduct] normalize error:", normErr.message, {
+          siteId,
+          catId,
+          productId: rows[i].product_id,
+        });
+        return { error: normErr.message };
+      }
+      rows[i].position = i;
+    }
+  }
+
+  // 3. Find the target row
+  const idx = rows.findIndex((r) => r.product_id === productId);
+  if (idx === -1) return {};
+
+  const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+
+  // 4. Out of bounds → noop
+  if (targetIdx < 0 || targetIdx >= rows.length) return {};
+
+  const posA = rows[idx].position;
+  const posB = rows[targetIdx].position;
+
+  // 5. Swap positions
+  const { error: errA } = await supabase
+    .from("category_products")
+    .update({ position: posB })
+    .eq("category_id", catId)
+    .eq("product_id", productId);
+  if (errA) {
+    console.error("[reorderProduct] swap A error:", errA.message, { siteId, catId, productId });
+    return { error: errA.message };
+  }
+
+  const { error: errB } = await supabase
+    .from("category_products")
+    .update({ position: posA })
+    .eq("category_id", catId)
+    .eq("product_id", rows[targetIdx].product_id);
+  if (errB) {
+    console.error("[reorderProduct] swap B error:", errB.message, {
+      siteId,
+      catId,
+      productId: rows[targetIdx].product_id,
+    });
+    return { error: errB.message };
+  }
+
+  // 6. Revalidate the category detail page
+  revalidatePath(`/sites/${siteId}/categories/${catId}`, "page");
+  return {};
+}
+
 // ── Category Image ────────────────────────────────────────────────────────────
 
 /**

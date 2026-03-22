@@ -5,7 +5,7 @@
 // score fetch failure is non-fatal — table just shows '—'
 
 // Debounce search
-/* Header */ /* Search */ /* Empty states */ /* Product list */ /* Thumbnail */ /* Info */ /* Actions — Edit link + SEO score badge */ /* Pagination */
+/* Header */ /* Search */ /* Empty states */ /* Product list */ /* Thumbnail */ /* Info */ /* Actions — Edit link + SEO score badge + reorder */ /* Pagination */
 // Reset scores for new page — only show scores for currently visible products
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
@@ -13,6 +13,7 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { GenerateAllProductsSeoButton } from "./GenerateAllProductsSeoButton";
 import SeoJobStatus from "../../SeoJobStatus";
+import { reorderProduct } from "../actions";
 
 const PAGE_SIZE = 25;
 
@@ -27,6 +28,7 @@ interface Product {
   is_prime: boolean;
   source_image_url: string | null;
   images: string[] | null;
+  position?: number | null;
 }
 
 interface ApiResponse {
@@ -69,12 +71,19 @@ export function CategoryProductsSection({
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [reorderError, setReorderError] = useState<string | null>(null);
   const [productScores, setProductScores] =
     useState<Record<string, number | null>>(initialProductScores);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const queryRef = useRef(query);
   queryRef.current = query;
+
+  // Sync local products state when server-revalidated initialProducts prop changes
+  // (triggered by revalidatePath after a successful reorderProduct call)
+  useEffect(() => {
+    setProducts(initialProducts);
+  }, [initialProducts]);
 
   const fetchProducts = useCallback(
     async (q: string, p: number) => {
@@ -125,6 +134,25 @@ export function CategoryProductsSection({
     fetchProducts(queryRef.current, newPage);
   }
 
+  async function handleReorder(productId: string, direction: "up" | "down", index: number) {
+    setReorderError(null);
+
+    // Optimistic update: swap this product with its neighbour in local state
+    const targetIdx = direction === "up" ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= products.length) return;
+
+    const next = [...products];
+    [next[index], next[targetIdx]] = [next[targetIdx], next[index]];
+    setProducts(next);
+
+    const result = await reorderProduct(siteId, catId, productId, direction);
+    if (result?.error) {
+      // Revert to server truth on error
+      setProducts(initialProducts);
+      setReorderError(result.error);
+    }
+  }
+
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const to = Math.min(page * PAGE_SIZE, total);
 
@@ -149,6 +177,13 @@ export function CategoryProductsSection({
           <SeoJobStatus siteId={siteId} jobType="seo_products_batch" entityId={catId} compact />
         </div>
       </div>
+
+      {/* Reorder error banner */}
+      {reorderError && (
+        <div className="mb-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          Reorder failed: {reorderError}
+        </div>
+      )}
 
       {}
       {(total > 0 || query) && (
@@ -182,7 +217,7 @@ export function CategoryProductsSection({
             loading ? "opacity-50" : "opacity-100"
           }`}
         >
-          {products.map((product) => {
+          {products.map((product, index) => {
             const imageUrl =
               product.source_image_url ??
               (product.images && product.images.length > 0 ? product.images[0] : null);
@@ -255,6 +290,37 @@ export function CategoryProductsSection({
                     >
                       {productScores[product.slug]}
                     </span>
+                  )}
+                  {/* Reorder buttons — only shown when not searching */}
+                  {!query && (
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleReorder(product.id, "up", index);
+                        }}
+                        disabled={index === 0}
+                        className="inline-flex items-center justify-center rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                        title="Move up"
+                        aria-label={`Move ${product.title ?? product.asin} up`}
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleReorder(product.id, "down", index);
+                        }}
+                        disabled={index === products.length - 1}
+                        className="inline-flex items-center justify-center rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                        title="Move down"
+                        aria-label={`Move ${product.title ?? product.asin} down`}
+                      >
+                        ▼
+                      </button>
+                    </div>
                   )}
                   <Link
                     href={`/sites/${siteId}/products/${product.id}/edit`}

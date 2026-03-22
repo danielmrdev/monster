@@ -38,22 +38,25 @@ export default async function CategoryDetailPage({ params }: PageProps) {
     .eq("page_path", `/categories/${category.slug}/`)
     .maybeSingle();
 
-  // Fetch initial products scoped to this category via !inner join
+  // Fetch initial products scoped to this category via !inner join, ordered by position ASC
   // category_products join metadata stripped before passing to client component
   const { data: rawProducts, count } = await supabase
     .from("tsa_products")
     .select(
-      "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id)",
+      "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id, position)",
       { count: "exact" },
     )
     .eq("site_id", siteId)
     .eq("category_products.category_id", catId)
-    .order("created_at", { ascending: false })
+    .order("position", { foreignTable: "category_products" })
     .range(0, 24);
 
   const initialTotal = count ?? 0;
-  // Strip join metadata — category_products is internal and not part of the Product shape
-  const initialProducts = (rawProducts ?? []).map(({ category_products: _cp, ...p }) => p);
+  // Strip join metadata — expose position as top-level field for reorder UI
+  const initialProducts = (rawProducts ?? []).map(({ category_products, ...p }) => ({
+    ...p,
+    position: Array.isArray(category_products) ? (category_products[0]?.position ?? null) : null,
+  }));
 
   // Fetch SEO scores for the initial product batch (keyed by page_path = /products/<slug>/)
   const productSlugs = initialProducts.map((p) => p.slug).filter(Boolean) as string[];
