@@ -35,6 +35,11 @@ export default async function EditProductPage({ params, searchParams }: PageProp
   const product = productResult.data;
   const categoryIds = (linkResult.data ?? []).map((r) => r.category_id);
 
+  // Deserialize pros_cons JSONB → newline-joined strings for textarea defaultValues
+  const prosCons = product.pros_cons as { pros?: string[]; cons?: string[] } | null;
+  const prosText = (prosCons?.pros ?? []).join("\n");
+  const consText = (prosCons?.cons ?? []).join("\n");
+
   const action = updateProduct.bind(null, siteId, prodId);
 
   // Build returnTo URL for the form (preserves category context)
