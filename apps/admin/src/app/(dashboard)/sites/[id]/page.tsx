@@ -191,7 +191,6 @@ export default async function SiteDetailPage({ params }: PageProps) {
           >
             ← Sites
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">{site.name}</h1>
           <span className={statusBadge(site.status)}>{site.status ?? "draft"}</span>
           {!site.is_active && (
             <span className="inline-flex items-center rounded-full border border-muted-foreground/40 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">

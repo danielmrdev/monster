@@ -85,7 +85,6 @@ export default async function EditSitePage({ params }: PageProps) {
           ← {site.name}
         </Link>
         <span className="text-muted-foreground">/</span>
-        <h1 className="text-2xl font-bold tracking-tight">Edit Site</h1>
       </div>
       <EditForm site={siteForForm} templates={siteTemplates} />
       <LegalTemplateAssignment

@@ -173,8 +173,6 @@ export default async function FinancesPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Finances</h1>
-
       {/* Date range filter */}
       <FinancesFilters defaultFrom={dateRange.from} defaultTo={dateRange.to} />
 
@@ -187,12 +185,17 @@ export default async function FinancesPage({
           {dfsBalance !== null ? (
             <div className="space-y-1">
               <p className="text-3xl font-bold font-mono">{fmtUSD(dfsBalance)}</p>
-              <p className="text-sm text-muted-foreground">Available balance in your DataForSEO account</p>
+              <p className="text-sm text-muted-foreground">
+                Available balance in your DataForSEO account
+              </p>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
               Not configured — add DataForSEO credentials in{" "}
-              <a href="/settings" className="underline">Settings</a>.
+              <a href="/settings" className="underline">
+                Settings
+              </a>
+              .
             </p>
           )}
         </CardContent>

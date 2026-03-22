@@ -17,7 +17,6 @@ export default async function InfraPage() {
     const message = err instanceof Error ? err.message : String(err);
     return (
       <div className="space-y-8">
-        <h1 className="text-2xl font-bold tracking-tight">Infrastructure</h1>
         <Card className="border-destructive">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-destructive">
@@ -35,7 +34,6 @@ export default async function InfraPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Infrastructure</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Live health status of all registered servers — fetched at{" "}
           {new Date(fleet.fetchedAt).toLocaleString("en-GB", {

@@ -223,7 +223,6 @@ export function JobsTable({ initialJobs }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Jobs</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             BullMQ worker queue — last {jobs.length} jobs
           </p>

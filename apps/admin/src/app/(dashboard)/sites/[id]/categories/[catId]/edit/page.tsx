@@ -33,7 +33,6 @@ export default async function EditCategoryPage({ params }: PageProps) {
         >
           ← {cat.name}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Edit Category</h1>
       </div>
 
       <div className="rounded-xl border border-border bg-card px-6 py-5">

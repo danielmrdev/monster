@@ -33,7 +33,7 @@ export function NavSidebar() {
   return (
     <aside className="w-[220px] shrink-0 flex flex-col h-full bg-sidebar border-r border-sidebar-border">
       {/* Brand */}
-      <div className="px-5 py-5 border-b border-sidebar-border">
+      <div className="flex h-[68px] shrink-0 items-center px-5 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <Zap className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />

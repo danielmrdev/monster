@@ -27,7 +27,6 @@ export default async function NewCategoryPage({ params }: PageProps) {
         >
           ← {site.name}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">New Category</h1>
       </div>
 
       <div className="rounded-xl border border-border bg-card px-6 py-5">

@@ -84,7 +84,6 @@ export default async function CategoryDetailPage({ params }: PageProps) {
           >
             ← {site.name}
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight truncate">{category.name}</h1>
           <p className="text-sm text-muted-foreground font-mono shrink-0">/{category.slug}</p>
         </div>
         <Link

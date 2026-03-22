@@ -56,7 +56,6 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
           <AggregationTrigger />
           <AnalyticsFilters

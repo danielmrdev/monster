@@ -73,7 +73,6 @@ export default async function EditProductPage({ params }: PageProps) {
         >
           ← {site.name}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Edit Product</h1>
         <span className="font-mono text-sm text-muted-foreground">{product.asin}</span>
         {seoScore?.overall_score != null && (
           <span className="text-xs text-muted-foreground bg-muted/40 rounded px-2 py-0.5 border border-border">

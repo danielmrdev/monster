@@ -54,7 +54,6 @@ export default async function ResearchPage({ searchParams }: ResearchPageProps) 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Research Lab</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Submit a niche idea to start an autonomous AI research session.
         </p>

@@ -34,7 +34,6 @@ export default async function NewSitePage({ searchParams }: PageProps) {
           ← Sites
         </Link>
         <span className="text-muted-foreground">/</span>
-        <h1 className="text-2xl font-bold tracking-tight">New Site</h1>
       </div>
       <SiteForm defaultValues={{ niche, market }} templates={siteTemplates} />
     </div>

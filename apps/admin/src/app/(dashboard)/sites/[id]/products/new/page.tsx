@@ -44,7 +44,6 @@ export default async function NewProductPage({ params, searchParams }: PageProps
         >
           ← {category ? category.name : site.name}
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Add Products</h1>
       </div>
 
       {/* Mode tabs */}
