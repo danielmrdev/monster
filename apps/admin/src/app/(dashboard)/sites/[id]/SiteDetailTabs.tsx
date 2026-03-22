@@ -78,6 +78,7 @@ interface Alert {
 }
 
 interface TabsProps {
+  siteId: string;
   site: {
     domain: string | null;
     niche: string | null;
@@ -111,13 +112,27 @@ interface TabsProps {
 const VALID_TABS = ["overview", "deploy", "seo", "categories"] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
-function getInitialTab(): TabValue {
+const TAB_STORAGE_PREFIX = "monster:site-tab:";
+
+function getInitialTab(siteId: string): TabValue {
   if (typeof window === "undefined") return "overview";
+  // Hash takes priority (used by back links like #categories, #products)
   const hash = window.location.hash.replace("#", "") as TabValue;
-  return VALID_TABS.includes(hash) ? hash : "overview";
+  if (VALID_TABS.includes(hash)) {
+    // Persist the hash-based tab so it survives further navigations
+    try { sessionStorage.setItem(TAB_STORAGE_PREFIX + siteId, hash); } catch {}
+    return hash;
+  }
+  // Fall back to sessionStorage
+  try {
+    const stored = sessionStorage.getItem(TAB_STORAGE_PREFIX + siteId) as TabValue | null;
+    if (stored && VALID_TABS.includes(stored)) return stored;
+  } catch {}
+  return "overview";
 }
 
 export function SiteDetailTabs({
+  siteId,
   site,
   categoriesSlot,
   deploySlot,
@@ -136,13 +151,14 @@ export function SiteDetailTabs({
 
   const [activeTab, setActiveTab] = useState<TabValue>("overview");
   useEffect(() => {
-    setActiveTab(getInitialTab());
-  }, []);
+    setActiveTab(getInitialTab(siteId));
+  }, [siteId]);
 
   function handleTabChange(value: string) {
     const tab = value as TabValue;
     setActiveTab(tab);
     window.history.replaceState(null, "", `#${tab}`);
+    try { sessionStorage.setItem(TAB_STORAGE_PREFIX + siteId, tab); } catch {}
   }
 
   return (

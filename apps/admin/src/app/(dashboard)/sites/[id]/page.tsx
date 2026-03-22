@@ -252,6 +252,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
 
       {/* Tabbed content */}
       <SiteDetailTabs
+        siteId={id}
         site={{
           domain: site.domain,
           niche: site.niche,
