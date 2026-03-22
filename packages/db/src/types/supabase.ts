@@ -1025,6 +1025,7 @@ export type Database = {
           focus_keyword: string | null;
           id: string;
           keywords: string[] | null;
+          manually_edited_fields: string[];
           meta_description: string | null;
           name: string;
           seo_text: string | null;
@@ -1040,6 +1041,7 @@ export type Database = {
           focus_keyword?: string | null;
           id?: string;
           keywords?: string[] | null;
+          manually_edited_fields?: string[];
           meta_description?: string | null;
           name: string;
           seo_text?: string | null;
@@ -1055,6 +1057,7 @@ export type Database = {
           focus_keyword?: string | null;
           id?: string;
           keywords?: string[] | null;
+          manually_edited_fields?: string[];
           meta_description?: string | null;
           name?: string;
           seo_text?: string | null;
@@ -1088,6 +1091,7 @@ export type Database = {
           is_amazon_choice: boolean | null;
           is_prime: boolean;
           last_checked_at: string | null;
+          manually_edited_fields: string[];
           meta_description: string | null;
           optimized_title: string | null;
           original_price: number | null;
@@ -1118,6 +1122,7 @@ export type Database = {
           is_amazon_choice?: boolean | null;
           is_prime?: boolean;
           last_checked_at?: string | null;
+          manually_edited_fields?: string[];
           meta_description?: string | null;
           optimized_title?: string | null;
           original_price?: number | null;
@@ -1148,6 +1153,7 @@ export type Database = {
           is_amazon_choice?: boolean | null;
           is_prime?: boolean;
           last_checked_at?: string | null;
+          manually_edited_fields?: string[];
           meta_description?: string | null;
           optimized_title?: string | null;
           original_price?: number | null;
