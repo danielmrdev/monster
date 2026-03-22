@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { GoogleFontPicker } from "@/components/ui/GoogleFontPicker";
 
 const AMAZON_MARKETS = [
   { value: "ES", label: "Spain (ES)" },
@@ -280,19 +281,17 @@ export function SiteForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {/* Font Family */}
-            <div className="space-y-1.5">
-              <Label htmlFor="fontFamily">Font Family</Label>
-              <Input
-                id="fontFamily"
-                name="fontFamily"
-                placeholder="Inter"
-                aria-invalid={!!errors?.headingFont}
-              />
-              <FieldError messages={errors?.headingFont} />
-            </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Heading Font */}
+            <GoogleFontPicker id="headingFont" name="headingFont" label="Heading Font" />
 
+            {/* Body Font */}
+            <GoogleFontPicker id="bodyFont" name="bodyFont" label="Body Font" />
+          </div>
+          <FieldError messages={errors?.headingFont} />
+          <FieldError messages={errors?.bodyFont} />
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* Logo URL */}
             <div className="space-y-1.5">
               <Label htmlFor="logoUrl">Logo URL</Label>

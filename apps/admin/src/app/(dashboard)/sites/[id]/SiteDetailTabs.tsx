@@ -129,7 +129,10 @@ function getInitialTab(siteId: string): TabValue {
   // Hash takes priority (used by back links like #categories, #products)
   const hash = window.location.hash.replace("#", "") as TabValue;
   if (VALID_TABS.includes(hash)) {
-    try { sessionStorage.setItem(TAB_STORAGE_PREFIX + siteId, hash); } catch {}
+    // Persist the hash-based tab so it survives further navigations
+    try {
+      sessionStorage.setItem(TAB_STORAGE_PREFIX + siteId, hash);
+    } catch {}
     return hash;
   }
 
@@ -168,7 +171,9 @@ export function SiteDetailTabs({
     const tab = value as TabValue;
     setActiveTab(tab);
     window.history.replaceState(null, "", `#${tab}`);
-    try { sessionStorage.setItem(TAB_STORAGE_PREFIX + siteId, tab); } catch {}
+    try {
+      sessionStorage.setItem(TAB_STORAGE_PREFIX + siteId, tab);
+    } catch {}
   }
 
   return (
@@ -243,7 +248,10 @@ export function SiteDetailTabs({
                   </dd>
                 </div>
                 {(
-                  [["Font Family", customization.fontFamily]] as [string, string | undefined][]
+                  [
+                    ["Heading Font", customization.headingFont],
+                    ["Body Font", customization.bodyFont],
+                  ] as [string, string | undefined][]
                 ).map(([label, value]) => (
                   <div key={label}>
                     <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
