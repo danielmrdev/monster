@@ -10,10 +10,12 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string; prodId: string }>;
+  searchParams: Promise<{ from?: string; catId?: string }>;
 }
 
-export default async function ProductDetailPage({ params }: PageProps) {
+export default async function ProductDetailPage({ params, searchParams }: PageProps) {
   const { id: siteId, prodId } = await params;
+  const { from, catId: fromCatId } = await searchParams;
   const supabase = createServiceClient();
 
   const [{ data: site }, { data: product, error: prodError }] = await Promise.all([
@@ -66,16 +68,25 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const prosCons = product.pros_cons as { pros?: string[]; cons?: string[] } | null;
 
+  // Determine back navigation: category detail (if from=category) or site products tab
+  const fromCategory = from === "category" && fromCatId
+    ? categories.find((c) => c.id === fromCatId) ?? null
+    : null;
+  const backHref = fromCategory
+    ? `/sites/${siteId}/categories/${fromCategory.id}`
+    : `/sites/${siteId}#products`;
+  const backLabel = fromCategory ? fromCategory.name : site.name;
+
   return (
     <div className="space-y-6">
       {/* Back + header */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <Link
-            href={`/sites/${siteId}#products`}
+            href={backHref}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
-            ← {site.name}
+            ← {backLabel}
           </Link>
           <span className="font-mono text-sm text-muted-foreground shrink-0">{product.asin}</span>
           {seoScore?.overall_score != null && (
@@ -86,7 +97,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Link
-            href={`/sites/${siteId}/products/${prodId}/edit`}
+            href={`/sites/${siteId}/products/${prodId}/edit${fromCategory ? `?from=category&catId=${fromCategory.id}` : ""}`}
             className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors"
           >
             Edit Product

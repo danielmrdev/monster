@@ -7,10 +7,12 @@ import { updateProduct } from "../../actions";
 
 interface PageProps {
   params: Promise<{ id: string; prodId: string }>;
+  searchParams: Promise<{ from?: string; catId?: string }>;
 }
 
-export default async function EditProductPage({ params }: PageProps) {
+export default async function EditProductPage({ params, searchParams }: PageProps) {
   const { id: siteId, prodId } = await params;
+  const { from, catId: fromCatId } = await searchParams;
   const supabase = createServiceClient();
 
   const [siteResult, productResult, categoriesResult, linkResult, seoScoreResult] =
@@ -64,11 +66,16 @@ export default async function EditProductPage({ params }: PageProps) {
 
   const action = updateProduct.bind(null, siteId, prodId);
 
+  // Build returnTo URL for the form (preserves category context)
+  const returnTo = from === "category" && fromCatId
+    ? `/sites/${siteId}/products/${prodId}?from=category&catId=${fromCatId}`
+    : `/sites/${siteId}/products/${prodId}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link
-          href={`/sites/${siteId}/products/${prodId}`}
+          href={`/sites/${siteId}/products/${prodId}${from === "category" && fromCatId ? `?from=category&catId=${fromCatId}` : ""}`}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           ← {product.title ?? product.asin}
@@ -104,6 +111,7 @@ export default async function EditProductPage({ params }: PageProps) {
           categories={categoriesResult.data ?? []}
           action={action}
           mode="edit"
+          returnTo={returnTo}
           defaultValues={{
             asin: product.asin,
             title: product.title,

@@ -116,14 +116,24 @@ const TAB_STORAGE_PREFIX = "monster:site-tab:";
 
 function getInitialTab(siteId: string): TabValue {
   if (typeof window === "undefined") return "overview";
+
+  // Fresh entry from sites table — reset to overview
+  const url = new URL(window.location.href);
+  if (url.searchParams.has("fresh")) {
+    try { sessionStorage.removeItem(TAB_STORAGE_PREFIX + siteId); } catch {}
+    url.searchParams.delete("fresh");
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    return "overview";
+  }
+
   // Hash takes priority (used by back links like #categories, #products)
   const hash = window.location.hash.replace("#", "") as TabValue;
   if (VALID_TABS.includes(hash)) {
-    // Persist the hash-based tab so it survives further navigations
     try { sessionStorage.setItem(TAB_STORAGE_PREFIX + siteId, hash); } catch {}
     return hash;
   }
-  // Fall back to sessionStorage
+
+  // Fall back to sessionStorage (preserves tab across preview/edit navigations)
   try {
     const stored = sessionStorage.getItem(TAB_STORAGE_PREFIX + siteId) as TabValue | null;
     if (stored && VALID_TABS.includes(stored)) return stored;

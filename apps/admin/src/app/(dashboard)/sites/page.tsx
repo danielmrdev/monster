@@ -77,7 +77,7 @@ export default async function SitesPage() {
               {sites.map((site) => (
                 <TableRow key={site.id}>
                   <TableCell className="font-medium">
-                    <Link href={`/sites/${site.id}`} className="text-primary hover:underline">
+                    <Link href={`/sites/${site.id}?fresh`} className="text-primary hover:underline">
                       {site.name}
                     </Link>
                   </TableCell>

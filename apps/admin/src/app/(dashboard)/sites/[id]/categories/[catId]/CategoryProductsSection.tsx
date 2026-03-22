@@ -225,7 +225,7 @@ export function CategoryProductsSection({
             return (
               <Link
                 key={product.id}
-                href={`/sites/${siteId}/products/${product.id}`}
+                href={`/sites/${siteId}/products/${product.id}?from=category&catId=${catId}`}
                 className="px-6 py-3 flex items-center gap-4 hover:bg-muted/10 transition-colors"
               >
                 {}
@@ -323,7 +323,7 @@ export function CategoryProductsSection({
                     </div>
                   )}
                   <Link
-                    href={`/sites/${siteId}/products/${product.id}/edit`}
+                    href={`/sites/${siteId}/products/${product.id}/edit?from=category&catId=${catId}`}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >

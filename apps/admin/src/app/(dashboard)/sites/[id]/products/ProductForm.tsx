@@ -54,6 +54,8 @@ interface ProductFormProps {
     meta_description?: string | null;
   };
   mode: "create" | "edit";
+  /** URL to navigate to after successful save or cancel in edit mode */
+  returnTo?: string;
 }
 
 export function ProductForm({
@@ -63,6 +65,7 @@ export function ProductForm({
   action,
   defaultValues,
   mode,
+  returnTo,
 }: ProductFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<ProductFormState, FormData>(action, null);
@@ -90,14 +93,16 @@ export function ProductForm({
 
   useEffect(() => {
     if (state?.success) {
-      if (mode === "edit" && productId) {
+      if (returnTo) {
+        router.push(returnTo);
+      } else if (mode === "edit" && productId) {
         router.push(`/sites/${siteId}/products/${productId}`);
       } else {
         router.push(`/sites/${siteId}#products`);
       }
       router.refresh();
     }
-  }, [state?.success, router, siteId, mode, productId]);
+  }, [state?.success, router, siteId, mode, productId, returnTo]);
 
   function handleLookup() {
     const asinInput = document.getElementById("asin") as HTMLInputElement | null;
@@ -545,7 +550,7 @@ export function ProductForm({
           {isPending ? "Saving…" : mode === "create" ? "Add Product" : "Save Changes"}
         </Button>
         <Link
-          href={mode === "edit" && productId ? `/sites/${siteId}/products/${productId}` : `/sites/${siteId}#products`}
+          href={returnTo ?? (mode === "edit" && productId ? `/sites/${siteId}/products/${productId}` : `/sites/${siteId}#products`)}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           Cancel
