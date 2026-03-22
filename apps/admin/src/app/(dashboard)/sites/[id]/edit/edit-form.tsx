@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { GoogleFontPicker } from "@/components/ui/GoogleFontPicker";
 import type { SiteCustomization } from "@monster/shared";
 
 const AMAZON_MARKETS = [
@@ -420,20 +421,27 @@ export function EditForm({ site, templates }: EditFormProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {}
-            <div className="space-y-1.5">
-              <Label htmlFor="fontFamily">Font Family</Label>
-              <Input
-                id="fontFamily"
-                name="fontFamily"
-                defaultValue={c?.fontFamily ?? ""}
-                placeholder="Inter"
-                aria-invalid={!!errors?.headingFont}
-              />
-              <FieldError messages={errors?.headingFont} />
-            </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Heading Font */}
+            <GoogleFontPicker
+              id="headingFont"
+              name="headingFont"
+              label="Heading Font"
+              defaultValue={c?.headingFont ?? ""}
+            />
 
+            {/* Body Font */}
+            <GoogleFontPicker
+              id="bodyFont"
+              name="bodyFont"
+              label="Body Font"
+              defaultValue={c?.bodyFont ?? ""}
+            />
+          </div>
+          <FieldError messages={errors?.headingFont} />
+          <FieldError messages={errors?.bodyFont} />
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {}
             <div className="space-y-1.5">
               <Label>Logo (PNG or JPEG)</Label>
