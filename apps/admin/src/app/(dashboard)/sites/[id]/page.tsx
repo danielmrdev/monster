@@ -56,10 +56,10 @@ export default async function SiteDetailPage({ params }: PageProps) {
       ? supabase
           .from("tsa_categories")
           .select(
-            "id, name, slug, focus_keyword, keywords, seo_text, description, category_products(count)",
+            "id, name, slug, focus_keyword, keywords, seo_text, description, sort_order, category_products(count)",
           )
           .eq("site_id", id)
-          .order("name", { ascending: true })
+          .order("sort_order", { ascending: true })
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -67,6 +67,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
 
   const categories = (categoriesResult.data ?? []).map((cat) => ({
     ...cat,
+    sort_order: cat.sort_order ?? 0,
     productCount: (cat.category_products as unknown as { count: number }[] | null)?.[0]?.count ?? 0,
   }));
 

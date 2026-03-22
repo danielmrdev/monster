@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { DeleteCategoryButton } from "./categories/DeleteCategoryButton";
+import { reorderCategory } from "./actions";
 
 interface Category {
   id: string;
@@ -12,6 +14,7 @@ interface Category {
   seo_text: string | null;
   description: string | null;
   productCount: number;
+  sort_order: number;
 }
 
 interface Props {
@@ -20,15 +23,50 @@ interface Props {
 }
 
 export function CategoriesSection({ siteId, categories }: Props) {
+  const [items, setItems] = useState<Category[]>(categories);
+  const [reorderError, setReorderError] = useState<string | null>(null);
+
+  // Sync local state when server revalidation delivers new props
+  useEffect(() => {
+    setItems(categories);
+  }, [categories]);
+
+  const handleReorder = useCallback(
+    async (categoryId: string, direction: "up" | "down") => {
+      setReorderError(null);
+
+      // Optimistic update
+      setItems((prev) => {
+        const idx = prev.findIndex((c) => c.id === categoryId);
+        if (idx === -1) return prev;
+        const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+        if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+
+        const next = [...prev];
+        // Swap positions
+        const temp = next[idx];
+        next[idx] = next[targetIdx];
+        next[targetIdx] = temp;
+        return next;
+      });
+
+      const result = await reorderCategory(siteId, categoryId, direction);
+      if (result?.error) {
+        setReorderError(result.error);
+        // Revert optimistic update on error
+        setItems(categories);
+      }
+    },
+    [siteId, categories],
+  );
+
   return (
     <div id="categories" className="rounded-xl border border-border bg-card px-6 py-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Categories
-          {categories.length > 0 && (
-            <span className="ml-2 font-normal normal-case text-foreground/60">
-              {categories.length}
-            </span>
+          {items.length > 0 && (
+            <span className="ml-2 font-normal normal-case text-foreground/60">{items.length}</span>
           )}
         </h2>
         <Link
@@ -39,7 +77,13 @@ export function CategoriesSection({ siteId, categories }: Props) {
         </Link>
       </div>
 
-      {categories.length === 0 ? (
+      {reorderError && (
+        <p className="mb-3 rounded-md bg-red-500/10 px-3 py-2 text-xs text-red-400 ring-1 ring-red-500/20">
+          Reorder failed: {reorderError}
+        </p>
+      )}
+
+      {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No categories yet.{" "}
           <Link
@@ -52,7 +96,7 @@ export function CategoriesSection({ siteId, categories }: Props) {
         </p>
       ) : (
         <div className="divide-y divide-border -mx-6">
-          {categories.map((cat) => (
+          {items.map((cat, index) => (
             <Link
               key={cat.id}
               href={`/sites/${siteId}/categories/${cat.id}`}
@@ -79,7 +123,39 @@ export function CategoriesSection({ siteId, categories }: Props) {
                   <p className="text-xs text-muted-foreground/40 mt-1 italic">No description</p>
                 )}
               </div>
-              <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.preventDefault()}>
+              <div
+                className="flex items-center gap-3 shrink-0"
+                onClick={(e) => e.preventDefault()}
+              >
+                {/* Reorder buttons */}
+                <div className="flex items-center gap-0.5">
+                  <button
+                    type="button"
+                    aria-label="Move category up"
+                    disabled={index === 0}
+                    className="flex h-6 w-6 items-center justify-center rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleReorder(cat.id, "up");
+                    }}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Move category down"
+                    disabled={index === items.length - 1}
+                    className="flex h-6 w-6 items-center justify-center rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleReorder(cat.id, "down");
+                    }}
+                  >
+                    ↓
+                  </button>
+                </div>
                 <Link
                   href={`/sites/${siteId}/categories/${cat.id}/edit`}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -87,7 +163,11 @@ export function CategoriesSection({ siteId, categories }: Props) {
                 >
                   Edit
                 </Link>
-                <DeleteCategoryButton siteId={siteId} categoryId={cat.id} categoryName={cat.name} />
+                <DeleteCategoryButton
+                  siteId={siteId}
+                  categoryId={cat.id}
+                  categoryName={cat.name}
+                />
               </div>
             </Link>
           ))}

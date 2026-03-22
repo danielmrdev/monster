@@ -320,3 +320,85 @@ export async function enqueueProductRefresh(
     return { ok: false, error: message };
   }
 }
+
+/**
+ * Swap the sort_order of two adjacent categories in the given direction.
+ *
+ * Edge-case normalization: if all sort_order values are equal (DEFAULT 0 initial state),
+ * the action assigns sequential values (0, 1, 2…) first, then executes the swap.
+ *
+ * Observability: logs [reorderCategory] prefix on error paths; returns { error } on
+ * Supabase failure so the UI can surface the message to the user.
+ * Inspect via: pm2 logs monster-admin --lines 50 | grep reorderCategory
+ */
+export async function reorderCategory(
+  siteId: string,
+  categoryId: string,
+  direction: "up" | "down",
+): Promise<{ error?: string }> {
+  const supabase = createServiceClient();
+
+  // Fetch all categories for this site ordered by sort_order
+  const { data: rows, error: fetchErr } = await supabase
+    .from("tsa_categories")
+    .select("id, sort_order")
+    .eq("site_id", siteId)
+    .order("sort_order", { ascending: true });
+
+  if (fetchErr || !rows) {
+    const msg = fetchErr?.message ?? "Failed to fetch categories";
+    console.error(`[reorderCategory] Fetch failed for site ${siteId}: ${msg}`);
+    return { error: msg };
+  }
+
+  // Normalize: if all sort_order values are identical, assign 0, 1, 2, ...
+  const allSame = rows.every((r) => r.sort_order === rows[0]?.sort_order);
+  if (allSame && rows.length > 1) {
+    for (let i = 0; i < rows.length; i++) {
+      const { error: normErr } = await supabase
+        .from("tsa_categories")
+        .update({ sort_order: i })
+        .eq("id", rows[i].id);
+      if (normErr) {
+        const msg = `Normalization failed at index ${i}: ${normErr.message}`;
+        console.error(`[reorderCategory] ${msg}`);
+        return { error: msg };
+      }
+      rows[i].sort_order = i;
+    }
+  }
+
+  // Find target index
+  const idx = rows.findIndex((r) => r.id === categoryId);
+  if (idx === -1) return {}; // noop: category not found
+  const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (targetIdx < 0 || targetIdx >= rows.length) return {}; // noop: boundary
+
+  const current = rows[idx];
+  const adjacent = rows[targetIdx];
+
+  // Swap sort_order values
+  const { error: e1 } = await supabase
+    .from("tsa_categories")
+    .update({ sort_order: adjacent.sort_order })
+    .eq("id", current.id);
+  if (e1) {
+    const msg = `Update failed for category ${current.id}: ${e1.message}`;
+    console.error(`[reorderCategory] ${msg}`);
+    return { error: msg };
+  }
+
+  const { error: e2 } = await supabase
+    .from("tsa_categories")
+    .update({ sort_order: current.sort_order })
+    .eq("id", adjacent.id);
+  if (e2) {
+    const msg = `Update failed for category ${adjacent.id}: ${e2.message}`;
+    console.error(`[reorderCategory] ${msg}`);
+    return { error: msg };
+  }
+
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath(`/sites/${siteId}`, "page");
+  return {};
+}
