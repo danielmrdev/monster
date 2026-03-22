@@ -63,11 +63,11 @@ export function CategoriesSection({ siteId, categories }: Props) {
                   <span className="text-sm font-medium text-foreground">{cat.name}</span>
                   <span className="font-mono text-xs text-muted-foreground">/{cat.slug}</span>
                   {cat.focus_keyword && (
-                    <span className="inline-flex items-center rounded-full bg-muted/40 px-2 py-0.5 text-xs text-muted-foreground border border-border">
+                    <span className="inline-flex items-center rounded-full bg-violet-500/15 px-2 py-0.5 text-xs text-violet-400 ring-1 ring-violet-500/30">
                       {cat.focus_keyword}
                     </span>
                   )}
-                  <span className="text-xs text-muted-foreground bg-muted/40 rounded-full px-2 py-0.5">
+                  <span className="inline-flex items-center rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-400 ring-1 ring-blue-500/30">
                     {cat.productCount} products
                   </span>
                 </div>

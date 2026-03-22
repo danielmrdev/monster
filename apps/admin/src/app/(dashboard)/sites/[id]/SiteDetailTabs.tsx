@@ -372,6 +372,8 @@ export function SiteDetailTabs({
           </Card>
         )}
 
+        <SeoScoresTable seoScores={seoScores} rescoreAction={rescoreAction} />
+
         <Card title="SEO Score Dimensions">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
@@ -400,8 +402,6 @@ export function SiteDetailTabs({
             ))}
           </div>
         </Card>
-
-        <SeoScoresTable seoScores={seoScores} rescoreAction={rescoreAction} />
       </TabsContent>
     </Tabs>
   );
