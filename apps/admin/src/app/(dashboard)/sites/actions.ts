@@ -34,7 +34,8 @@ export type CreateSiteErrors = {
   template_slug?: string[];
   primaryColor?: string[];
   accentColor?: string[];
-  fontFamily?: string[];
+  headingFont?: string[];
+  bodyFont?: string[];
   logoUrl?: string[];
   faviconUrl?: string[];
   _form?: string[];
@@ -62,7 +63,8 @@ export async function createSite(
   const rawCustomization = {
     primaryColor: (formData.get("primaryColor") as string) || undefined,
     accentColor: (formData.get("accentColor") as string) || undefined,
-    fontFamily: (formData.get("fontFamily") as string) || undefined,
+    headingFont: (formData.get("headingFont") as string) || undefined,
+    bodyFont: (formData.get("bodyFont") as string) || undefined,
     logoUrl: (formData.get("logoUrl") as string) || undefined,
     faviconUrl: (formData.get("faviconUrl") as string) || undefined,
   };
@@ -146,7 +148,8 @@ export async function updateSite(
   const rawCustomization = {
     primaryColor: (formData.get("primaryColor") as string) || undefined,
     accentColor: (formData.get("accentColor") as string) || undefined,
-    fontFamily: (formData.get("fontFamily") as string) || undefined,
+    headingFont: (formData.get("headingFont") as string) || undefined,
+    bodyFont: (formData.get("bodyFont") as string) || undefined,
     logoUrl: (formData.get("logoUrl") as string) || undefined,
     faviconUrl: (formData.get("faviconUrl") as string) || undefined,
     faviconDir: (formData.get("faviconDir") as string) || undefined,

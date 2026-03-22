@@ -429,9 +429,9 @@ export function EditForm({ site, templates }: EditFormProps) {
                 name="fontFamily"
                 defaultValue={c?.fontFamily ?? ""}
                 placeholder="Inter"
-                aria-invalid={!!errors?.fontFamily}
+                aria-invalid={!!errors?.headingFont}
               />
-              <FieldError messages={errors?.fontFamily} />
+              <FieldError messages={errors?.headingFont} />
             </div>
 
             {}

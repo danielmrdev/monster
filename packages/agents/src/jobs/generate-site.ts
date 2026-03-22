@@ -314,7 +314,9 @@ export class GenerateSiteJob {
         const customization = site.customization as {
           primaryColor?: string;
           accentColor?: string;
-          fontFamily?: string;
+          headingFont?: string;
+          bodyFont?: string;
+          fontFamily?: string; // @deprecated — kept for backward compat with existing DB rows
           logoUrl?: string;
           faviconDir?: string;
         } | null;
@@ -331,7 +333,9 @@ export class GenerateSiteJob {
             customization: {
               primaryColor: customization?.primaryColor ?? "#4f46e5",
               accentColor: customization?.accentColor ?? "#7c3aed",
-              fontFamily: customization?.fontFamily ?? "sans-serif",
+              headingFont: customization?.headingFont,
+              bodyFont: customization?.bodyFont,
+              fontFamily: customization?.fontFamily, // @deprecated — kept for backward compat with existing DB rows
               // logoUrl in site.json must be the static path in dist/ — not the admin upload path.
               // The file is copied to dist/logo.webp in step 5b, so we use '/logo.webp' here.
               logoUrl: customization?.logoUrl ? "/logo.webp" : undefined,
