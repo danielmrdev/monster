@@ -276,6 +276,8 @@ export type Database = {
           market: string;
           depth: number;
           results: Json;
+          status: string;
+          site_id: string | null;
           created_at: string;
           expires_at: string;
         };
@@ -285,6 +287,8 @@ export type Database = {
           market: string;
           depth?: number;
           results?: Json;
+          status?: string;
+          site_id?: string | null;
           created_at?: string;
           expires_at?: string;
         };
@@ -294,6 +298,8 @@ export type Database = {
           market?: string;
           depth?: number;
           results?: Json;
+          status?: string;
+          site_id?: string | null;
           created_at?: string;
           expires_at?: string;
         };
