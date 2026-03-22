@@ -157,8 +157,9 @@ export function ProductsSection({ siteId, initialProducts, initialTotal }: Props
               (product.images && product.images.length > 0 ? product.images[0] : null);
 
             return (
-              <div
+              <Link
                 key={product.id}
+                href={`/sites/${siteId}/products/${product.id}`}
                 className="px-6 py-3 flex items-center gap-4 hover:bg-muted/10 transition-colors"
               >
                 {/* Thumbnail */}
@@ -209,16 +210,17 @@ export function ProductsSection({ siteId, initialProducts, initialTotal }: Props
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.preventDefault()}>
                   <Link
-                    href={`/sites/${siteId}/products/${product.id}`}
+                    href={`/sites/${siteId}/products/${product.id}/edit`}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    View
+                    Edit
                   </Link>
                   <DeleteProductButton siteId={siteId} productId={product.id} asin={product.asin} />
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
