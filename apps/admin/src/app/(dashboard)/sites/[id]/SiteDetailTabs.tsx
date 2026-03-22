@@ -296,7 +296,7 @@ export function SiteDetailTabs({
 
       {}
       <TabsContent value="deploy" className="space-y-6">
-        <Card title="Site Generation">{generationAction}</Card>
+        {generationAction}
         <Card title="Deployment" action={deployAction}>
           {deploySlot}
         </Card>

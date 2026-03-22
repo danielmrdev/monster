@@ -58,6 +58,7 @@ let hashPromise: Promise<string> | null = null;
 function enqueue(type: string): void {
   const h = location.hostname;
   if (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0' || h.endsWith('.local') || h.endsWith('.test')) return;
+  if (location.pathname.startsWith('/api/preview/')) return;
   if (!hashPromise) hashPromise = visitorHash();
   hashPromise.then((visitor_hash) => {
     const ev: AnalyticsEvent = {
