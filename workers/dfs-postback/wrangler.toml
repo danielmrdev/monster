@@ -1,0 +1,7 @@
+name = "dfs-postback"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Secrets (set via `wrangler secret put`):
+# SUPABASE_URL
+# SUPABASE_SERVICE_ROLE_KEY
