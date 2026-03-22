@@ -131,3 +131,31 @@ export async function deleteCategory(siteId: string, categoryId: string) {
   await supabase.from("tsa_categories").delete().eq("id", categoryId).eq("site_id", siteId);
   revalidatePath(`/sites/${siteId}`);
 }
+
+// ── Category Image ────────────────────────────────────────────────────────────
+
+/**
+ * Update the custom image URL for a category.
+ *
+ * Pass imageUrl = null to clear the custom image (resets to product-derived image).
+ * On success, revalidates the category detail and edit pages.
+ *
+ * Diagnostics: returns { error: message } on DB failure — caller should surface
+ * this to the user. Supabase error codes are forwarded verbatim for inspection.
+ */
+export async function saveCategoryImage(
+  siteId: string,
+  categoryId: string,
+  imageUrl: string | null,
+): Promise<{ error?: string }> {
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("tsa_categories")
+    .update({ category_image: imageUrl })
+    .eq("id", categoryId)
+    .eq("site_id", siteId);
+  if (error) return { error: error.message };
+  revalidatePath(`/sites/${siteId}/categories/${categoryId}`);
+  revalidatePath(`/sites/${siteId}/categories/${categoryId}/edit`);
+  return {};
+}
