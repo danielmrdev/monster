@@ -90,10 +90,14 @@ export function ProductForm({
 
   useEffect(() => {
     if (state?.success) {
-      router.push(`/sites/${siteId}#products`);
+      if (mode === "edit" && productId) {
+        router.push(`/sites/${siteId}/products/${productId}`);
+      } else {
+        router.push(`/sites/${siteId}#products`);
+      }
       router.refresh();
     }
-  }, [state?.success, router, siteId]);
+  }, [state?.success, router, siteId, mode, productId]);
 
   function handleLookup() {
     const asinInput = document.getElementById("asin") as HTMLInputElement | null;
@@ -541,7 +545,7 @@ export function ProductForm({
           {isPending ? "Saving…" : mode === "create" ? "Add Product" : "Save Changes"}
         </Button>
         <Link
-          href={`/sites/${siteId}#products`}
+          href={mode === "edit" && productId ? `/sites/${siteId}/products/${productId}` : `/sites/${siteId}#products`}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           Cancel

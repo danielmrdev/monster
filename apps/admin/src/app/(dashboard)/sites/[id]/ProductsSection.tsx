@@ -211,10 +211,10 @@ export function ProductsSection({ siteId, initialProducts, initialTotal }: Props
                 {/* Actions */}
                 <div className="flex items-center gap-3 shrink-0">
                   <Link
-                    href={`/sites/${siteId}/products/${product.id}/edit`}
+                    href={`/sites/${siteId}/products/${product.id}`}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Edit
+                    View
                   </Link>
                   <DeleteProductButton siteId={siteId} productId={product.id} asin={product.asin} />
                 </div>

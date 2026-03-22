@@ -68,17 +68,11 @@ export default async function EditProductPage({ params }: PageProps) {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link
-          href={`/sites/${siteId}`}
+          href={`/sites/${siteId}/products/${prodId}`}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          ← {site.name}
+          ← {product.title ?? product.asin}
         </Link>
-        <span className="font-mono text-sm text-muted-foreground">{product.asin}</span>
-        {seoScore?.overall_score != null && (
-          <span className="text-xs text-muted-foreground bg-muted/40 rounded px-2 py-0.5 border border-border">
-            SEO {seoScore.overall_score}/100
-          </span>
-        )}
       </div>
 
       {/* SEO Generation panel — above the form, always visible in edit mode */}
