@@ -101,16 +101,35 @@ export async function updateCategory(
   if (Object.keys(errors).length) return { errors };
 
   const supabase = createServiceClient();
+
+  // Detect manually edited SEO fields by comparing with current DB values
+  const SEO_FIELDS = ["focus_keyword", "description", "seo_text"] as const;
+  const { data: current } = await supabase
+    .from("tsa_categories")
+    .select("focus_keyword, description, seo_text, manually_edited_fields")
+    .eq("id", categoryId)
+    .eq("site_id", siteId)
+    .single();
+
+  const prevEdited = new Set<string>((current?.manually_edited_fields as string[]) ?? []);
+  const resolvedDescription = meta_description ?? description;
+  const newValues: Record<string, string | null> = { focus_keyword, description: resolvedDescription, seo_text };
+  for (const field of SEO_FIELDS) {
+    const oldVal = (current?.[field] as string | null) ?? null;
+    if (newValues[field] !== oldVal) prevEdited.add(field);
+  }
+
   const { error } = await supabase
     .from("tsa_categories")
     .update({
       name,
       slug,
       // meta_description (D057) maps to the `description` column; prefer it over the legacy description field
-      description: meta_description ?? description,
+      description: resolvedDescription,
       seo_text,
       focus_keyword,
       keywords,
+      manually_edited_fields: Array.from(prevEdited),
     })
     .eq("id", categoryId)
     .eq("site_id", siteId);

@@ -138,6 +138,27 @@ export async function updateProduct(
 
   const supabase = createServiceClient();
 
+  // Detect manually edited SEO fields by comparing with current DB values
+  const SEO_FIELDS = ["focus_keyword", "detailed_description", "user_opinions_summary", "meta_description"] as const;
+  const { data: current } = await supabase
+    .from("tsa_products")
+    .select("focus_keyword, detailed_description, user_opinions_summary, meta_description, pros_cons, manually_edited_fields")
+    .eq("id", productId)
+    .eq("site_id", siteId)
+    .single();
+
+  const prevEdited = new Set<string>((current?.manually_edited_fields as string[]) ?? []);
+  const newValues: Record<string, string | null> = { focus_keyword, detailed_description, user_opinions_summary, meta_description };
+  for (const field of SEO_FIELDS) {
+    const oldVal = (current?.[field] as string | null) ?? null;
+    if (newValues[field] !== oldVal) prevEdited.add(field);
+  }
+  // Check pros_cons separately (compare serialized)
+  const oldProsCons = current?.pros_cons as { pros?: string[]; cons?: string[] } | null;
+  if (JSON.stringify(pros_cons) !== JSON.stringify(oldProsCons ?? { pros: [], cons: [] })) {
+    prevEdited.add("pros_cons");
+  }
+
   const { error } = await supabase
     .from("tsa_products")
     .update({
@@ -153,6 +174,7 @@ export async function updateProduct(
       pros_cons,
       user_opinions_summary,
       meta_description,
+      manually_edited_fields: Array.from(prevEdited),
     })
     .eq("id", productId)
     .eq("site_id", siteId);

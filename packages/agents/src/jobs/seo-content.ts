@@ -450,6 +450,7 @@ async function handleCategory(job: import("bullmq").Job<SeoContentPayload>): Pro
     catUpdatePayload.description = bestResult.description || null;
   }
 
+  catUpdatePayload.manually_edited_fields = [] as unknown as string;
   const { error: catUpdateErr } = await supabase
     .from("tsa_categories")
     .update(catUpdatePayload)
