@@ -5,23 +5,18 @@ import { Bell } from "lucide-react";
 import { Dialog } from "@base-ui/react/dialog";
 import { AlertList, type AlertRow } from "@/app/(dashboard)/alerts/AlertList";
 import { getOpenAlertsCount, getAlerts } from "@/app/(dashboard)/alerts/actions";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * AlertsBell — header bell icon with open-alert badge and popup modal.
  *
- * Renders a Bell icon in the header. When there are open product alerts,
- * shows an amber badge with the count. Clicking opens a @base-ui/react/dialog
- * popup anchored below the header with the AlertList component.
- *
- * Observability:
- *  - data-alerts-bell attribute for DevTools inspection
- *  - Badge span is only present in DOM when count > 0
- *  - aria-label shows count: "${count} open alerts" or "Alerts" when 0
- *  - count fetch failure: logs "[alerts] getOpenAlertsCount failed:" to server console; badge stays at 0
- *  - alert fetch failure: logs "[alerts] getAlerts failed:" to server console; modal shows empty state
+ * Shows two badge types:
+ *  - Amber badge: product alerts (open count)
+ *  - Blue dot: DFS search completions (via Supabase Realtime)
  */
 export function AlertsBell() {
   const [count, setCount] = useState(0);
+  const [searchNotifications, setSearchNotifications] = useState(0);
   const [open, setOpen] = useState(false);
   const [alerts, setAlerts] = useState<AlertRow[]>([]);
 
@@ -35,22 +30,66 @@ export function AlertsBell() {
     fetchData();
   }, [fetchData]);
 
+  // Subscribe to DFS search completions via Supabase Realtime
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("search-notifications")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "dfs_search_cache" },
+        (payload) => {
+          // REPLICA IDENTITY FULL is set, so payload.old is available
+          if (payload.new.status === "complete" && payload.old?.status === "pending") {
+            setSearchNotifications((prev) => prev + 1);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const handleActionComplete = useCallback(() => {
     fetchData();
   }, [fetchData]);
 
+  // Clear search notifications when bell opens
+  const handleOpenChange = useCallback(
+    (isOpen: boolean) => {
+      setOpen(isOpen);
+      if (isOpen) {
+        setSearchNotifications(0);
+        fetchData();
+      }
+    },
+    [fetchData],
+  );
+
+  const totalBadge = count + searchNotifications;
+
   return (
     <div className="relative" data-alerts-bell>
-      <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Root open={open} onOpenChange={handleOpenChange}>
         <Dialog.Trigger
           className="relative rounded-md p-2 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
-          aria-label={count > 0 ? `${count} open alerts` : "Alerts"}
+          aria-label={totalBadge > 0 ? `${totalBadge} notifications` : "Alerts"}
         >
           <Bell size={16} strokeWidth={1.75} />
           {count > 0 && (
             <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white leading-none">
               {count > 99 ? "99+" : count}
             </span>
+          )}
+          {searchNotifications > 0 && count === 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-blue-500">
+              <span className="animate-ping absolute h-3 w-3 rounded-full bg-blue-400 opacity-75" />
+            </span>
+          )}
+          {searchNotifications > 0 && count > 0 && (
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 rounded-full bg-blue-500" />
           )}
         </Dialog.Trigger>
         <Dialog.Portal>
@@ -64,7 +103,7 @@ export function AlertsBell() {
                     className="text-muted-foreground hover:text-foreground text-xs"
                     aria-label="Close alerts panel"
                   >
-                    ✕
+                    &#10005;
                   </button>
                 }
               />
