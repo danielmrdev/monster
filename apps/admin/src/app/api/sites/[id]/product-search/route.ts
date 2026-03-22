@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { DataForSEOClient } from "@monster/agents";
 import { enqueueProductSeo } from "@/app/(dashboard)/sites/[id]/seo/actions";
-
-// DataForSEO Merchant API uses async task flow (task_post → poll → task_get).
-// Allow up to 60s for the polling to complete.
-export const maxDuration = 60;
-
-// Cache TTL: 7 days
-const CACHE_TTL_DAYS = 7;
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -35,23 +27,14 @@ export interface SearchResultItem {
 type CachedProduct = Omit<SearchResultItem, "alreadyAdded">;
 
 /**
- * GET /api/sites/[id]/product-search?q=<keyword>&depth=<100|200|300|400>
+ * GET /api/sites/[id]/product-search?q=<keyword>
  *
- * Searches Amazon via DataForSEO Merchant API with a 7-day cache keyed by
- * (keyword, market). If the cache has >= requested depth, returns immediately
- * without hitting DFS. Otherwise calls DFS and updates the cache.
- *
- * depth is 100–400 in steps of 100 (default 100).
- * Returns { results, market, depth, fromCache: boolean }.
+ * Reads results from dfs_search_cache (populated by DFS postback Worker).
+ * Returns { results, market, status } where status = "complete"|"pending"|"not_found".
  */
 export async function GET(request: NextRequest, { params }: Params) {
   const { id: siteId } = await params;
   const q = request.nextUrl.searchParams.get("q")?.trim();
-  const depthParam = parseInt(request.nextUrl.searchParams.get("depth") ?? "100", 10);
-  const depth = Math.min(
-    400,
-    Math.max(100, isNaN(depthParam) ? 100 : Math.ceil(depthParam / 100) * 100),
-  );
 
   if (!q) {
     return NextResponse.json({ error: "q query param required" }, { status: 400 });
@@ -73,73 +56,21 @@ export async function GET(request: NextRequest, { params }: Params) {
   // ── Cache lookup ────────────────────────────────────────────────────────────
   const { data: cacheRow } = await supabase
     .from("dfs_search_cache")
-    .select("depth, results, expires_at")
+    .select("depth, results, status, expires_at")
     .eq("keyword", q.toLowerCase())
     .eq("market", market)
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
 
-  let cachedProducts: CachedProduct[] | null = null;
-  let fromCache = false;
-
-  if (cacheRow && cacheRow.depth >= depth) {
-    // Cache hit — slice to requested depth
-    cachedProducts = (cacheRow.results as CachedProduct[]).slice(0, depth);
-    fromCache = true;
-    console.log(
-      `[product-search] CACHE HIT siteId=${siteId} q="${q}" market=${market} depth=${depth} cached_depth=${cacheRow.depth}`,
-    );
+  if (!cacheRow) {
+    return NextResponse.json({ results: [], market, status: "not_found" });
   }
 
-  // ── DFS fetch (cache miss or stale) ────────────────────────────────────────
-  if (!cachedProducts) {
-    try {
-      const client = new DataForSEOClient();
-      const dfsProducts = await client.searchProducts(q, market, depth, siteId);
-
-      cachedProducts = dfsProducts.map((p) => ({
-        asin: p.asin,
-        title: p.title,
-        imageUrl: p.imageUrl,
-        price: p.price,
-        rating: p.rating ?? 0,
-        reviewCount: p.reviewCount ?? 0,
-        isPrime: p.isPrime,
-        isBestSeller: p.isBestSeller,
-        isAmazonChoice: p.isAmazonChoice,
-        boughtPastMonth: p.boughtPastMonth,
-        specialOffers: p.specialOffers,
-        rankPosition: p.rankPosition,
-      }));
-
-      // Upsert cache (update if keyword+market exists with more depth, insert otherwise)
-      const expiresAt = new Date(Date.now() + CACHE_TTL_DAYS * 86_400_000).toISOString();
-      if (cacheRow) {
-        // Existing row but stale/shallower — replace results and reset TTL
-        await supabase
-          .from("dfs_search_cache")
-          .update({ depth, results: cachedProducts, expires_at: expiresAt })
-          .eq("keyword", q.toLowerCase())
-          .eq("market", market);
-      } else {
-        await supabase.from("dfs_search_cache").insert({
-          keyword: q.toLowerCase(),
-          market,
-          depth,
-          results: cachedProducts,
-          expires_at: expiresAt,
-        });
-      }
-
-      console.log(
-        `[product-search] DFS FETCH siteId=${siteId} q="${q}" market=${market} depth=${depth} results=${cachedProducts.length}`,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[product-search] siteId=${siteId} q="${q}" error=${message}`);
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
+  if (cacheRow.status === "pending") {
+    return NextResponse.json({ results: [], market, status: "pending" });
   }
+
+  const cachedProducts = (cacheRow.results as CachedProduct[]) ?? [];
 
   // ── Merge alreadyAdded (always per-site, never cached) ─────────────────────
   const { data: existing } = await supabase
@@ -154,7 +85,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     alreadyAdded: existingAsins.has(p.asin),
   }));
 
-  return NextResponse.json({ results, market, depth, fromCache });
+  return NextResponse.json({ results, market, status: "complete" });
 }
 
 // ── Bulk add ──────────────────────────────────────────────────────────────────

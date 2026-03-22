@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition, useRef, useMemo } from "react";
+import { useState, useTransition, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useRealtimeSearch } from "@/hooks/use-realtime-search";
+import { PreviousSearches, type CachedSearch } from "./PreviousSearches";
 import type { SearchResultItem } from "@/app/api/sites/[id]/product-search/route";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -25,6 +27,8 @@ interface Props {
   siteId: string;
   categories: Category[];
   preselectedCategoryId?: string;
+  market: string;
+  previousSearches: CachedSearch[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -44,7 +48,13 @@ function StarRating({ rating }: { rating: number }) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function ProductSearch({ siteId, categories, preselectedCategoryId }: Props) {
+export function ProductSearch({
+  siteId,
+  categories,
+  preselectedCategoryId,
+  market,
+  previousSearches,
+}: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -55,7 +65,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [fromCache, setFromCache] = useState(false);
+  const [pendingKeyword, setPendingKeyword] = useState<string | null>(null);
 
   // Filter state
   const [filterLowQuality, setFilterLowQuality] = useState(true);
@@ -71,6 +81,34 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
   const [adding, startAdd] = useTransition();
 
+  // ── Load results from cache ───────────────────────────────────────────────
+
+  const loadFromCache = useCallback(
+    async (keyword: string) => {
+      const res = await fetch(
+        `/api/sites/${siteId}/product-search?q=${encodeURIComponent(keyword)}`,
+      );
+      const data = await res.json();
+      if (data.status === "complete" && data.results) {
+        setResults(data.results);
+        setQuery(keyword);
+        setPendingKeyword(null);
+        setSearching(false);
+      }
+    },
+    [siteId],
+  );
+
+  // ── Realtime subscription — fires when postback Worker writes results ─────
+
+  const onSearchComplete = useCallback(() => {
+    if (pendingKeyword) {
+      loadFromCache(pendingKeyword);
+    }
+  }, [pendingKeyword, loadFromCache]);
+
+  useRealtimeSearch(pendingKeyword, market, onSearchComplete);
+
   // ── Filtered results ────────────────────────────────────────────────────────
 
   const visibleResults = useMemo(() => {
@@ -83,7 +121,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
 
   // ── Actions ─────────────────────────────────────────────────────────────────
 
-  function handleSearch(e?: React.FormEvent) {
+  async function handleSearch(e?: React.FormEvent) {
     e?.preventDefault();
     const q = inputRef.current?.value.trim() ?? "";
     if (!q) return;
@@ -95,40 +133,80 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
     setAddSuccess(null);
     setAddError(null);
     setDepth(DEPTH_STEP);
-    setFromCache(false);
     setSearching(true);
+    setPendingKeyword(null);
 
-    fetch(`/api/sites/${siteId}/product-search?q=${encodeURIComponent(q)}&depth=${DEPTH_STEP}`)
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Search failed");
-        setResults(data.results ?? []);
-        setFromCache(data.fromCache ?? false);
-      })
-      .catch((err) => {
-        setSearchError(err instanceof Error ? err.message : "Unknown error");
-      })
-      .finally(() => setSearching(false));
+    try {
+      // Fire-and-forget: POST to /start
+      const startRes = await fetch(`/api/sites/${siteId}/product-search/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: q, depth: DEPTH_STEP }),
+      });
+      const startData = await startRes.json();
+
+      if (!startRes.ok) {
+        throw new Error(startData.error ?? "Search failed");
+      }
+
+      if (startData.status === "cached") {
+        // Results already in cache — load them
+        await loadFromCache(q);
+      } else {
+        // pending or already_pending — subscribe to Realtime
+        setPendingKeyword(q.toLowerCase());
+      }
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "Unknown error");
+      setSearching(false);
+    }
   }
 
-  function handleLoadMore() {
+  async function handleLoadMore() {
     if (!query || loadingMore) return;
     const nextDepth = depth + DEPTH_STEP;
     if (nextDepth > DEPTH_MAX) return;
 
     setLoadingMore(true);
-    fetch(`/api/sites/${siteId}/product-search?q=${encodeURIComponent(query)}&depth=${nextDepth}`)
-      .then(async (res) => {
+
+    try {
+      const startRes = await fetch(`/api/sites/${siteId}/product-search/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: query, depth: nextDepth }),
+      });
+      const startData = await startRes.json();
+
+      if (!startRes.ok) throw new Error(startData.error ?? "Load more failed");
+
+      if (startData.status === "cached") {
+        const res = await fetch(
+          `/api/sites/${siteId}/product-search?q=${encodeURIComponent(query)}`,
+        );
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Load more failed");
-        setResults(data.results ?? []);
+        if (data.results) {
+          setResults(data.results);
+          setDepth(nextDepth);
+        }
+      } else {
+        setPendingKeyword(query.toLowerCase());
         setDepth(nextDepth);
-        setFromCache(data.fromCache ?? false);
-      })
-      .catch((err) => {
-        setSearchError(err instanceof Error ? err.message : "Unknown error");
-      })
-      .finally(() => setLoadingMore(false));
+      }
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  function handleSelectPrevious(keyword: string) {
+    if (inputRef.current) inputRef.current.value = keyword;
+    setSearching(true);
+    setResults(null);
+    setSelected(new Set());
+    setAddSuccess(null);
+    setAddError(null);
+    loadFromCache(keyword);
   }
 
   function toggleItem(asin: string) {
@@ -220,7 +298,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
       <form onSubmit={handleSearch} className="flex gap-2">
         <Input
           ref={inputRef}
-          placeholder="Search Amazon products… e.g. freidoras de aire, camping tent"
+          placeholder="Search Amazon products... e.g. freidoras de aire, camping tent"
           defaultValue=""
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           className="flex-1 min-w-0"
@@ -229,13 +307,18 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
         <Button type="submit" disabled={searching}>
           {searching ? (
             <span className="flex items-center gap-2">
-              <Spinner /> Searching…
+              <Spinner /> Searching...
             </span>
           ) : (
             "Search"
           )}
         </Button>
       </form>
+
+      {/* Previous searches */}
+      {!results && !searching && previousSearches.length > 0 && (
+        <PreviousSearches searches={previousSearches} onSelect={handleSelectPrevious} />
+      )}
 
       {/* Search error */}
       {searchError && (
@@ -244,8 +327,8 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
         </div>
       )}
 
-      {/* Loading skeleton */}
-      {searching && (
+      {/* Loading / pending state */}
+      {searching && !results && (
         <div className="space-y-2">
           {[...Array(6)].map((_, i) => (
             <div
@@ -254,7 +337,9 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
             />
           ))}
           <p className="text-xs text-center text-muted-foreground pt-1">
-            Querying DataForSEO… this takes 15–30 seconds
+            {pendingKeyword
+              ? "Waiting for DataForSEO results... this may take up to 2 minutes"
+              : "Starting search..."}
           </p>
         </div>
       )}
@@ -264,7 +349,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
         <>
           {visibleResults.length === 0 && !results?.length ? (
             <p className="text-sm text-muted-foreground">
-              No results for <strong>"{query}"</strong>. Try a different keyword.
+              No results for <strong>&quot;{query}&quot;</strong>. Try a different keyword.
             </p>
           ) : (
             <>
@@ -273,15 +358,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-sm text-muted-foreground">
                     {visibleResults.length} results for{" "}
-                    <strong className="text-foreground">"{query}"</strong>
-                    {fromCache && (
-                      <span
-                        className="ml-1.5 text-xs text-muted-foreground/50"
-                        title="Served from cache — no DFS charge"
-                      >
-                        · cached
-                      </span>
-                    )}
+                    <strong className="text-foreground">&quot;{query}&quot;</strong>
                   </span>
                   {/* Quality filter toggle */}
                   <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -290,12 +367,12 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                       checked={filterLowQuality}
                       onChange={(e) => {
                         setFilterLowQuality(e.target.checked);
-                        setSelected(new Set()); // reset selection on filter change
+                        setSelected(new Set());
                       }}
                       className="rounded border-border accent-primary w-3.5 h-3.5"
                     />
                     <span className="text-xs text-muted-foreground">
-                      Hide &lt;{MIN_RATING}★ / &lt;{MIN_REVIEWS} reviews
+                      Hide &lt;{MIN_RATING}&#9733; / &lt;{MIN_REVIEWS} reviews
                       {filteredOutCount > 0 && (
                         <span className="ml-1 text-muted-foreground/60">
                           ({filteredOutCount} hidden)
@@ -339,7 +416,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                     <Button type="button" onClick={handleAdd} disabled={adding} size="sm">
                       {adding ? (
                         <span className="flex items-center gap-1.5">
-                          <Spinner size="sm" /> Adding…
+                          <Spinner size="sm" /> Adding...
                         </span>
                       ) : (
                         `Add ${selected.size} product${selected.size !== 1 ? "s" : ""}`
@@ -352,7 +429,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
               {/* Success/error feedback */}
               {addSuccess && (
                 <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400">
-                  ✓ {addSuccess}
+                  {addSuccess}
                 </div>
               )}
               {addError && (
@@ -431,7 +508,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                             )}
                             {item.isAmazonChoice && (
                               <span className="text-[10px] font-bold text-white bg-[#FF9900] px-1.5 py-0.5 rounded shrink-0">
-                                Amazon's Choice
+                                Amazon&apos;s Choice
                               </span>
                             )}
                             {item.isBestSeller && (
@@ -449,7 +526,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                                 className="text-[10px] font-medium text-emerald-400 border border-emerald-400/40 px-1.5 py-0.5 rounded shrink-0"
                                 title={item.specialOffers.join(" · ")}
                               >
-                                🏷 Oferta
+                                Oferta
                               </span>
                             )}
                             {disabled && (
@@ -505,7 +582,7 @@ export function ProductSearch({ siteId, categories, preselectedCategoryId }: Pro
                     {loadingMore ? (
                       <span className="flex items-center gap-1.5">
                         <Spinner size="sm" />
-                        {fromCache ? "Loading…" : "Fetching from Amazon…"}
+                        Loading more...
                       </span>
                     ) : (
                       `Load ${DEPTH_STEP} more results`

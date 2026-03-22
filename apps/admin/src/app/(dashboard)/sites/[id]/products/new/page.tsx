@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { ProductForm } from "../ProductForm";
 import { ProductSearch } from "../ProductSearch";
 import { createProduct } from "../actions";
+import type { CachedSearch } from "../PreviousSearches";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -16,22 +17,46 @@ export default async function NewProductPage({ params, searchParams }: PageProps
 
   const supabase = createServiceClient();
 
-  const [siteResult, categoriesResult] = await Promise.all([
-    supabase.from("sites").select("id, name").eq("id", siteId).single(),
+  // Fetch site first (need market for cache query)
+  const siteResult = await supabase
+    .from("sites")
+    .select("id, name, market")
+    .eq("id", siteId)
+    .single();
+
+  if (!siteResult.data) notFound();
+
+  const site = siteResult.data;
+  const market = (site.market ?? "ES").toUpperCase();
+
+  // Fetch categories and previous searches in parallel
+  const [categoriesResult, cacheResult] = await Promise.all([
     supabase
       .from("tsa_categories")
       .select("id, name, slug")
       .eq("site_id", siteId)
       .order("name", { ascending: true }),
+    supabase
+      .from("dfs_search_cache")
+      .select("keyword, market, depth, results, status, created_at")
+      .eq("market", market)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
-  if (!siteResult.data) notFound();
-
-  const site = siteResult.data;
   const categories = categoriesResult.data ?? [];
+  const previousSearches: CachedSearch[] = (cacheResult.data ?? []).map((row) => ({
+    keyword: row.keyword,
+    market: row.market,
+    depth: row.depth,
+    result_count: Array.isArray(row.results) ? (row.results as unknown[]).length : 0,
+    status: row.status ?? "complete",
+    created_at: row.created_at,
+  }));
+
   const action = createProduct.bind(null, siteId);
   const isManual = mode === "manual";
-
   const category = categoryId ? (categories.find((c) => c.id === categoryId) ?? null) : null;
 
   return (
@@ -42,7 +67,7 @@ export default async function NewProductPage({ params, searchParams }: PageProps
           href={category ? `/sites/${siteId}/categories/${category.id}` : `/sites/${siteId}`}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          ← {category ? category.name : site.name}
+          &larr; {category ? category.name : site.name}
         </Link>
       </div>
 
@@ -81,6 +106,8 @@ export default async function NewProductPage({ params, searchParams }: PageProps
             siteId={siteId}
             categories={categories}
             preselectedCategoryId={categoryId}
+            market={market}
+            previousSearches={previousSearches}
           />
         )}
       </div>
