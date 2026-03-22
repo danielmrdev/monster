@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -70,21 +70,12 @@ export function ProductForm({
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<ProductFormState, FormData>(action, null);
   const [lookupPending, startLookup] = useTransition();
-  const [isGenerating, startGenerate] = useTransition();
-  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const [asinData, setAsinData] = useState<AsinData | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     defaultValues?.category_ids ?? [],
   );
-
-  // Refs for AI content textareas — populated by generate handler
-  const detailDescRef = useRef<HTMLTextAreaElement>(null);
-  const prosRef = useRef<HTMLTextAreaElement>(null);
-  const consRef = useRef<HTMLTextAreaElement>(null);
-  const userOpRef = useRef<HTMLTextAreaElement>(null);
-  const metaDescRef = useRef<HTMLTextAreaElement>(null);
 
   // Pre-populate image preview for edit mode
   const [imagePreview, setImagePreview] = useState<string | null>(
@@ -143,68 +134,6 @@ export function ProductForm({
         if (imgUrlInput && data.imageUrl) imgUrlInput.value = data.imageUrl;
       } catch (err) {
         setLookupError(err instanceof Error ? err.message : "Unknown error");
-      }
-    });
-  }
-
-  function generateDescription() {
-    if (!productId) return;
-    setGenerateError(null);
-    startGenerate(async () => {
-      try {
-        const res = await fetch(`/api/sites/${siteId}/generate-seo-text`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ field: "product_all_content", contextId: productId }),
-        });
-
-        if (!res.ok || !res.body) {
-          const text = await res.text().catch(() => `HTTP ${res.status}`);
-          setGenerateError(text);
-          return;
-        }
-
-        // Map field names to their textarea refs
-        const fieldRefs: Record<string, React.RefObject<HTMLTextAreaElement | null>> = {
-          detailed_description: detailDescRef,
-          pros: prosRef,
-          cons: consRef,
-          user_opinions_summary: userOpRef,
-          meta_description: metaDescRef,
-        };
-
-        const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-        let buffer = "";
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += value;
-          const parts = buffer.split("\n\n");
-          buffer = parts.pop() ?? "";
-          for (const part of parts) {
-            const line = part.trim();
-            if (!line.startsWith("data: ")) continue;
-            try {
-              const event = JSON.parse(line.slice(6));
-              if (
-                event.type === "field" &&
-                typeof event.name === "string" &&
-                typeof event.text === "string"
-              ) {
-                const ref = fieldRefs[event.name];
-                if (ref?.current) {
-                  ref.current.value = event.text;
-                }
-              } else if (event.type === "error") {
-                setGenerateError(event.error ?? "Generation failed");
-              }
-            } catch {
-              /* ignore parse errors */
-            }
-          }
-        }
-      } catch (e) {
-        setGenerateError(e instanceof Error ? e.message : "Generation failed");
       }
     });
   }
@@ -368,69 +297,14 @@ export function ProductForm({
         />
       </div>
 
-      {/* AI Content — edit mode only */}
+      {/* AI Content fields — edit mode only */}
       {mode === "edit" && productId && (
         <div className="space-y-4 rounded-xl border border-border/60 bg-muted/20 p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">AI Content</h3>
-            <button
-              type="button"
-              onClick={generateDescription}
-              disabled={isGenerating}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? (
-                <>
-                  <svg
-                    className="animate-spin h-3 w-3"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                  Generating…
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-                  </svg>
-                  Generate with AI
-                </>
-              )}
-            </button>
-          </div>
+          <h3 className="text-sm font-semibold text-foreground">SEO Content</h3>
 
-          {generateError && <p className="text-xs text-destructive">{generateError}</p>}
-
-          {/* Detailed Description */}
           <div className="space-y-1.5">
             <Label htmlFor="detailed_description">Detailed Description</Label>
             <Textarea
-              ref={detailDescRef}
               id="detailed_description"
               name="detailed_description"
               rows={6}
@@ -441,11 +315,9 @@ export function ProductForm({
             <FieldError messages={errors?.detailed_description} />
           </div>
 
-          {/* Pros */}
           <div className="space-y-1.5">
             <Label htmlFor="pros">Pros</Label>
             <Textarea
-              ref={prosRef}
               id="pros"
               name="pros"
               rows={4}
@@ -456,11 +328,9 @@ export function ProductForm({
             <FieldError messages={errors?.pros} />
           </div>
 
-          {/* Cons */}
           <div className="space-y-1.5">
             <Label htmlFor="cons">Cons</Label>
             <Textarea
-              ref={consRef}
               id="cons"
               name="cons"
               rows={4}
@@ -471,11 +341,9 @@ export function ProductForm({
             <FieldError messages={errors?.cons} />
           </div>
 
-          {/* User Opinions Summary */}
           <div className="space-y-1.5">
             <Label htmlFor="user_opinions_summary">User Opinions Summary</Label>
             <Textarea
-              ref={userOpRef}
               id="user_opinions_summary"
               name="user_opinions_summary"
               rows={3}
@@ -486,11 +354,9 @@ export function ProductForm({
             <FieldError messages={errors?.user_opinions_summary} />
           </div>
 
-          {/* Meta Description */}
           <div className="space-y-1.5">
             <Label htmlFor="meta_description">Meta Description</Label>
             <Textarea
-              ref={metaDescRef}
               id="meta_description"
               name="meta_description"
               rows={2}

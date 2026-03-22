@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition, useRef } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -48,9 +48,6 @@ export function CategoryForm({
 }: CategoryFormProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<CategoryFormState, FormData>(action, null);
-  const [isGenerating, startGenerate] = useTransition();
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const seoTextRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (state?.success) {
@@ -58,55 +55,6 @@ export function CategoryForm({
       router.refresh();
     }
   }, [state?.success, router, siteId]);
-
-  function generateSeoText() {
-    if (!categoryId) return;
-    setGenerateError(null);
-    startGenerate(async () => {
-      try {
-        const res = await fetch(`/api/sites/${siteId}/generate-seo-text`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ field: "category_seo_text", contextId: categoryId }),
-        });
-
-        if (!res.ok || !res.body) {
-          const text = await res.text().catch(() => `HTTP ${res.status}`);
-          setGenerateError(text);
-          return;
-        }
-
-        // Clear existing text and stream in the new content
-        if (seoTextRef.current) seoTextRef.current.value = "";
-
-        const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-        let buffer = "";
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += value;
-          const parts = buffer.split("\n\n");
-          buffer = parts.pop() ?? "";
-          for (const part of parts) {
-            const line = part.trim();
-            if (!line.startsWith("data: ")) continue;
-            try {
-              const event = JSON.parse(line.slice(6));
-              if (event.type === "text" && event.text && seoTextRef.current) {
-                seoTextRef.current.value += event.text;
-              } else if (event.type === "error") {
-                setGenerateError(event.error ?? "Generation failed");
-              }
-            } catch {
-              /* ignore parse errors */
-            }
-          }
-        }
-      } catch (e) {
-        setGenerateError(e instanceof Error ? e.message : "Generation failed");
-      }
-    });
-  }
 
   const errors = state?.errors;
 
@@ -210,69 +158,14 @@ export function CategoryForm({
 
       {/* SEO text */}
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="seo_text">SEO Text</Label>
-          {mode === "edit" && categoryId && (
-            <button
-              type="button"
-              onClick={generateSeoText}
-              disabled={isGenerating}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? (
-                <>
-                  <svg
-                    className="animate-spin h-3 w-3"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                  Generating…
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-                  </svg>
-                  Generate with AI
-                </>
-              )}
-            </button>
-          )}
-        </div>
+        <Label htmlFor="seo_text">SEO Text</Label>
         <Textarea
-          ref={seoTextRef}
           id="seo_text"
           name="seo_text"
           defaultValue={defaultValues?.seo_text ?? ""}
           placeholder="~400-word SEO text for this category page. Will be generated by AI if left empty."
           rows={8}
         />
-        {generateError && <p className="text-xs text-destructive">{generateError}</p>}
       </div>
 
       {/* Form-level error */}
