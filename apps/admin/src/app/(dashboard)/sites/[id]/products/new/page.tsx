@@ -38,7 +38,7 @@ export default async function NewProductPage({ params, searchParams }: PageProps
       .order("name", { ascending: true }),
     supabase
       .from("dfs_search_cache")
-      .select("keyword, market, depth, results, status, created_at")
+      .select("*")
       .eq("market", market)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
@@ -51,7 +51,7 @@ export default async function NewProductPage({ params, searchParams }: PageProps
     market: row.market,
     depth: row.depth,
     result_count: Array.isArray(row.results) ? (row.results as unknown[]).length : 0,
-    status: row.status ?? "complete",
+    status: ((row as Record<string, unknown>).status as string) ?? "complete",
     created_at: row.created_at,
   }));
 
