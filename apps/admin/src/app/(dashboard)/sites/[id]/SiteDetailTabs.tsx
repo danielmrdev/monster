@@ -291,6 +291,40 @@ export function SiteDetailTabs({
       {isTsa && (
         <TabsContent value="categories" className="space-y-6">
           {categoriesSlot}
+          <Card title="Product Alerts">
+            {alerts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No open alerts.</p>
+            ) : (
+              <div className="space-y-2">
+                {alerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm"
+                  >
+                    <span className="mt-0.5 text-amber-400">⚠</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-foreground capitalize">
+                        {alert.alert_type.replace(/_/g, " ")}
+                      </span>
+                      {alert.tsa_products && (
+                        <span className="ml-2 font-mono text-xs text-muted-foreground">
+                          {alert.tsa_products.asin}
+                        </span>
+                      )}
+                      {alert.tsa_products?.title && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                          {alert.tsa_products.title}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {new Date(alert.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </TabsContent>
       )}
 
@@ -334,43 +368,6 @@ export function SiteDetailTabs({
           </dl>
           {homepageSeoSlot}
         </Card>
-
-        {isTsa && (
-          <Card title="Product Alerts">
-            {alerts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No open alerts.</p>
-            ) : (
-              <div className="space-y-2">
-                {alerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm"
-                  >
-                    <span className="mt-0.5 text-amber-400">⚠</span>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-foreground capitalize">
-                        {alert.alert_type.replace(/_/g, " ")}
-                      </span>
-                      {alert.tsa_products && (
-                        <span className="ml-2 font-mono text-xs text-muted-foreground">
-                          {alert.tsa_products.asin}
-                        </span>
-                      )}
-                      {alert.tsa_products?.title && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                          {alert.tsa_products.title}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {new Date(alert.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        )}
 
         <SeoScoresTable seoScores={seoScores} rescoreAction={rescoreAction} />
 
