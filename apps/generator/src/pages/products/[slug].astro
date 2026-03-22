@@ -231,28 +231,42 @@ const parentCategory = categories.find((c) => c.slug === product.category_slug) 
     <section class="mt-8 border-t border-gray-100 pt-8">
       <h2 class="text-lg font-semibold text-gray-800 mb-4">Pros y contras</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="rounded-lg border border-green-200 bg-green-50 p-4">
-          <h3 class="text-sm font-semibold text-green-800 mb-3 flex items-center gap-1.5">
-            <span>✓</span> Ventajas
-          </h3>
-          <ul class="space-y-2">
+        <!-- Pros -->
+        <div class="rounded-xl border border-gray-200 bg-white overflow-hidden border-l-4 border-l-green-500">
+          <div class="flex items-center gap-2 px-4 py-3 bg-green-50 border-b border-gray-100">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="8" fill="#22c55e" fill-opacity="0.2"/>
+              <path d="M4.5 8l2.5 2.5 4.5-5" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="text-sm font-semibold text-green-800">Ventajas</span>
+          </div>
+          <ul class="divide-y divide-gray-50">
             {prosCons.pros.map((pro) => (
-              <li class="text-sm text-green-700 flex gap-2 leading-snug">
-                <span class="shrink-0 mt-0.5">·</span>
-                <span>{pro}</span>
+              <li class="flex items-start gap-3 px-4 py-2.5">
+                <svg class="shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M4.5 8l2.5 2.5 4.5-5" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="text-sm text-gray-700 leading-snug">{pro}</span>
               </li>
             ))}
           </ul>
         </div>
-        <div class="rounded-lg border border-red-200 bg-red-50 p-4">
-          <h3 class="text-sm font-semibold text-red-800 mb-3 flex items-center gap-1.5">
-            <span>✗</span> Inconvenientes
-          </h3>
-          <ul class="space-y-2">
+        <!-- Cons -->
+        <div class="rounded-xl border border-gray-200 bg-white overflow-hidden border-l-4 border-l-amber-400">
+          <div class="flex items-center gap-2 px-4 py-3 bg-amber-50 border-b border-gray-100">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="8" fill="#f59e0b" fill-opacity="0.2"/>
+              <path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#d97706" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="text-sm font-semibold text-amber-800">Inconvenientes</span>
+          </div>
+          <ul class="divide-y divide-gray-50">
             {prosCons.cons.map((con) => (
-              <li class="text-sm text-red-700 flex gap-2 leading-snug">
-                <span class="shrink-0 mt-0.5">·</span>
-                <span>{con}</span>
+              <li class="flex items-start gap-3 px-4 py-2.5">
+                <svg class="shrink-0 mt-0.5" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#d97706" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span class="text-sm text-gray-700 leading-snug">{con}</span>
               </li>
             ))}
           </ul>
