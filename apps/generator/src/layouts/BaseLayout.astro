@@ -126,25 +126,25 @@ try {
     <style>
       @import "tailwindcss";
       @plugin "@tailwindcss/typography";
+
+      /* Override Tailwind's default font stack with our CSS variables.
+         --font-body and --font-heading are set as inline styles on <html>
+         when the user picks a font; the :root block below provides fallbacks. */
+      @theme inline {
+        --font-sans: var(--font-body, sans-serif);
+        --font-heading: var(--font-body, sans-serif);
+      }
     </style>
     <style is:global>
-      /* Global resets — Astro scopes component styles, so these must be is:global
-         to apply across all child components and page slots. */
+      :root {
+        --font-body: sans-serif;
+      }
       a {
         text-decoration: none;
         color: inherit;
       }
       h1, h2, h3, h4, h5, h6 {
         font-family: var(--font-heading);
-      }
-    </style>
-    <style is:global>
-      :root {
-        --font-body: sans-serif;
-        --font-heading: var(--font-body);
-      }
-      body {
-        font-family: var(--font-body, sans-serif);
       }
     </style>
   </head>
