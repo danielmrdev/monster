@@ -48,7 +48,8 @@ interface Props {
 }
 
 function StarRating({ rating }: { rating: number }) {
-  const stars = Math.round(rating * 2) / 2;
+  const clamped = Math.max(0, Math.min(5, rating));
+  const stars = Math.round(clamped * 2) / 2;
   return (
     <span className="text-amber-400 text-xs">
       {"★".repeat(Math.floor(stars))}
@@ -276,7 +277,10 @@ export function CategoryProductsSection({
                 </div>
 
                 {}
-                <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.preventDefault()}>
+                <div
+                  className="flex items-center gap-3 shrink-0"
+                  onClick={(e) => e.preventDefault()}
+                >
                   {product.slug && productScores[product.slug] != null && (
                     <span
                       className={`text-xs font-mono px-1.5 py-0.5 rounded border ${

@@ -55,7 +55,11 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
 
   const categories = (categoryLinks ?? [])
     .map((link) => {
-      const cat = link.tsa_categories as unknown as { id: string; name: string; slug: string } | null;
+      const cat = link.tsa_categories as unknown as {
+        id: string;
+        name: string;
+        slug: string;
+      } | null;
       return cat;
     })
     .filter(Boolean) as { id: string; name: string; slug: string }[];
@@ -70,9 +74,8 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   const editedFields = new Set<string>((product.manually_edited_fields as string[]) ?? []);
 
   // Determine back navigation: category detail (if from=category) or site products tab
-  const fromCategory = from === "category" && fromCatId
-    ? categories.find((c) => c.id === fromCatId) ?? null
-    : null;
+  const fromCategory =
+    from === "category" && fromCatId ? (categories.find((c) => c.id === fromCatId) ?? null) : null;
   const backHref = fromCategory
     ? `/sites/${siteId}/categories/${fromCategory.id}`
     : `/sites/${siteId}#products`;
@@ -141,8 +144,8 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
               {product.rating != null && (
                 <div className="flex items-center gap-1.5">
                   <span className="text-amber-400 text-xs">
-                    {"★".repeat(Math.floor(product.rating))}
-                    {"☆".repeat(5 - Math.floor(product.rating))}
+                    {"★".repeat(Math.floor(Math.max(0, Math.min(5, product.rating))))}
+                    {"☆".repeat(5 - Math.floor(Math.max(0, Math.min(5, product.rating))))}
                   </span>
                   <span className="text-xs text-muted-foreground">{product.rating}</span>
                   {product.review_count != null && (
@@ -185,7 +188,9 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
             <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               Focus Keyword
               {editedFields.has("focus_keyword") && (
-                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                  manually edited
+                </span>
               )}
             </dt>
             <dd className="mt-1 text-sm text-foreground">{product.focus_keyword ?? "—"}</dd>
@@ -194,7 +199,9 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
             <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               Meta Description
               {editedFields.has("meta_description") && (
-                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                  manually edited
+                </span>
               )}
             </dt>
             <dd className="mt-1 text-sm text-foreground">{product.meta_description ?? "—"}</dd>
@@ -203,7 +210,9 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
             <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               Detailed Description
               {editedFields.has("detailed_description") && (
-                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                  manually edited
+                </span>
               )}
             </dt>
             <dd className="mt-2">
@@ -215,7 +224,9 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
               <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                 Pros
                 {editedFields.has("pros_cons") && (
-                  <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                  <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                    manually edited
+                  </span>
                 )}
               </dt>
               <dd className="mt-1 space-y-0.5">
@@ -232,7 +243,9 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
               <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                 Cons
                 {editedFields.has("pros_cons") && !prosCons?.pros?.length && (
-                  <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                  <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                    manually edited
+                  </span>
                 )}
               </dt>
               <dd className="mt-1 space-y-0.5">
@@ -249,7 +262,9 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
               <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                 User Opinions Summary
                 {editedFields.has("user_opinions_summary") && (
-                  <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                  <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                    manually edited
+                  </span>
                 )}
               </dt>
               <dd className="mt-1 text-sm text-foreground">{product.user_opinions_summary}</dd>
