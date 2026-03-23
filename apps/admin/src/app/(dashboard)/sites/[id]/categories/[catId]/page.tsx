@@ -43,7 +43,7 @@ export default async function CategoryDetailPage({ params }: PageProps) {
   const { data: rawProducts, count } = await supabase
     .from("tsa_products")
     .select(
-      "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id, position)",
+      "id, asin, slug, title, optimized_title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id, position)",
       { count: "exact" },
     )
     .eq("site_id", siteId)
@@ -108,7 +108,9 @@ export default async function CategoryDetailPage({ params }: PageProps) {
                 <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                   Focus Keyword
                   {editedFields.has("focus_keyword") && (
-                    <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                    <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                      manually edited
+                    </span>
                   )}
                 </dt>
                 <dd className="mt-1 text-sm text-foreground">{category.focus_keyword ?? "—"}</dd>
@@ -117,7 +119,9 @@ export default async function CategoryDetailPage({ params }: PageProps) {
                 <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                   Description
                   {editedFields.has("description") && (
-                    <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                    <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                      manually edited
+                    </span>
                   )}
                 </dt>
                 <dd className="mt-1 text-sm text-foreground">{category.description ?? "—"}</dd>
@@ -126,7 +130,9 @@ export default async function CategoryDetailPage({ params }: PageProps) {
                 <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                   SEO Text
                   {editedFields.has("seo_text") && (
-                    <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">manually edited</span>
+                    <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                      manually edited
+                    </span>
                   )}
                 </dt>
                 <dd className="mt-2">

@@ -22,6 +22,7 @@ interface Product {
   asin: string;
   slug?: string | null;
   title: string | null;
+  optimized_title: string | null;
   current_price: number | null;
   rating: number | null;
   review_count: number | null;
@@ -260,8 +261,15 @@ export function CategoryProductsSection({
                       </span>
                     )}
                   </div>
-                  {product.title && (
-                    <p className="text-sm text-foreground mt-0.5 line-clamp-1">{product.title}</p>
+                  {(product.optimized_title || product.title) && (
+                    <p className="text-sm text-foreground mt-0.5 line-clamp-1">
+                      {product.optimized_title ?? product.title}
+                    </p>
+                  )}
+                  {product.optimized_title && product.title && (
+                    <p className="text-xs text-muted-foreground/60 mt-0.5 line-clamp-1">
+                      {product.title}
+                    </p>
                   )}
                   {product.rating != null && (
                     <div className="flex items-center gap-1.5 mt-0.5">

@@ -141,8 +141,8 @@ export function ProductSeoPanel({
 
       {}
       <p className="text-xs text-muted-foreground">
-        Generates: detailed description (320–400 words with H2s), pros &amp; cons, user opinions,
-        meta description, and focus keyword.
+        Generates: optimized title, detailed description (320–400 words with H2s), pros &amp; cons,
+        user opinions, meta description, and focus keyword.
       </p>
 
       {}

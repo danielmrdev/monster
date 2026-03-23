@@ -23,7 +23,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
     supabase
       .from("tsa_products")
       .select(
-        "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, focus_keyword, meta_description, detailed_description, pros_cons, user_opinions_summary, manually_edited_fields",
+        "id, asin, slug, title, optimized_title, current_price, rating, review_count, is_prime, source_image_url, images, focus_keyword, meta_description, detailed_description, pros_cons, user_opinions_summary, manually_edited_fields",
       )
       .eq("id", prodId)
       .eq("site_id", siteId)
@@ -129,8 +129,13 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
 
           {/* Details */}
           <div className="flex-1 min-w-0 space-y-2">
-            {product.title && (
-              <h2 className="text-sm font-semibold text-foreground">{product.title}</h2>
+            {(product.optimized_title || product.title) && (
+              <h2 className="text-sm font-semibold text-foreground">
+                {product.optimized_title ?? product.title}
+              </h2>
+            )}
+            {product.optimized_title && product.title && (
+              <p className="text-xs text-muted-foreground/60 line-clamp-1">{product.title}</p>
             )}
             <div className="flex items-center gap-3 flex-wrap">
               {product.current_price != null && (
@@ -184,6 +189,17 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
           )}
         </h2>
         <dl className="space-y-4">
+          <div>
+            <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              Optimized Title
+              {editedFields.has("optimized_title") && (
+                <span className="rounded-full bg-destructive/15 text-destructive text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                  manually edited
+                </span>
+              )}
+            </dt>
+            <dd className="mt-1 text-sm text-foreground">{product.optimized_title ?? "—"}</dd>
+          </div>
           <div>
             <dt className="text-xs font-medium text-muted-foreground flex items-center gap-2">
               Focus Keyword

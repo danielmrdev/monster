@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, { params }: Params) {
   let query = supabase
     .from("tsa_products")
     .select(
-      "id, asin, slug, title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id, position)",
+      "id, asin, slug, title, optimized_title, current_price, rating, review_count, is_prime, source_image_url, images, category_products!inner(category_id, position)",
       { count: "exact" },
     )
     .eq("site_id", siteId)
