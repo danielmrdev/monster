@@ -10,60 +10,58 @@ export interface GoogleFont {
   category: FontCategory;
 }
 
-export const GOOGLE_FONTS: GoogleFont[] = [
-  // System fonts (no Google Fonts request will be made for these)
+// Fallback list used while the API loads or if it fails
+const FALLBACK_FONTS: GoogleFont[] = [
   { name: "sans-serif", category: "sans-serif" },
   { name: "serif", category: "serif" },
-  // Sans-serif
   { name: "Inter", category: "sans-serif" },
   { name: "Roboto", category: "sans-serif" },
   { name: "Open Sans", category: "sans-serif" },
   { name: "Lato", category: "sans-serif" },
   { name: "Montserrat", category: "sans-serif" },
   { name: "Poppins", category: "sans-serif" },
-  { name: "Nunito", category: "sans-serif" },
-  { name: "Source Sans 3", category: "sans-serif" },
-  { name: "Raleway", category: "sans-serif" },
-  { name: "DM Sans", category: "sans-serif" },
-  { name: "Plus Jakarta Sans", category: "sans-serif" },
-  { name: "Outfit", category: "sans-serif" },
-  { name: "Figtree", category: "sans-serif" },
-  { name: "Manrope", category: "sans-serif" },
-  { name: "Work Sans", category: "sans-serif" },
-  { name: "Barlow", category: "sans-serif" },
-  { name: "IBM Plex Sans", category: "sans-serif" },
-  { name: "Karla", category: "sans-serif" },
-  { name: "Noto Sans", category: "sans-serif" },
-  { name: "Mulish", category: "sans-serif" },
-  { name: "Quicksand", category: "sans-serif" },
-  { name: "Cabin", category: "sans-serif" },
-  // Serif
   { name: "Playfair Display", category: "serif" },
   { name: "Merriweather", category: "serif" },
   { name: "Lora", category: "serif" },
-  { name: "Cormorant Garamond", category: "serif" },
-  { name: "DM Serif Display", category: "serif" },
-  { name: "EB Garamond", category: "serif" },
-  { name: "Libre Baskerville", category: "serif" },
-  { name: "Crimson Text", category: "serif" },
-  { name: "PT Serif", category: "serif" },
-  { name: "Spectral", category: "serif" },
-  // Display
   { name: "Oswald", category: "display" },
-  { name: "Bebas Neue", category: "display" },
-  { name: "Anton", category: "display" },
-  { name: "Righteous", category: "display" },
-  { name: "Cinzel", category: "display" },
-  { name: "Josefin Sans", category: "display" },
-  { name: "Abril Fatface", category: "display" },
-  { name: "Pacifico", category: "display" },
-  { name: "Teko", category: "display" },
-  // Monospace
   { name: "JetBrains Mono", category: "monospace" },
-  { name: "Fira Code", category: "monospace" },
-  { name: "Source Code Pro", category: "monospace" },
-  { name: "IBM Plex Mono", category: "monospace" },
 ];
+
+// Module-level cache so multiple pickers share the same data
+let fontCache: GoogleFont[] | null = null;
+let fontCachePromise: Promise<GoogleFont[]> | null = null;
+
+function fetchFonts(): Promise<GoogleFont[]> {
+  if (fontCache) return Promise.resolve(fontCache);
+  if (fontCachePromise) return fontCachePromise;
+
+  fontCachePromise = fetch("/api/google-fonts")
+    .then((res) => {
+      if (!res.ok) throw new Error("Failed to fetch fonts");
+      return res.json();
+    })
+    .then((data: { family: string; category: FontCategory }[]) => {
+      if (!data.length) return FALLBACK_FONTS;
+
+      const systemFonts: GoogleFont[] = [
+        { name: "sans-serif", category: "sans-serif" },
+        { name: "serif", category: "serif" },
+      ];
+      const googleFonts: GoogleFont[] = data.map((f) => ({
+        name: f.family,
+        category: f.category,
+      }));
+
+      fontCache = [...systemFonts, ...googleFonts];
+      return fontCache;
+    })
+    .catch(() => {
+      fontCachePromise = null;
+      return FALLBACK_FONTS;
+    });
+
+  return fontCachePromise;
+}
 
 const CATEGORY_COLORS: Record<FontCategory, string> = {
   "sans-serif": "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
@@ -83,15 +81,29 @@ export function GoogleFontPicker({ name, defaultValue = "", label, id }: GoogleF
   const [selectedValue, setSelectedValue] = React.useState<string>(defaultValue);
   const [inputText, setInputText] = React.useState<string>(defaultValue);
   const [open, setOpen] = React.useState(false);
+  const [fonts, setFonts] = React.useState<GoogleFont[]>(fontCache ?? FALLBACK_FONTS);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const listRef = React.useRef<HTMLUListElement>(null);
 
   const inputId = id ?? `font-picker-${name}`;
 
-  const filtered = React.useMemo(
-    () => GOOGLE_FONTS.filter((f) => f.name.toLowerCase().includes(inputText.toLowerCase())),
-    [inputText],
-  );
+  // Load full font list on mount
+  React.useEffect(() => {
+    fetchFonts().then((f) => setFonts(f));
+  }, []);
+
+  const filtered = React.useMemo(() => {
+    if (!inputText) return fonts.slice(0, 100); // Show first 100 when empty
+    const q = inputText.toLowerCase();
+    const matches: GoogleFont[] = [];
+    for (const f of fonts) {
+      if (f.name.toLowerCase().includes(q)) {
+        matches.push(f);
+        if (matches.length >= 100) break;
+      }
+    }
+    return matches;
+  }, [inputText, fonts]);
 
   // Close on outside click
   React.useEffect(() => {
@@ -117,7 +129,6 @@ export function GoogleFontPicker({ name, defaultValue = "", label, id }: GoogleF
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     setInputText(e.target.value);
     setOpen(true);
-    // If user clears the input, clear the selected value too
     if (!e.target.value) {
       setSelectedValue("");
     }
@@ -152,7 +163,6 @@ export function GoogleFontPicker({ name, defaultValue = "", label, id }: GoogleF
       if (prev) {
         prev.focus();
       } else {
-        // Return focus to input
         (containerRef.current?.querySelector("input") as HTMLInputElement | null)?.focus();
       }
     } else if (e.key === "Escape") {
@@ -213,7 +223,6 @@ export function GoogleFontPicker({ name, defaultValue = "", label, id }: GoogleF
                 tabIndex={0}
                 aria-selected={selectedValue === font.name}
                 onMouseDown={(e) => {
-                  // Prevent blur before click registers
                   e.preventDefault();
                   handleSelect(font);
                 }}
