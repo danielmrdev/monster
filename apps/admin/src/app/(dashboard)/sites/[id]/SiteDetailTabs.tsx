@@ -183,7 +183,7 @@ export function SiteDetailTabs({
       <TabsList className={`grid w-full ${isTsa ? "grid-cols-4" : "grid-cols-3"}`}>
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="deploy">Deploy</TabsTrigger>
-        <TabsTrigger value="seo">SEO &amp; Alerts</TabsTrigger>
+        <TabsTrigger value="seo">SEO</TabsTrigger>
         {isTsa && <TabsTrigger value="categories">Categories</TabsTrigger>}
       </TabsList>
 

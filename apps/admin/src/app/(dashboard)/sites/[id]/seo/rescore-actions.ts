@@ -139,22 +139,13 @@ export async function rescoreSite(
     return { scored: 0, total, error: "No scoreable pages found in dist" };
   }
 
-  // Delete stale scores for pages no longer in the current build.
-  // This handles deleted categories/products — their rows would otherwise
-  // persist indefinitely since upsert only overwrites existing matches.
-  // NOTE: pass the array directly to .not("page_path", "in", [...]) — the Supabase
-  // JS client serialises it correctly. The manual string approach with quoted paths
-  // produces invalid PostgREST syntax and silently deletes nothing.
-  const currentPaths = scoreRows.map((r) => r.page_path);
-  const { error: deleteErr } = await supabase
-    .from("seo_scores")
-    .delete()
-    .eq("site_id", siteId)
-    .not("page_path", "in", currentPaths);
+  // Delete all existing scores for this site, then insert fresh ones.
+  // Previously used .not("in", ...) to selectively delete stale paths,
+  // but that silently failed with large path arrays, leaving ghost rows.
+  const { error: deleteErr } = await supabase.from("seo_scores").delete().eq("site_id", siteId);
 
   if (deleteErr) {
-    console.warn("[rescoreSite] Failed to delete stale scores:", deleteErr.message);
-    // Non-fatal — proceed with upsert
+    console.warn("[rescoreSite] Failed to delete old scores:", deleteErr.message);
   }
 
   const { error: upsertErr } = await supabase
