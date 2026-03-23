@@ -80,6 +80,46 @@ export class SpaceshipClient {
     };
   }
 
+  // ── getDomainDetails ────────────────────────────────────────────────────
+
+  /**
+   * Fetches details for a single domain registered in Spaceship.
+   *
+   * Calls GET /v1/domains/{domain} (synchronous).
+   * Returns null if the domain is not found (404) in this account.
+   *
+   * Rate limit: 5 requests per domain per 300s.
+   */
+  async getDomainDetails(
+    domain: string,
+  ): Promise<{ name: string; expirationDate: string | null; autoRenew: boolean } | null> {
+    const headers = await this.buildHeaders();
+    const url = `${SPACESHIP_BASE_URL}/domains/${encodeURIComponent(domain)}`;
+
+    const response = await fetch(url, { method: "GET", headers });
+
+    if (response.status === 404) return null;
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(
+        `[SpaceshipClient] getDomainDetails: HTTP ${response.status} for "${domain}" — ${body}`,
+      );
+    }
+
+    const data = (await response.json()) as {
+      name: string;
+      expirationDate?: string;
+      autoRenew?: boolean;
+    };
+
+    return {
+      name: data.name,
+      expirationDate: data.expirationDate ?? null,
+      autoRenew: data.autoRenew ?? false,
+    };
+  }
+
   // ── checkAvailability ────────────────────────────────────────────────────
 
   /**

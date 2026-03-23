@@ -1,4 +1,5 @@
 import { DataForSEOClient } from "@monster/agents";
+import { SpaceshipClient } from "@monster/domains";
 import { createServiceClient } from "@/lib/supabase/service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -31,10 +32,9 @@ export default async function FinancesPage({
   const [
     costsResult,
     categoriesResult,
-    sitesResult,
+    sitesWithDomainResult,
     revenueAmazonResult,
     revenueManualResult,
-    domainsResult,
   ] = await Promise.all([
     supabase
       .from("costs")
@@ -43,7 +43,7 @@ export default async function FinancesPage({
       .lte("date", dateRange.to)
       .order("created_at", { ascending: false }),
     supabase.from("cost_categories").select("slug, name"),
-    supabase.from("sites").select("id, name").order("name"),
+    supabase.from("sites").select("id, name, domain").order("name"),
     supabase
       .from("revenue_amazon")
       .select("id, site_id, date, clicks, items_ordered, earnings, currency, market")
@@ -56,10 +56,6 @@ export default async function FinancesPage({
       .gte("date", dateRange.from)
       .lte("date", dateRange.to)
       .order("date", { ascending: false }),
-    supabase
-      .from("domains")
-      .select("id, domain, expires_at, site_id")
-      .not("expires_at", "is", null),
   ]);
 
   if (costsResult.error) {
@@ -68,8 +64,8 @@ export default async function FinancesPage({
   if (categoriesResult.error) {
     throw new Error(`Failed to fetch cost_categories: ${categoriesResult.error.message}`);
   }
-  if (sitesResult.error) {
-    throw new Error(`Failed to fetch sites: ${sitesResult.error.message}`);
+  if (sitesWithDomainResult.error) {
+    throw new Error(`Failed to fetch sites: ${sitesWithDomainResult.error.message}`);
   }
   if (revenueAmazonResult.error) {
     throw new Error(`Failed to fetch revenue_amazon: ${revenueAmazonResult.error.message}`);
@@ -77,49 +73,81 @@ export default async function FinancesPage({
   if (revenueManualResult.error) {
     throw new Error(`Failed to fetch revenue_manual: ${revenueManualResult.error.message}`);
   }
-  if (domainsResult.error) {
-    throw new Error(`Failed to fetch domains: ${domainsResult.error.message}`);
-  }
 
   const costs = costsResult.data;
   const categories = categoriesResult.data;
-  const sites = sitesResult.data;
+  const sites = sitesWithDomainResult.data.map(({ domain: _d, ...rest }) => rest);
   const revenueAmazon = revenueAmazonResult.data;
   const revenueManual = revenueManualResult.data;
 
-  // DataForSEO account balance — fetched outside Promise.all so a DFS error
-  // never throws the entire Finances page. getAccountBalance() never throws by
-  // contract (T01), but we guard defensively anyway.
+  // DataForSEO balance — fetched defensively so errors never throw the page.
   let dfsBalance: number | null = null;
   try {
-    const dfsClient = new DataForSEOClient();
-    dfsBalance = await dfsClient.getAccountBalance();
+    dfsBalance = await new DataForSEOClient().getAccountBalance();
   } catch {
-    // getAccountBalance should never throw, but guard defensively
+    // guard defensively
+  }
+
+  // Spaceship domain details — query each domain assigned to a site individually
+  // via GET /v1/domains/{domain} (no rate-limit issues unlike the list endpoint).
+  const sitesWithDomainAssigned = sitesWithDomainResult.data.filter((s) => s.domain);
+  let spaceshipError: string | null = null;
+  type SpaceshipDomainInfo = { name: string; expirationDate: string | null; autoRenew: boolean };
+  const spaceshipDomains: SpaceshipDomainInfo[] = [];
+
+  if (sitesWithDomainAssigned.length > 0) {
+    try {
+      const ssClient = new SpaceshipClient();
+      const results = await Promise.allSettled(
+        sitesWithDomainAssigned.map((s) => ssClient.getDomainDetails(s.domain!)),
+      );
+      let hasError = false;
+      for (const r of results) {
+        if (r.status === "fulfilled" && r.value) {
+          spaceshipDomains.push(r.value);
+        } else if (r.status === "rejected") {
+          hasError = true;
+          spaceshipError = r.reason?.message ?? "Unknown error";
+        }
+      }
+      if (hasError && spaceshipDomains.length > 0) {
+        spaceshipError = null; // partial success — show what we got
+      }
+    } catch (e: unknown) {
+      spaceshipError = e instanceof Error ? e.message : "Unknown error";
+    }
   }
 
   // Compute P&L aggregation (pure in-memory)
   const pnlResult = computePnL(costs, revenueAmazon, revenueManual, sites);
 
-  // Domain expiry alerts — in-memory filter for domains expiring within 60 days
+  // Domain renewals — cross-reference sites (with domain assigned) against
+  // Spaceship API. Only show domains that actually exist in Spaceship.
   const now = Date.now();
-  const sixtyDaysMs = 60 * 24 * 60 * 60 * 1000;
   const siteNameById = new Map(sites.map((s) => [s.id, s.name]));
 
-  const expiringDomains = domainsResult.data
-    .map((d) => {
-      const expiresDate = new Date(d.expires_at!).getTime();
-      const daysRemaining = Math.floor((expiresDate - now) / (1000 * 60 * 60 * 24));
+  // Build lookup: domain name → Spaceship data
+  const spaceshipByDomain = new Map(spaceshipDomains.map((d) => [d.name, d]));
+
+  // Sites that have a domain assigned AND that domain exists in Spaceship
+  const domainRenewals = sitesWithDomainResult.data
+    .filter((s) => s.domain && spaceshipByDomain.has(s.domain))
+    .map((s) => {
+      const ss = spaceshipByDomain.get(s.domain!)!;
+      const expiresDate = ss.expirationDate ? new Date(ss.expirationDate).getTime() : null;
+      const daysRemaining = expiresDate
+        ? Math.floor((expiresDate - now) / (1000 * 60 * 60 * 24))
+        : null;
       return {
-        id: d.id,
-        domain: d.domain,
-        site_id: d.site_id,
-        siteName: siteNameById.get(d.site_id) ?? "Unknown",
+        id: s.id,
+        domain: s.domain!,
+        siteName: s.name,
+        expirationDate: ss.expirationDate,
+        autoRenew: ss.autoRenew,
         daysRemaining,
       };
     })
-    .filter((d) => d.daysRemaining <= 60)
-    .sort((a, b) => a.daysRemaining - b.daysRemaining);
+    .sort((a, b) => (a.daysRemaining ?? 9999) - (b.daysRemaining ?? 9999));
 
   // Build a revenue row list for the Revenue History section
   type RevenueRow = {
@@ -289,40 +317,68 @@ export default async function FinancesPage({
         </CardContent>
       </Card>
 
-      {/* ── Domain Renewals card (only when expiring domains exist) ─────────── */}
-      {expiringDomains.length > 0 && (
-        <Card className="border-amber-300 dark:border-amber-700">
-          <CardHeader className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800 rounded-t-lg">
-            <CardTitle className="text-amber-800 dark:text-amber-300">
-              ⚠ Domain Renewals ({expiringDomains.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+      {/* ── Domain Renewals card (Spaceship-verified, assigned to sites) ──── */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Domain Renewals{domainRenewals.length > 0 ? ` (${domainRenewals.length})` : ""}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className={domainRenewals.length > 0 ? "p-0" : undefined}>
+          {spaceshipError ? (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              Could not fetch domains from Spaceship: {spaceshipError}
+            </p>
+          ) : domainRenewals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No domains assigned to sites found in Spaceship.
+            </p>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Domain</TableHead>
                   <TableHead>Site</TableHead>
+                  <TableHead>Expiration</TableHead>
                   <TableHead className="text-right">Days Remaining</TableHead>
+                  <TableHead className="text-right">Auto-Renew</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {expiringDomains.map((d) => (
+                {domainRenewals.map((d) => (
                   <TableRow key={d.id}>
                     <TableCell className="font-mono text-sm">{d.domain}</TableCell>
                     <TableCell className="text-muted-foreground">{d.siteName}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {d.expirationDate
+                        ? new Date(d.expirationDate).toLocaleDateString("en", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "—"}
+                    </TableCell>
                     <TableCell
-                      className={`text-right font-mono ${daysRemainingColor(d.daysRemaining)}`}
+                      className={`text-right font-mono ${d.daysRemaining !== null ? daysRemainingColor(d.daysRemaining) : "text-muted-foreground"}`}
                     >
-                      {d.daysRemaining}d
+                      {d.daysRemaining !== null ? `${d.daysRemaining}d` : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {d.autoRenew ? (
+                        <span className="text-green-600 dark:text-green-400 text-sm">Yes</span>
+                      ) : (
+                        <span className="text-red-600 dark:text-red-400 text-sm font-medium">
+                          No
+                        </span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* ── Add cost form ───────────────────────────────────────────────────── */}
       <CostForm categories={categories} sites={sites} />
