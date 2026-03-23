@@ -30,6 +30,15 @@ interface MarketConfig {
   se_domain: string;
 }
 
+function deriveMarketFromSeDomain(seDomain: string): string {
+  if (seDomain.includes(".es")) return "ES";
+  if (seDomain.includes(".co.uk")) return "UK";
+  if (seDomain.includes(".de")) return "DE";
+  if (seDomain.includes(".fr")) return "FR";
+  if (seDomain.includes(".it")) return "IT";
+  return "US";
+}
+
 // ---------------------------------------------------------------------------
 // Market config lookup
 // DataForSEO location/language codes for each Amazon market.
@@ -98,7 +107,7 @@ interface DFSRawDeliveryInfo {
   is_free_delivery?: boolean | null;
 }
 
-interface DFSRawItem {
+export interface DFSRawItem {
   type?: string | null;
   rank_group?: number | null;
   data_asin?: string | null;
@@ -112,6 +121,7 @@ interface DFSRawItem {
   is_amazon_choice?: boolean | null;
   bought_past_month?: number | null;
   special_offers?: string[] | null;
+  rank_position?: number | null;
 }
 
 interface DFSRawResult {
@@ -120,6 +130,7 @@ interface DFSRawResult {
 
 interface DFSRawTask {
   id?: string | null;
+  status_code?: number | null;
   result?: DFSRawResult[] | null;
 }
 
@@ -321,6 +332,26 @@ export class DataForSEOClient {
     depth = 30,
     siteId?: string | null,
   ): Promise<DataForSEOProduct[]> {
+    const { taskId } = await this.postSearchTask(keyword, market, depth, siteId);
+    const products = await this.pollSearchTask(taskId, keyword, market);
+    if (!products || products.length === 0) {
+      throw new Error(
+        `DataForSEO task ${taskId} did not complete within timeout (${DataForSEOClient.MAX_POLL_ATTEMPTS} attempts) keyword="${keyword}"`,
+      );
+    }
+    return products;
+  }
+
+  /**
+   * Post a search task to DFS and return the taskId (no polling).
+   * Caller is responsible for polling via `pollSearchTask()` or `collectReadyTask()`.
+   */
+  async postSearchTask(
+    keyword: string,
+    market: string,
+    depth = 30,
+    siteId?: string | null,
+  ): Promise<{ taskId: string }> {
     const config = MARKET_CONFIG[market];
     if (!config) {
       throw new Error(
@@ -330,7 +361,6 @@ export class DataForSEOClient {
 
     const auth = await this.fetchAuthHeader();
 
-    // ── Step 1: task_post ──────────────────────────────────────────────────
     const postBody = [
       {
         keyword,
@@ -353,16 +383,65 @@ export class DataForSEOClient {
     }
 
     console.log(`[DataForSEO] task_post id=${taskId} keyword="${keyword}"`);
+    void this.trackCost(`searchProducts:${keyword}:${market}`, 0.006, siteId);
 
-    // ── Step 2: poll tasks_ready ───────────────────────────────────────────
-    await this.awaitTask(
-      "/merchant/amazon/products/tasks_ready",
-      auth,
-      taskId,
-      `keyword="${keyword}"`,
-    );
+    return { taskId };
+  }
 
-    // ── Step 3: task_get/advanced ──────────────────────────────────────────
+  /**
+   * Poll tasks_ready for a specific taskId, then fetch + map results.
+   * Returns mapped products, or null if polling exceeds `timeoutMs`.
+   *
+   * @param timeoutMs - Max time to spend polling. If omitted, uses MAX_POLL_ATTEMPTS with no deadline.
+   */
+  async pollSearchTask(
+    taskId: string,
+    keyword: string,
+    market: string,
+    timeoutMs?: number,
+  ): Promise<DataForSEOProduct[] | null> {
+    const auth = await this.fetchAuthHeader();
+    const deadline = timeoutMs ? Date.now() + timeoutMs : null;
+
+    let taskReady = false;
+    for (let attempt = 0; attempt < DataForSEOClient.MAX_POLL_ATTEMPTS; attempt++) {
+      const delay = 5000 * Math.pow(2, Math.min(attempt, 3));
+
+      if (deadline && Date.now() + delay > deadline) {
+        console.log(`[DataForSEO] time budget exceeded after ${attempt} attempts, task=${taskId}`);
+        return null;
+      }
+
+      await this.sleep(delay);
+
+      const readyResponse = await this.apiGet<DFSRawResponse>(
+        "/merchant/amazon/products/tasks_ready",
+        auth,
+      );
+      const readyTasks = readyResponse?.tasks ?? [];
+
+      for (const task of readyTasks) {
+        for (const result of task.result ?? []) {
+          if ((result as unknown as { id?: string }).id === taskId) {
+            taskReady = true;
+            break;
+          }
+        }
+        if (taskReady) break;
+      }
+
+      if (taskReady) {
+        console.log(`[DataForSEO] task ready after ${attempt + 1} attempt(s) keyword="${keyword}"`);
+        break;
+      }
+    }
+
+    if (!taskReady) {
+      console.log(`[DataForSEO] max attempts reached, task=${taskId}`);
+      return null;
+    }
+
+    // task_get/advanced
     const getResponse = await this.apiGet<DFSRawResponse>(
       `/merchant/amazon/products/task_get/advanced/${taskId}`,
       auth,
@@ -370,7 +449,6 @@ export class DataForSEOClient {
 
     const rawItems: DFSRawItem[] = getResponse?.tasks?.[0]?.result?.[0]?.items ?? [];
 
-    // Log raw items[0] once per process for shape validation (D035 observability)
     if (!_rawItemsLogged && rawItems.length > 0) {
       _rawItemsLogged = true;
       console.log(
@@ -379,22 +457,40 @@ export class DataForSEOClient {
       );
     }
 
-    // ── Step 4: filter + map ───────────────────────────────────────────────
+    return this.mapRawItems(rawItems);
+  }
+
+  /**
+   * Search Amazon products (convenience wrapper: postSearchTask + pollSearchTask).
+   * For callers that don't need the taskId or pending-row logic.
+   */
+  async searchProductsInline(
+    keyword: string,
+    market: string,
+    depth = 30,
+    timeoutMs?: number,
+    siteId?: string | null,
+  ): Promise<{ taskId: string; products: DataForSEOProduct[] | null }> {
+    const { taskId } = await this.postSearchTask(keyword, market, depth, siteId);
+    const products = await this.pollSearchTask(taskId, keyword, market, timeoutMs);
+    return { taskId, products };
+  }
+
+  /** Filter + map raw DFS items to DataForSEOProduct[] */
+  private mapRawItems(rawItems: DFSRawItem[]): DataForSEOProduct[] {
     const products: DataForSEOProduct[] = [];
 
     for (const item of rawItems) {
-      // Only organic Amazon SERP results — skip paid, editorial, related_searches
       if (item.type !== "amazon_serp") continue;
-
       const asin = item.data_asin ?? "";
-      if (!asin) continue; // skip items with no ASIN
+      if (!asin) continue;
 
       products.push({
         asin,
         title: item.title ?? "",
         imageUrl: item.image_url ?? null,
         price: item.price_from ?? null,
-        originalPrice: null, // not available from keyword search — populated by lookupAsin()
+        originalPrice: null,
         rating: parseFloat(String(item.rating?.value ?? "0")),
         reviewCount: item.rating?.votes_count ?? 0,
         isPrime: item.is_prime ?? item.delivery_info?.is_free_delivery ?? false,
@@ -406,71 +502,43 @@ export class DataForSEOClient {
       });
     }
 
-    if (products.length === 0) {
-      throw new Error(`DataForSEO returned zero usable products for keyword: "${keyword}"`);
-    }
-
-    void this.trackCost(`searchProducts:${keyword}:${market}`, 0.006, siteId);
     return products;
   }
 
-  /**
-   * Fire-and-forget search: task_post with postback_url.
-   * DFS will POST results to the Cloudflare Worker when ready.
-   * Returns the taskId for tracking.
-   */
-  async searchProductsAsync(
-    keyword: string,
-    market: string,
-    depth: number,
-    postbackUrl: string,
-    tag?: string,
-  ): Promise<string> {
-    const config = MARKET_CONFIG[market];
-    if (!config) {
-      throw new Error(
-        `DataForSEO: unknown market "${market}". Supported: ${Object.keys(MARKET_CONFIG).join(", ")}`,
-      );
-    }
+  // ── Collect ready task results ──────────────────────────────────────────────
 
+  /**
+   * Try to fetch results for a specific DFS task by ID.
+   * Returns null if the task is still processing (status 40602).
+   * Uses task_get/advanced directly — no need for tasks_ready.
+   * NOTE: task_get is destructive — consuming the task from the DFS queue.
+   */
+  async collectReadyTask(
+    dfsTaskId: string,
+  ): Promise<{ items: DFSRawItem[]; keyword: string; seDomain: string } | null> {
     const auth = await this.fetchAuthHeader();
 
-    const postBody = [
-      {
-        keyword,
-        location_code: config.location_code,
-        language_code: config.language_code,
-        se_domain: config.se_domain,
-        depth,
-        postback_url: postbackUrl,
-        postback_data: "advanced",
-        tag: tag ?? "",
-      },
-    ];
-
-    const postResponse = await this.apiPost<DFSRawResponse>(
-      "/merchant/amazon/products/task_post",
-      auth,
-      postBody,
+    const res = await fetch(
+      `${DataForSEOClient.BASE_URL}/merchant/amazon/products/task_get/advanced/${dfsTaskId}`,
+      { headers: { Authorization: auth } },
     );
 
-    const taskId = postResponse?.tasks?.[0]?.id;
-    if (!taskId) {
-      throw new Error(`DataForSEO task_post did not return a task ID for keyword: "${keyword}"`);
-    }
+    if (!res.ok) return null;
 
-    console.log(
-      `[DataForSEO] async task_post id=${taskId} keyword="${keyword}" postback=${postbackUrl}`,
-    );
+    const data = (await res.json()) as DFSRawResponse;
+    const task = data.tasks?.[0];
 
-    // Track cost using existing private method (D028 pattern)
-    void this.trackCost(
-      `searchProductsAsync:"${keyword}" market=${market} depth=${depth}`,
-      0.006,
-      tag,
-    );
+    // 40602 = Task In Queue, 40401 = Not Found
+    if (!task || task.status_code !== 20000) return null;
 
-    return taskId;
+    const result = task.result?.[0] as Record<string, unknown> | undefined;
+    if (!result?.keyword) return null;
+
+    return {
+      items: (result.items ?? []) as DFSRawItem[],
+      keyword: result.keyword as string,
+      seDomain: (result.se_domain as string) ?? "",
+    };
   }
 
   // ── ASIN lookup (individual product detail) ──────────────────────────────

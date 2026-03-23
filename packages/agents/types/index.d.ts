@@ -32,6 +32,45 @@ export declare function enqueueNicheResearch(
 ): Promise<string | undefined>;
 
 // DataForSEO
+export interface DFSRawItem {
+  type?: string | null;
+  rank_group?: number | null;
+  data_asin?: string | null;
+  title?: string | null;
+  image_url?: string | null;
+  price_from?: number | null;
+  rating?: { value?: string | null; votes_count?: number | null } | null;
+  is_prime?: boolean | null;
+  delivery_info?: { is_free_delivery?: boolean | null } | null;
+  is_best_seller?: boolean | null;
+  is_amazon_choice?: boolean | null;
+  bought_past_month?: number | null;
+  special_offers?: string[] | null;
+  rank_position?: number | null;
+}
+
+export interface KeywordIdea {
+  keyword: string;
+  search_volume: number | null;
+  cpc: number | null;
+  competition: number | null;
+}
+
+export interface SerpCompetitor {
+  domain: string;
+  median_position: number | null;
+  avg_position: number | null;
+  competitor_metrics: Record<string, unknown> | null;
+}
+
+export interface SerpResult {
+  domain: string;
+  url: string;
+  title: string;
+  description: string | null;
+  rank_group: number;
+}
+
 export interface DataForSEOProduct {
   asin: string;
   title: string;
@@ -48,10 +87,43 @@ export interface DataForSEOProduct {
   rankPosition: number | null;
 }
 export declare class DataForSEOClient {
-  searchProducts(keyword: string, market: string, depth?: number, siteId?: string): Promise<DataForSEOProduct[]>;
-  lookupAsin(asin: string, market: string, siteId?: string): Promise<{ price: number; originalPrice: number | null } | null>;
+  searchProducts(
+    keyword: string,
+    market: string,
+    depth?: number,
+    siteId?: string | null,
+  ): Promise<DataForSEOProduct[]>;
+  postSearchTask(
+    keyword: string,
+    market: string,
+    depth?: number,
+    siteId?: string | null,
+  ): Promise<{ taskId: string }>;
+  pollSearchTask(
+    taskId: string,
+    keyword: string,
+    market: string,
+    timeoutMs?: number,
+  ): Promise<DataForSEOProduct[] | null>;
+  searchProductsInline(
+    keyword: string,
+    market: string,
+    depth?: number,
+    timeoutMs?: number,
+    siteId?: string | null,
+  ): Promise<{ taskId: string; products: DataForSEOProduct[] | null }>;
+  collectReadyTask(
+    dfsTaskId: string,
+  ): Promise<{ items: DFSRawItem[]; keyword: string; seDomain: string } | null>;
+  lookupAsin(
+    asin: string,
+    market: string,
+    siteId?: string | null,
+  ): Promise<{ price: number | null; originalPrice: number | null } | null>;
   getAccountBalance(): Promise<number | null>;
-  fetchAuthHeader(): Promise<string>;
+  keywordIdeas(keyword: string, market: string): Promise<KeywordIdea[]>;
+  serpCompetitors(keywords: string[], market: string): Promise<SerpCompetitor[]>;
+  googleSerpResults(keyword: string, market: string): Promise<SerpResult[]>;
 }
 
 // Monster Chat

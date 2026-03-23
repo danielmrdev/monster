@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useTransition, useRef, useMemo, useCallback } from "react";
+import { useState, useTransition, useRef, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useRealtimeSearch } from "@/hooks/use-realtime-search";
 import { PreviousSearches, type CachedSearch } from "./PreviousSearches";
 import type { SearchResultItem } from "@/app/api/sites/[id]/product-search/route";
 
@@ -81,33 +80,41 @@ export function ProductSearch({
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
   const [adding, startAdd] = useTransition();
 
-  // ── Load results from cache ───────────────────────────────────────────────
+  // ── Poll for pending results ─────────────────────────────────────────────
 
-  const loadFromCache = useCallback(
-    async (keyword: string) => {
-      const res = await fetch(
-        `/api/sites/${siteId}/product-search?q=${encodeURIComponent(keyword)}`,
-      );
-      const data = await res.json();
-      if (data.status === "complete" && data.results) {
-        setResults(data.results);
-        setQuery(keyword);
-        setPendingKeyword(null);
-        setSearching(false);
+  useEffect(() => {
+    if (!pendingKeyword) return;
+    let cancelled = false;
+
+    const poll = async () => {
+      while (!cancelled) {
+        await new Promise((r) => setTimeout(r, 5000));
+        if (cancelled) break;
+        try {
+          const res = await fetch(
+            `/api/sites/${siteId}/product-search?q=${encodeURIComponent(pendingKeyword)}`,
+          );
+          const data = await res.json();
+          if (data.status === "complete" && data.results) {
+            if (!cancelled) {
+              setResults(data.results);
+              setQuery(pendingKeyword);
+              setPendingKeyword(null);
+              setSearching(false);
+            }
+            return;
+          }
+        } catch {
+          // ignore, retry
+        }
       }
-    },
-    [siteId],
-  );
+    };
 
-  // ── Realtime subscription — fires when postback Worker writes results ─────
-
-  const onSearchComplete = useCallback(() => {
-    if (pendingKeyword) {
-      loadFromCache(pendingKeyword);
-    }
-  }, [pendingKeyword, loadFromCache]);
-
-  useRealtimeSearch(pendingKeyword, market, onSearchComplete);
+    poll();
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingKeyword, siteId]);
 
   // ── Filtered results ────────────────────────────────────────────────────────
 
@@ -137,24 +144,22 @@ export function ProductSearch({
     setPendingKeyword(null);
 
     try {
-      // Fire-and-forget: POST to /start
-      const startRes = await fetch(`/api/sites/${siteId}/product-search/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: q, depth: DEPTH_STEP }),
-      });
-      const startData = await startRes.json();
+      const res = await fetch(
+        `/api/sites/${siteId}/product-search?q=${encodeURIComponent(q)}&depth=${DEPTH_STEP}`,
+      );
+      const data = await res.json();
 
-      if (!startRes.ok) {
-        throw new Error(startData.error ?? "Search failed");
-      }
+      if (!res.ok) throw new Error(data.error ?? "Search failed");
 
-      if (startData.status === "cached") {
-        // Results already in cache — load them
-        await loadFromCache(q);
-      } else {
-        // pending or already_pending — subscribe to Realtime
+      if (data.status === "complete" && data.results) {
+        setResults(data.results);
+        setSearching(false);
+      } else if (data.status === "pending") {
+        // Backend is still fetching — poll in background
         setPendingKeyword(q.toLowerCase());
+      } else {
+        setSearchError("No results found");
+        setSearching(false);
       }
     } catch (err) {
       setSearchError(err instanceof Error ? err.message : "Unknown error");
@@ -170,25 +175,17 @@ export function ProductSearch({
     setLoadingMore(true);
 
     try {
-      const startRes = await fetch(`/api/sites/${siteId}/product-search/start`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: query, depth: nextDepth }),
-      });
-      const startData = await startRes.json();
+      const res = await fetch(
+        `/api/sites/${siteId}/product-search?q=${encodeURIComponent(query)}&depth=${nextDepth}`,
+      );
+      const data = await res.json();
 
-      if (!startRes.ok) throw new Error(startData.error ?? "Load more failed");
+      if (!res.ok) throw new Error(data.error ?? "Load more failed");
 
-      if (startData.status === "cached") {
-        const res = await fetch(
-          `/api/sites/${siteId}/product-search?q=${encodeURIComponent(query)}`,
-        );
-        const data = await res.json();
-        if (data.results) {
-          setResults(data.results);
-          setDepth(nextDepth);
-        }
-      } else {
+      if (data.status === "complete" && data.results) {
+        setResults(data.results);
+        setDepth(nextDepth);
+      } else if (data.status === "pending") {
         setPendingKeyword(query.toLowerCase());
         setDepth(nextDepth);
       }
@@ -199,14 +196,27 @@ export function ProductSearch({
     }
   }
 
-  function handleSelectPrevious(keyword: string) {
+  async function handleSelectPrevious(keyword: string) {
     if (inputRef.current) inputRef.current.value = keyword;
     setSearching(true);
     setResults(null);
     setSelected(new Set());
     setAddSuccess(null);
     setAddError(null);
-    loadFromCache(keyword);
+
+    try {
+      const res = await fetch(
+        `/api/sites/${siteId}/product-search?q=${encodeURIComponent(keyword)}`,
+      );
+      const data = await res.json();
+      if (data.status === "complete" && data.results) {
+        setResults(data.results);
+        setQuery(keyword);
+        setSearching(false);
+      }
+    } catch {
+      setSearching(false);
+    }
   }
 
   function toggleItem(asin: string) {

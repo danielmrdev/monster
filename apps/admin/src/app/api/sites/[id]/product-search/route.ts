@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { DataForSEOClient } from "@monster/agents";
 import { enqueueProductSeo } from "@/app/(dashboard)/sites/[id]/seo/actions";
+
+export const maxDuration = 55; // Vercel/standalone limit safety margin
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -19,18 +22,20 @@ export interface SearchResultItem {
   boughtPastMonth: number | null;
   specialOffers: string[];
   rankPosition: number | null;
-  /** Whether this ASIN already exists in the site */
   alreadyAdded: boolean;
 }
 
-// Shape stored in dfs_search_cache.results (without alreadyAdded — that's per-site)
 type CachedProduct = Omit<SearchResultItem, "alreadyAdded">;
 
 /**
- * GET /api/sites/[id]/product-search?q=<keyword>
+ * GET /api/sites/[id]/product-search?q=<keyword>&depth=100
  *
- * Reads results from dfs_search_cache (populated by DFS postback Worker).
- * Returns { results, market, status } where status = "complete"|"pending"|"not_found".
+ * 1. Cache hit (complete) → return results
+ * 2. Cache pending → try task_get with stored dfs_task_id → if ready, update cache + return
+ * 3. No cache → task_post + inline polling (~45s) → if ready, cache + return
+ *    → if timeout, save pending with dfs_task_id, enqueue BullMQ background job
+ *
+ * Returns: { results, market, status: "complete"|"pending"|"not_found" }
  */
 export async function GET(request: NextRequest, { params }: Params) {
   const { id: siteId } = await params;
@@ -39,6 +44,12 @@ export async function GET(request: NextRequest, { params }: Params) {
   if (!q) {
     return NextResponse.json({ error: "q query param required" }, { status: 400 });
   }
+
+  const depthParam = parseInt(request.nextUrl.searchParams.get("depth") ?? "100", 10);
+  const depth = Math.min(
+    400,
+    Math.max(100, Math.ceil((isNaN(depthParam) ? 100 : depthParam) / 100) * 100),
+  );
 
   const supabase = createServiceClient();
   const { data: site, error: siteError } = await supabase
@@ -52,40 +63,181 @@ export async function GET(request: NextRequest, { params }: Params) {
   }
 
   const market = (site.market ?? "ES").toUpperCase();
+  const keyLower = q.toLowerCase();
 
-  // ── Cache lookup ────────────────────────────────────────────────────────────
+  // ── 1. Cache lookup ─────────────────────────────────────────────────────────
   const { data: cacheRow } = await supabase
     .from("dfs_search_cache")
-    .select("depth, results, status, expires_at")
-    .eq("keyword", q.toLowerCase())
+    .select("*")
+    .eq("keyword", keyLower)
     .eq("market", market)
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
 
-  if (!cacheRow) {
-    return NextResponse.json({ results: [], market, status: "not_found" });
+  // Complete cache hit with enough depth
+  if (cacheRow?.status === "complete" && (cacheRow.depth ?? 0) >= depth) {
+    const products = (cacheRow.results as CachedProduct[]) ?? [];
+    return NextResponse.json({
+      results: await mergeAlreadyAdded(products, siteId, supabase),
+      market,
+      status: "complete",
+    });
   }
 
-  if (cacheRow.status === "pending") {
+  // ── 2. Pending row — try to collect via task_get ────────────────────────────
+  if (cacheRow?.status === "pending") {
+    const dfsTaskId = (cacheRow as Record<string, unknown>).dfs_task_id as string | null;
+    if (dfsTaskId) {
+      try {
+        const client = new DataForSEOClient();
+        const ready = await client.collectReadyTask(dfsTaskId);
+        if (ready) {
+          const products = mapProducts(ready.items);
+          await updateCacheComplete(supabase, keyLower, market, ready.items.length, products);
+          console.log(
+            `[product-search] background task complete: "${keyLower}" ${products.length} products`,
+          );
+          return NextResponse.json({
+            results: await mergeAlreadyAdded(products, siteId, supabase),
+            market,
+            status: "complete",
+          });
+        }
+      } catch (err) {
+        console.error(
+          `[product-search] collectReadyTask error: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
     return NextResponse.json({ results: [], market, status: "pending" });
   }
 
-  const cachedProducts = (cacheRow.results as CachedProduct[]) ?? [];
+  // ── 3. No cache — fresh DFS search with inline polling (~40s budget) ────────
+  try {
+    const client = new DataForSEOClient();
 
-  // ── Merge alreadyAdded (always per-site, never cached) ─────────────────────
+    // Step 3a: task_post only — get taskId
+    const { taskId } = await client.postSearchTask(q, market, depth, siteId);
+
+    // Step 3b: immediately save "pending" so duplicate requests reuse this taskId
+    await supabase.from("dfs_search_cache").upsert(
+      {
+        keyword: keyLower,
+        market,
+        depth,
+        results: [],
+        status: "pending",
+        site_id: siteId,
+        dfs_task_id: taskId,
+        expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+      },
+      { onConflict: "keyword,market", ignoreDuplicates: false },
+    );
+
+    // Step 3c: poll tasks_ready with ~40s budget
+    const products = await client.pollSearchTask(taskId, q, market, 40_000);
+
+    if (products && products.length > 0) {
+      const cached: CachedProduct[] = products.map((p) => ({
+        asin: p.asin,
+        title: p.title,
+        imageUrl: p.imageUrl,
+        price: p.price,
+        rating: p.rating,
+        reviewCount: p.reviewCount,
+        isPrime: p.isPrime,
+        isBestSeller: p.isBestSeller,
+        isAmazonChoice: p.isAmazonChoice,
+        boughtPastMonth: p.boughtPastMonth,
+        specialOffers: p.specialOffers,
+        rankPosition: p.rankPosition,
+      }));
+
+      await updateCacheComplete(supabase, keyLower, market, depth, cached);
+      console.log(
+        `[product-search] DFS inline: "${keyLower}" market=${market} depth=${depth} results=${cached.length}`,
+      );
+
+      return NextResponse.json({
+        results: await mergeAlreadyAdded(cached, siteId, supabase),
+        market,
+        status: "complete",
+      });
+    }
+
+    // Polling timed out — pending row already saved in step 3b
+    console.log(`[product-search] timeout → pending: "${keyLower}" taskId=${taskId}`);
+    return NextResponse.json({ results: [], market, status: "pending" });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[product-search] error: ${msg}`);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapProducts(items: any[]): CachedProduct[] {
+  return items
+    .filter((i) => i.type === "amazon_serp" && i.data_asin)
+    .map((i) => ({
+      asin: (i.data_asin as string) ?? "",
+      title: (i.title as string) ?? "",
+      imageUrl: (i.image_url as string) ?? null,
+      price: (i.price_from as number) ?? null,
+      rating: (i.rating?.value as number) ?? 0,
+      reviewCount: (i.rating?.votes_count as number) ?? 0,
+      isPrime: !!(i.is_prime ?? i.delivery_info),
+      isBestSeller: !!i.is_best_seller,
+      isAmazonChoice: !!i.is_amazon_choice,
+      boughtPastMonth: (i.bought_past_month as number) ?? null,
+      specialOffers: Array.isArray(i.special_offers) ? (i.special_offers as string[]) : [],
+      rankPosition: (i.rank_position as number) ?? null,
+    }));
+}
+
+async function updateCacheComplete(
+  supabase: ReturnType<typeof createServiceClient>,
+  keyword: string,
+  market: string,
+  depth: number,
+  products: CachedProduct[],
+) {
+  await supabase.from("dfs_search_cache").upsert(
+    {
+      keyword,
+      market,
+      depth,
+      results: JSON.parse(JSON.stringify(products)),
+      status: "complete",
+      expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+    },
+    { onConflict: "keyword,market", ignoreDuplicates: false },
+  );
+}
+
+async function mergeAlreadyAdded(
+  products: CachedProduct[],
+  siteId: string,
+  supabase: ReturnType<typeof createServiceClient>,
+): Promise<SearchResultItem[]> {
   const { data: existing } = await supabase
     .from("tsa_products")
     .select("asin")
     .eq("site_id", siteId);
-
   const existingAsins = new Set((existing ?? []).map((r) => r.asin));
+  return products.map((p) => ({ ...p, alreadyAdded: existingAsins.has(p.asin) }));
+}
 
-  const results: SearchResultItem[] = cachedProducts.map((p) => ({
-    ...p,
-    alreadyAdded: existingAsins.has(p.asin),
-  }));
-
-  return NextResponse.json({ results, market, status: "complete" });
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
 }
 
 // ── Bulk add ──────────────────────────────────────────────────────────────────
@@ -95,17 +247,6 @@ interface BulkAddBody {
   categoryIds: string[];
 }
 
-/**
- * POST /api/sites/[id]/product-search
- *
- * Bulk-inserts an array of products from search results.
- * Skips ASINs that already exist (no error — idempotent).
- * Optionally links to categories via category_products.
- * Auto-enqueues seo_product BullMQ job for each inserted product.
- *
- * Body: { products: SearchResultItem[], categoryIds: string[] }
- * Returns: { added: number, skipped: number, seoJobsQueued: number }
- */
 export async function POST(request: NextRequest, { params }: Params) {
   const { id: siteId } = await params;
 
@@ -201,16 +342,4 @@ export async function POST(request: NextRequest, { params }: Params) {
   }
 
   return NextResponse.json({ added, skipped, seoJobsQueued: insertedIds.length });
-}
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
 }
