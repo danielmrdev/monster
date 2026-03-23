@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { NavSidebar } from "@/components/nav-sidebar";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { AlertsBell } from "@/components/alerts-bell";
+import { useJobNotifications } from "@/hooks/useJobNotifications";
 
 const SIDEBAR_KEY = "chat-sidebar-open";
 
@@ -77,6 +78,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const pathname = usePathname();
   const { title, subtitle } = getPageMeta(pathname);
   const pageContext = getPageContext(pathname);
+  const { activeCount, finishedJobs, clearFinishedJobs } = useJobNotifications();
 
   // Initialize from localStorage; default closed
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -104,7 +106,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
       <div className="flex flex-1 overflow-hidden">
-        <NavSidebar />
+        <NavSidebar badges={{ jobs: activeCount }} />
         <div className="flex flex-col flex-1 overflow-hidden min-w-0">
           <header className="flex h-[68px] shrink-0 items-center justify-between px-6 border-b border-sidebar-border bg-sidebar gap-4">
             {/* Page title */}
@@ -120,7 +122,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </div>
             {/* Actions */}
             <div className="flex items-center gap-1 shrink-0">
-              <AlertsBell />
+              <AlertsBell finishedJobs={finishedJobs} onClearFinishedJobs={clearFinishedJobs} />
               <button
                 onClick={toggleSidebar}
                 className={[

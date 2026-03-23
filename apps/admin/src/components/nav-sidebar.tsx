@@ -21,13 +21,18 @@ const navItems = [
   { href: "/research", label: "Research Lab", icon: FlaskConical },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/finances", label: "Finances", icon: DollarSign },
-  { href: "/jobs", label: "Jobs", icon: Activity },
+  { href: "/jobs", label: "Jobs", icon: Activity, badgeKey: "jobs" as const },
   { href: "/monster", label: "Monster Chat", icon: MessageSquare },
   { href: "/infra", label: "Infrastructure", icon: Server },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function NavSidebar() {
+interface NavSidebarProps {
+  /** Badge counts keyed by badgeKey. */
+  badges?: { jobs?: number };
+}
+
+export function NavSidebar({ badges = {} }: NavSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -51,9 +56,10 @@ export function NavSidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {navItems.map(({ href, label, icon: Icon, badgeKey }) => {
           const isActive =
             pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+          const badgeCount = badgeKey ? (badges[badgeKey] ?? 0) : 0;
 
           return (
             <Link
@@ -74,7 +80,14 @@ export function NavSidebar() {
                 strokeWidth={isActive ? 2 : 1.75}
               />
               {label}
-              {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
+              {badgeCount > 0 && (
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground tabular-nums leading-none">
+                  {badgeCount > 99 ? "99+" : badgeCount}
+                </span>
+              )}
+              {isActive && badgeCount === 0 && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+              )}
             </Link>
           );
         })}
