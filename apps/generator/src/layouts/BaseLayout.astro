@@ -41,11 +41,28 @@ interface Props {
 const { title, lang = "es", metaDescription, customization, faviconDir, siteId, supabaseUrl, supabaseAnonKey, canonicalUrl, ogData, schemaData } = Astro.props;
 const primary = customization?.primaryColor ?? "#4f46e5";
 const accent = customization?.accentColor ?? "#7c3aed";
-const headingFont = customization?.headingFont ?? "";
-const bodyFont = customization?.bodyFont ?? "";
+const headingFont = customization?.headingFont || "";
+const bodyFont = customization?.bodyFont || "";
+
+const systemFonts = new Set(["sans-serif", "serif", "monospace", "cursive", "fantasy"]);
+
+// Build inline CSS custom properties for <html> — avoids Astro define:vars
+// which sets empty-string variables that prevent CSS fallbacks from working.
+const cssVarParts = [
+  `--color-primary:${primary}`,
+  `--color-accent:${accent}`,
+];
+if (bodyFont) {
+  const isGeneric = systemFonts.has(bodyFont);
+  cssVarParts.push(`--font-body:${isGeneric ? bodyFont : `"${bodyFont}"`}`);
+}
+if (headingFont) {
+  const isGeneric = systemFonts.has(headingFont);
+  cssVarParts.push(`--font-heading:${isGeneric ? headingFont : `"${headingFont}"`}`);
+}
+const htmlStyle = cssVarParts.join(";");
 
 // Build Google Fonts URL for non-system fonts.
-const systemFonts = new Set(["sans-serif", "serif", "monospace", "cursive", "fantasy"]);
 const fontsToLoad = [
   bodyFont && !systemFonts.has(bodyFont) ? bodyFont : null,
   headingFont && headingFont !== bodyFont && !systemFonts.has(headingFont) ? headingFont : null,
@@ -72,7 +89,7 @@ try {
 }
 ---
 
-<html lang={lang}>
+<html lang={lang} style={htmlStyle}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -121,12 +138,10 @@ try {
         font-family: var(--font-heading);
       }
     </style>
-    <style define:vars={{ primary, accent, headingFont, bodyFont }}>
+    <style is:global>
       :root {
-        --color-primary: var(--primary);
-        --color-accent: var(--accent);
-        --font-body: var(--bodyFont, sans-serif);
-        --font-heading: var(--headingFont, var(--font-body));
+        --font-body: sans-serif;
+        --font-heading: var(--font-body);
       }
       body {
         font-family: var(--font-body, sans-serif);

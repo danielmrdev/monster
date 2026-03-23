@@ -120,7 +120,9 @@ function getInitialTab(siteId: string): TabValue {
   // Fresh entry from sites table — reset to overview
   const url = new URL(window.location.href);
   if (url.searchParams.has("fresh")) {
-    try { sessionStorage.removeItem(TAB_STORAGE_PREFIX + siteId); } catch {}
+    try {
+      sessionStorage.removeItem(TAB_STORAGE_PREFIX + siteId);
+    } catch {}
     url.searchParams.delete("fresh");
     window.history.replaceState(null, "", url.pathname + url.search + url.hash);
     return "overview";
@@ -282,9 +284,9 @@ export function SiteDetailTabs({
                 <div>
                   <dt className="text-xs font-medium text-muted-foreground">Favicon</dt>
                   <dd className="mt-1">
-                    {customization.faviconUrl ? (
+                    {customization.faviconDir ? (
                       <img
-                        src={customization.faviconUrl}
+                        src={`${customization.faviconDir}/favicon-32x32.png`}
                         alt="Site favicon"
                         className="h-8 w-8 object-contain rounded border border-border bg-muted/30 p-1"
                       />

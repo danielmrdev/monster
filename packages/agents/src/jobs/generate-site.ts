@@ -574,18 +574,22 @@ export class GenerateSiteJob {
         }
 
         const { glob } = await import("node:fs/promises");
-        const htmlFiles: string[] = [];
+        const allHtmlFiles: string[] = [];
         for await (const f of glob("**/*.html", { cwd: distDir })) {
-          htmlFiles.push(f);
+          allHtmlFiles.push(f);
         }
+        // Filter out redirect stubs (/go/) and legal pages — they score poorly by design
+        const htmlFiles = allHtmlFiles.filter(
+          (f) => !f.startsWith("go/") && inferPageType(f) !== "legal",
+        );
         const total = htmlFiles.length;
-        console.log(`[GenerateSiteJob] score_pages: ${total} pages to score`);
+        console.log(
+          `[GenerateSiteJob] score_pages: ${total} pages to score (${allHtmlFiles.length - total} skipped)`,
+        );
 
         const scoreRows: TablesInsert<"seo_scores">[] = [];
         let done = 0;
         for (const relPath of htmlFiles) {
-          // Skip redirect stubs and legal pages — they score poorly by design
-          if (relPath.startsWith("go/") || inferPageType(relPath) === "legal") continue;
           try {
             const absPath = join(distDir, relPath);
             const html = readFileSync(absPath, "utf-8");
